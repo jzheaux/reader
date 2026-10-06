@@ -25,7 +25,7 @@ import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createContent } from './content.js';
-import { render } from './render.js';
+import { render, PUZZLES } from './render.js';
 import { slides } from './slides.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -50,6 +50,9 @@ const TYPES = {
   '.webp': 'image/webp',
   '.svg': 'image/svg+xml',
 };
+
+// Every kind of puzzle, for the preview to load.
+const PUZZLE_SCRIPTS = [...PUZZLES].map((kind) => `<script src="/puzzles/${kind}.js"></script>`).join('\n');
 
 const LOOPBACK = new Set(['127.0.0.1', 'localhost', '[::1]']);
 
@@ -126,6 +129,10 @@ export function createServer({ root }) {
     const abs = path.resolve(STATIC_DIR, rel);
     if (!abs.startsWith(STATIC_DIR + path.sep) || !fs.existsSync(abs) || !fs.statSync(abs).isFile()) {
       return send(res, 404, 'not found', 'text/plain');
+    }
+    if (rel === 'preview.html') {
+      const html = fs.readFileSync(abs, 'utf8').replace('<!-- puzzles -->', PUZZLE_SCRIPTS);
+      return send(res, 200, html, TYPES['.html']);
     }
     return sendFile(res, abs);
   }

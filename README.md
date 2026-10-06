@@ -460,7 +460,7 @@ $ npm run lint
 | `static/app.js` | sidebar, editor, live preview, autosave, PDF view, read mode, deck |
 | `static/preview.html` | the sandboxed preview frame |
 | `static/puzzles.js` | puzzles in the preview: drawn from their fences, played, posted back |
-| `static/puzzles/` | one file per kind of puzzle |
+| `static/puzzles/` | one file per kind of puzzle; a file here is a fence name |
 | `static/speaker.html` | the speaker view for a deck being presented |
 
 PDF.js is vendored in `static/vendor/`; its version and license are noted there.

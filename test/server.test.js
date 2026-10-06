@@ -83,3 +83,11 @@ test('serves content files sandboxed, so their scripts never run as the app', as
   assert.equal(pdf.status, 200);
   assert.equal(pdf.headers.get('content-security-policy'), null);
 });
+
+test('the preview loads a script for each kind of puzzle', async () => {
+  const html = await (await fetch(base + '/preview.html')).text();
+  for (const kind of ['sudoku', 'tracks', 'wordsearch', 'coord', 'maze']) {
+    assert.match(html, new RegExp(`<script src="/puzzles/${kind}\\.js"></script>`));
+  }
+  assert.doesNotMatch(html, /<!-- puzzles -->/);
+});

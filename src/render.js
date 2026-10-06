@@ -6,7 +6,9 @@
  * back into its two halves.
  */
 
+import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { parse, toHtml } from 'gutter-md';
 import EMOJI from 'markdown-it-emoji/lib/data/full.mjs';
 import { ldsLink } from './lds.js';
@@ -31,9 +33,12 @@ export function render(src, { file, puzzleBase = 0, read } = {}) {
   };
 }
 
-// Fences naming a puzzle. Mirrored by PUZZLES in static/app.js; each is drawn
-// and played by static/puzzles/<kind>.js, loaded by static/preview.html.
-export const PUZZLES = new Set(['sudoku', 'tracks', 'wordsearch', 'coord', 'maze']);
+// Fences naming a puzzle: one for each static/puzzles/<kind>.js, which draws
+// and plays it. The server loads them all into the preview.
+export const PUZZLE_DIR = fileURLToPath(new URL('../static/puzzles/', import.meta.url));
+export const PUZZLES = new Set(
+  fs.readdirSync(PUZZLE_DIR).filter((f) => f.endsWith('.js')).map((f) => f.slice(0, -'.js'.length)).sort(),
+);
 const PUZZLE_CODE = /<pre><code class="language-([\w-]+)">[\s\S]*?<\/code><\/pre>/g;
 const PUZZLE_FENCE = /^ {0,3}(`{3,}|~{3,})[ \t]*([^`\s]*)[ \t]*([^`]*?)[ \t]*$/;
 
