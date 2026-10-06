@@ -13,8 +13,12 @@ import { parse, toHtml } from 'gutter-md';
 import EMOJI from 'markdown-it-emoji/lib/data/full.mjs';
 import { ldsLink } from './lds.js';
 
-export function render(src, { file, puzzleBase = 0, read } = {}) {
-  const text = expand(src || '');
+/**
+ * `line` is the line of the file `src` starts on, when it is only part of
+ * one (a slide), so whatever is written back by line number finds its line.
+ */
+export function render(src, { file, puzzleBase = 0, read, line = 0 } = {}) {
+  const text = expand(src || '', { line });
   const { meta, asides } = parse(text);
 
   // Column headings ("Speaker" / "Listener") only help when the document
@@ -229,9 +233,9 @@ const REFERENCE_DEF = /^[ \t]{0,3}\[[^\]]+\]:/;
  *   in pixels, a missing side scaled to keep its proportions. `sizes` sets it.
  *
  * Like shortcodes, the source keeps what was typed, and code is left alone.
- * Line numbers are preserved.
+ * Line numbers are preserved; those the markers carry count from `line`.
  */
-export function expand(src) {
+export function expand(src, { line: first = 0 } = {}) {
   let fence = null;
   const blocks = [];
   let qa = null;
@@ -255,8 +259,9 @@ export function expand(src) {
       else return line;
       return '';
     }
-    line = line.replace(TASK, (m, lead, box, radio) => `${lead}${MARK_OPEN}${n}:${box ? `t${box}` : `r${radio}`}${MARK_CLOSE}`);
-    line = line.replace(FIELD, (m, label, colons, value) => `${FIELD_OPEN}${n}${FIELD_SEP}${colons.length}${FIELD_SEP}${seal(label)}${FIELD_SEP}${seal(value)}${FIELD_CLOSE}`);
+    const at = first + n;
+    line = line.replace(TASK, (m, lead, box, radio) => `${lead}${MARK_OPEN}${at}:${box ? `t${box}` : `r${radio}`}${MARK_CLOSE}`);
+    line = line.replace(FIELD, (m, label, colons, value) => `${FIELD_OPEN}${at}${FIELD_SEP}${colons.length}${FIELD_SEP}${seal(label)}${FIELD_SEP}${seal(value)}${FIELD_CLOSE}`);
     [line, qa] = exchange(line, qa);
     const alone = MATH_ALONE.test(line);
     const next = lines[n + 1];

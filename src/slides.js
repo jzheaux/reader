@@ -43,7 +43,7 @@ export function slides(src, { file, read } = {}) {
   for (const { text, line } of chunks) {
     const { body, notes } = lift(text);
     if (!body.trim() && !notes) continue;
-    const r = render(body, { file, puzzleBase, read });
+    const r = render(body, { file, puzzleBase, read, line });
     puzzleBase += r.puzzles;
     css ||= `${r.css}\n${CSS}`;
     out.push({ body: unmast(r.body), notes, line });
@@ -87,7 +87,11 @@ export function split(src) {
   return { meta, slides: out.filter((s) => s.text.trim()) };
 }
 
-/** Separates a slide's speaker notes (its HTML comments) from its content. */
+/**
+ * Separates a slide's speaker notes (its HTML comments) from its content. A
+ * note leaves its line breaks behind, so each line of the content is still
+ * on the line it was in the file.
+ */
 export function lift(text) {
   const notes = [];
   const lines = text.split('\n');
@@ -102,12 +106,12 @@ export function lift(text) {
   let body = '';
   let last = 0;
   for (const m of masked.matchAll(NOTE)) {
-    body += text.slice(last, m.index);
+    body += text.slice(last, m.index) + m[0].replace(/[^\n]/g, '');
     notes.push(dedent(m[1]));
     last = m.index + m[0].length;
   }
   body += text.slice(last);
-  return { body: body.replace(/\n{3,}/g, '\n\n'), notes: notes.filter(Boolean).join('\n\n') };
+  return { body, notes: notes.filter(Boolean).join('\n\n') };
 }
 
 /** The fence still open after line `l`, given the one open before it. */

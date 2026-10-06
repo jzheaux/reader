@@ -81,3 +81,18 @@ test('puzzles are numbered across the whole deck', () => {
   assert.match(out.slides[0].body, /data-puzzle="0"/);
   assert.match(out.slides[1].body, /data-puzzle="1"/);
 });
+
+test('notes leave their lines behind, so a slide knows its lines in the file', () => {
+  const { body } = lift('# Hi\n\n<!--\n  a note\n-->\n\n- [ ] task\n');
+  assert.equal(body.split('\n').length, 8);
+  assert.equal(body.split('\n')[6], '- [ ] task');
+
+  const out = slides('# One\n\n---\n\n# Two\n\n<!--\n  a note\n-->\n\n- [ ] task\n@ Name: x\n');
+  assert.match(out.slides[1].body, /class="task-box" data-line="10"/);
+  assert.match(out.slides[1].body, /class="field" data-line="11"/);
+});
+
+test('blank lines in a slide\'s code are kept', () => {
+  const { body } = lift('```\na\n\n\n\nb\n```\n');
+  assert.match(body, /a\n\n\n\nb/);
+});
