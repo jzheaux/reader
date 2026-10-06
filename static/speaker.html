@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>speaker view</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='13' font-size='13'>🎤</text></svg>">
+<style>
+  :root {
+    --bg: #14130f; --panel: #201e1b; --ink: #ece6dc; --ink-soft: #a79e91;
+    --ink-faint: #756c60; --line: #34302b; --accent: #c9a476;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg); color: var(--ink); font: 15px/1.5 var(--sans);
+    display: grid; gap: 14px; padding: 14px;
+    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-areas: "now next" "notes notes";
+    -webkit-font-smoothing: antialiased;
+  }
+  .now { grid-area: now; }
+  .next { grid-area: next; display: flex; flex-direction: column; gap: 14px; }
+  .label { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 6px; }
+  .screen {
+    position: relative; width: 100%; aspect-ratio: 16 / 9;
+    background: #fff; border-radius: 6px; overflow: hidden;
+    box-shadow: 0 0 0 1px var(--line);
+  }
+  /* Rendered at projector size and scaled down, so a slide wraps the same
+   * here as it does on the big screen. */
+  .screen iframe {
+    position: absolute; top: 0; left: 0; border: 0; pointer-events: none;
+    width: 1280px; height: 720px; transform-origin: 0 0;
+  }
+  .screen .end {
+    position: absolute; inset: 0; display: grid; place-items: center;
+    background: var(--panel); color: var(--ink-faint);
+  }
+  .clock { display: flex; align-items: baseline; gap: 18px; flex-wrap: wrap; font-variant-numeric: tabular-nums; }
+  .clock .count { font-size: 30px; font-weight: 600; }
+  .clock .steps { font-size: 14px; letter-spacing: .15em; color: var(--ink-soft); }
+  .clock .timer { font-size: 30px; color: var(--accent); cursor: pointer; }
+  .clock .time { color: var(--ink-soft); }
+  .clock .hint { font-size: 12px; color: var(--ink-faint); flex-basis: 100%; }
+  .notes {
+    grid-area: notes; overflow: auto; background: var(--panel);
+    border-radius: 6px; padding: 16px 20px;
+    font-size: 22px; line-height: 1.5; white-space: pre-wrap;
+  }
+  .notes:empty::before { content: "No notes on this slide."; color: var(--ink-faint); }
+  .waiting { position: fixed; inset: 0; display: grid; place-items: center; background: var(--bg); color: var(--ink-soft); text-align: center; padding: 24px; }
+</style>
+</head>
+<body>
+  <section class="now">
+    <div class="label">Now</div>
+    <div class="screen"><iframe id="now" src="/preview.html" title="Current slide" tabindex="-1" sandbox="allow-scripts"></iframe></div>
+  </section>
+  <section class="next">
+    <div>
+      <div class="label">Next</div>
+      <div class="screen">
+        <iframe id="next" src="/preview.html" title="Next slide" tabindex="-1" sandbox="allow-scripts"></iframe>
+        <div class="end" id="end" hidden>End of the deck</div>
+      </div>
+    </div>
+    <div class="clock">
+      <span class="count" id="count"></span>
+      <span class="steps" id="steps" title="Steps shown on this slide"></span>
+      <span class="timer" id="timer" title="Click to restart">0:00</span>
+      <span class="time" id="time"></span>
+      <span class="hint">n p step · N P whole slide · click the timer to restart it</span>
+    </div>
+  </section>
+  <section class="notes" id="notes"></section>
+  <div class="waiting" id="waiting">Waiting for the deck. Press Present in reader, then S.</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const channel = new BroadcastChannel('reader-deck');
+  const deck = { slides: [], css: '', meta: {}, index: 0, reveal: 0, base: '' };
+  let started = Date.now();
+
+  function whenReady(frame) {
+    return new Promise((resolve) => {
+      window.addEventListener('message', (e) => {
+        if (e.source === frame.contentWindow && e.data?.type === 'ready') resolve();
+      });
+      const ping = () => frame.contentWindow?.postMessage({ type: 'ping' }, '*');
+      frame.addEventListener('load', ping);
+      ping();
+    });
+  }
+  const ready = { now: whenReady($('now')), next: whenReady($('next')) };
+
+  const shown = { now: -1, next: -1 };
+
+  // "Now" is what the room sees, with the steps still to come drawn faintly.
+  // "Next" is the next slide, whole.
+  async function show(name, i, reveal) {
+    await ready[name];
+    const slide = deck.slides[i];
+    const frame = $(name).contentWindow;
+    if (shown[name] === i && slide) return frame.postMessage({ type: 'reveal', reveal }, '*');
+    shown[name] = i;
+    frame.postMessage({
+      type: 'render', css: deck.css, body: slide ? slide.body : '', base: deck.base, resetScroll: true,
+      reveal, dim: name === 'now',
+    }, '*');
+  }
+
+  function draw({ fresh = false } = {}) {
+    const i = deck.index;
+    const n = deck.slides.length;
+    if (fresh) shown.now = shown.next = -1;
+    show('now', i, deck.reveal);
+    show('next', i + 1, Infinity);
+    $('end').hidden = i + 1 < n;
+    $('notes').textContent = deck.slides[i]?.notes || '';
+    const steps = deck.slides[i]?.steps || 0;
+    $('count').textContent = `${i + 1} / ${n}`;
+    $('steps').textContent = steps ? '●'.repeat(deck.reveal) + '○'.repeat(steps - deck.reveal) : '';
+    document.title = `${i + 1} / ${n} · speaker view`;
+  }
+
+  function fit() {
+    for (const f of document.querySelectorAll('.screen iframe')) {
+      f.style.transform = `scale(${f.parentElement.clientWidth / 1280})`;
+    }
+  }
+
+  function tick() {
+    const s = Math.floor((Date.now() - started) / 1000);
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const pad = (x) => String(x).padStart(2, '0');
+    $('timer').textContent = h ? `${h}:${pad(m)}:${pad(s % 60)}` : `${m}:${pad(s % 60)}`;
+    $('time').textContent = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  }
+
+  channel.addEventListener('message', (e) => {
+    const m = e.data || {};
+    if (m.type === 'deck') {
+      Object.assign(deck, { slides: m.slides, css: m.css, meta: m.meta, index: m.index, reveal: m.reveal, base: m.base });
+      $('waiting').hidden = Boolean(m.open);
+      draw({ fresh: true });
+    } else if (m.type === 'go') {
+      deck.index = m.index;
+      deck.reveal = m.reveal;
+      draw();
+    } else if (m.type === 'end') {
+      $('waiting').hidden = false;
+      $('waiting').textContent = 'The deck was closed. Press Present in reader to pick it up again.';
+    }
+  });
+
+  // The keys that move through the deck work here too; the deck does the moving.
+  const MOVES = new Set(['n', 'N', 'p', 'P', 'ArrowRight', 'ArrowDown', 'PageDown', ' ', 'Enter',
+    'ArrowLeft', 'ArrowUp', 'PageUp', 'Backspace', 'Home', 'End']);
+  window.addEventListener('keydown', (e) => {
+    if (e.metaKey || e.ctrlKey || e.altKey || !MOVES.has(e.key)) return;
+    e.preventDefault();
+    channel.postMessage({ type: 'key', key: e.key });
+  });
+
+  $('timer').addEventListener('click', () => { started = Date.now(); tick(); });
+  window.addEventListener('resize', fit);
+  fit();
+  tick();
+  setInterval(tick, 1000);
+  channel.postMessage({ type: 'hello' });
+</script>
+</body>
+</html>

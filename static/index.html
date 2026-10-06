@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>reader</title>
+<link rel="stylesheet" href="/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='13' font-size='13'>📖</text></svg>">
+</head>
+<body>
+
+<header class="bar">
+  <div class="bar-left">
+    <button class="ghost icon" id="sidebarToggle" title="Toggle file list (⌘\)" aria-label="Toggle file list">☰</button>
+    <span class="mark" id="rootName">reader</span>
+    <span class="crumb" id="crumb"></span>
+  </div>
+  <div class="bar-right">
+    <span class="save-state" id="saveState"></span>
+    <button class="ghost small" id="presentBtn" title="Present as slides (⌘⇧.)" hidden>Present</button>
+    <button class="ghost small" id="readBtn" title="Read without editing (⌘.)">Read</button>
+    <button class="ghost small" id="helpToggle">Formatting</button>
+  </div>
+</header>
+
+<main class="split" id="split">
+  <nav class="sidebar" id="sidebar">
+    <div class="side-head">
+      <input id="filter" type="search" placeholder="Filter…" autocomplete="off" spellcheck="false">
+      <button class="ghost small" id="newBtn" title="New file">New</button>
+    </div>
+    <form class="new-form" id="newForm" hidden>
+      <input id="newName" autocomplete="off" spellcheck="false">
+      <button class="primary small" type="submit">Create</button>
+    </form>
+    <ul class="files" id="files"></ul>
+  </nav>
+
+  <section class="pane view-pane" id="viewPane">
+    <iframe id="preview" src="/preview.html" title="Rendered document"
+      sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox"></iframe>
+    <div class="pdf-view" id="pdfView" hidden></div>
+    <div class="empty" id="empty" hidden></div>
+  </section>
+
+  <section class="pane write-pane" id="writePane">
+    <div class="conflict" id="conflict" hidden>
+      <span>This file changed on disk.</span>
+      <button class="ghost small" id="reloadBtn">Load disk version</button>
+      <button class="ghost small" id="overwriteBtn">Keep mine</button>
+    </div>
+
+    <div class="help" id="help" hidden>
+      <div><code>**bold**</code> <code>*italic*</code> <code>~~strike~~</code> <code>`code`</code> <code>[text](https://url)</code></div>
+      <div><code># Heading</code> <code>- list</code> <code>1. list</code> <code>&gt; quote</code> <code>---</code></div>
+      <div><code>~ an aside</code> — your own voice, set beside the line above it</div>
+      <div><code>---</code> alone on a line starts a new slide · <code>&lt;!-- notes --&gt;</code> are speaker notes</div>
+      <div class="keys">⌘S save · ⌘B bold · ⌘I italic · ⌘K link · ⌥↑ ⌥↓ file · ⌘\ files · ⌘. read · ⌘⇧. present</div>
+    </div>
+
+    <textarea id="editor" spellcheck="true" disabled
+      placeholder="Write here — it renders on the left as you type."></textarea>
+
+    <footer class="write-foot">
+      <div class="foot-info">
+        <span class="dot" id="dirtyDot" hidden>●</span>
+        <span id="counts"></span>
+      </div>
+      <span class="foot-path" id="footPath"></span>
+    </footer>
+  </section>
+</main>
+
+<div class="deck" id="deck" tabindex="-1" hidden>
+  <iframe id="stage" src="/preview.html" title="Slide" tabindex="-1" sandbox="allow-scripts"></iframe>
+  <div class="deck-notes" id="deckNotes" hidden></div>
+  <footer class="deck-foot">
+    <span id="deckBy"></span>
+    <span class="deck-keys">n p step · N P whole slide · T notes · S speaker view · F full screen · Esc done</span>
+    <span id="deckCount"></span>
+  </footer>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script type="module" src="/app.js"></script>
+</body>
+</html>
