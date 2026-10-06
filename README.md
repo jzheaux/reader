@@ -459,6 +459,7 @@ $ npm run lint
 | `src/slides.js` | a `slides`-format deck → rendered slides and their notes |
 | `static/app.js` | sidebar, editor, live preview, autosave, PDF view, read mode, deck |
 | `static/preview.html` | the sandboxed preview frame |
+| `static/edits.js` | edits the preview asks for, checked against the lines they were drawn from |
 | `static/puzzles.js` | puzzles in the preview: drawn from their fences, played, posted back |
 | `static/puzzles/` | one file per kind of puzzle; a file here is a fence name |
 | `static/speaker.html` | the speaker view for a deck being presented |

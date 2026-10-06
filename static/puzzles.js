@@ -16,6 +16,9 @@
  * Click a puzzle (or Tab to it) to play; while it has focus it takes the
  * keys. Esc hands them back.
  *
+ * A move goes up as an edit to the lines inside the fence, which the server
+ * names as `data-from` and `data-to` (see edits.js).
+ *
  * Each kind lives in puzzles/<kind>.js and registers itself here with
  * `mount(host, text, ui, post)`: draw the puzzle into `host` from `text`
  * (false if the text can't be read), keep what the reader was doing in `ui`,
@@ -49,8 +52,15 @@
       const lead = source == null ? '' : `${source}\n`;
       const text = source == null ? own : `${lead}${own}`;
       if (!memory.has(index)) memory.set(index, {});
-      const send = (before, after) => window.parent.postMessage(
-        { type: 'puzzle', index, kind: host.dataset.kind, before, after }, '*');
+      // The fence's lines, kept up to date as moves change how many there
+      // are, since the page isn't rendered again after a move.
+      const from = Number(host.dataset.from);
+      let to = Number(host.dataset.to);
+      const send = (before, after) => {
+        const edit = { from, to, before: lines(before), after: lines(after) };
+        to = from + edit.after.length;
+        window.parent.postMessage({ type: 'edit', edits: [edit], drawn: true }, '*');
+      };
       const post = (before, after) => {
         if (!lead) return send(before, after);
         const fence = (t) => (t === source ? '' : t.startsWith(lead) ? t.slice(lead.length) : null);
@@ -65,6 +75,8 @@
       if (index === focus) host.focus({ preventScroll: true });
     }
   }
+
+  const lines = (s) => (s === '' ? [] : s.split('\n'));
 
   function unreadable(host, why) {
     host.classList.add('puzzle-unreadable');

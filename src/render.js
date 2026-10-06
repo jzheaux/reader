@@ -20,6 +20,9 @@ import { ldsLink } from './lds.js';
 export function render(src, { file, puzzleBase = 0, read, line = 0 } = {}) {
   const text = expand(src || '', { line });
   const { meta, asides } = parse(text);
+  // The line of the file, as written, that a marker's line number names.
+  const lines = (src || '').split('\n');
+  const lineAt = (n) => lines[n - line] ?? '';
 
   // Column headings ("Speaker" / "Listener") only help when the document
   // names its voices; a journal entry doesn't need them.
@@ -27,8 +30,8 @@ export function render(src, { file, puzzleBase = 0, read, line = 0 } = {}) {
   const title = meta.title || (file ? path.basename(file, path.extname(file)) : 'Untitled');
 
   const html = toHtml(text, { layout: 'columns', headings, title });
-  const body = emojify(styles(maths(exchanges(searches(quotes(fields(tasks(alerts(figures(sizes(between(html, '<body>', '</body>').trim())))))))))));
-  const played = puzzles(body, puzzleBase, sources(text, file, read));
+  const body = emojify(styles(maths(exchanges(searches(quotes(fields(tasks(alerts(figures(sizes(between(html, '<body>', '</body>').trim()))), lineAt), lineAt)))))));
+  const played = puzzles(body, puzzleBase, fences(text, { file, read, line }));
   return {
     css: `${between(html, '<style>', '</style>').trim()}\n${CSS}`,
     body: played.html,
@@ -48,57 +51,76 @@ const PUZZLE_FENCE = /^ {0,3}(`{3,}|~{3,})[ \t]*([^`\s]*)[ \t]*([^`]*?)[ \t]*$/;
 
 /**
  * A fenced block naming a puzzle (```sudoku) is wrapped for the preview to
- * draw and play, numbered in document order from `base` so a played move can
- * find its fence again. The text stays inside, as written.
+ * draw and play, numbered in document order from `base` so the preview can
+ * tell it's the same puzzle after a re-render. The text stays inside, as
+ * written, and `data-from` and `data-to` say which lines of the file it is
+ * (from the first inside the fence up to the closing one), for a move to be
+ * written back to.
  *
  * A puzzle can keep its board in a file of its own, named after the kind
  * (```maze mazes/one.maze), so a big one doesn't fill the page; the fence
- * then holds only what's been played. `sources` has, for each puzzle in
- * order, that file's text (or why it couldn't be read), carried along for
- * the preview to put in front of the fence's text.
+ * then holds only what's been played. The file's text (or why it couldn't
+ * be read) is carried along for the preview to put in front of the fence's.
  */
-export function puzzles(html, base = 0, sources = []) {
+export function puzzles(html, base = 0, fences = []) {
   let n = base;
   let k = 0;
   const out = html.replace(PUZZLE_CODE, (m, kind) => {
     if (!PUZZLES.has(kind)) return m;
-    const src = sources[k++];
-    const attr = !src ? ''
-      : src.error ? ` data-source-error="${escapeAttr(src.error)}"`
-        : ` data-source="${escapeAttr(src.text)}"`;
-    return `<div class="puzzle" data-kind="${kind}" data-puzzle="${n++}"${attr}>${m}</div>`;
+    const f = fences[k++];
+    const lines = f ? ` data-from="${f.from}" data-to="${f.to}"` : '';
+    const source = !f?.source ? ''
+      : f.source.error ? ` data-source-error="${escapeAttr(f.source.error)}"`
+        : ` data-source="${escapeAttr(f.source.text)}"`;
+    return `<div class="puzzle" data-kind="${kind}" data-puzzle="${n++}"${lines}${source}>${m}</div>`;
   });
   return { html: out, count: n - base };
 }
 
 /**
- * The board file each puzzle fence in `text` names, in order: null for one
- * that names none, else { text } or { error }. A file is found next to the
- * document `file`, and read with `read(path)` (paths from the content root).
+ * Each puzzle fence in `text`, in order: { from, to, source }. `from` and `to`
+ * are the lines inside it, counting from `line`; `to` is the closing fence,
+ * or the end of the text if it was never closed. `source` is null for a
+ * fence that names no board file, else { text } or { error }. A file is
+ * found next to the document `file`, and read with `read(path)` (paths from
+ * the content root).
  */
-export function sources(text, file, read) {
+export function fences(text, { file, read, line = 0 } = {}) {
   const out = [];
+  const lines = text.split('\n');
   let fence = null;
-  for (const line of text.split('\n')) {
-    const f = PUZZLE_FENCE.exec(line);
+  let open = null;
+  for (let i = 0; i < lines.length; i++) {
+    const f = PUZZLE_FENCE.exec(lines[i]);
     if (fence) {
-      if (f && f[1][0] === fence[0] && f[1].length >= fence.length && !f[2] && !f[3]) fence = null;
+      if (f && f[1][0] === fence[0] && f[1].length >= fence.length && !f[2] && !f[3]) {
+        fence = null;
+        if (open) open.to = line + i;
+        open = null;
+      }
       continue;
     }
     if (!f) continue;
     fence = f[1];
     if (!PUZZLES.has(f[2])) continue;
-    const ref = f[3];
-    if (!ref) { out.push(null); continue; }
-    const rel = path.posix.normalize(path.posix.join(path.posix.dirname(file || ''), ref));
-    try {
-      if (!read) throw new Error('no files to read from');
-      out.push({ text: read(rel).replace(/\r\n?/g, '\n').replace(/\n+$/, '') });
-    } catch (err) {
-      out.push({ error: `${ref}: ${err.message}` });
-    }
+    // Never closed, it runs to the end of the text, short of the empty line
+    // after a last newline, which markdown leaves out of the code.
+    const end = lines.at(-1) === '' ? lines.length - 1 : lines.length;
+    open = { from: line + i + 1, to: line + end, source: board(f[3], file, read) };
+    out.push(open);
   }
   return out;
+}
+
+function board(ref, file, read) {
+  if (!ref) return null;
+  const rel = path.posix.normalize(path.posix.join(path.posix.dirname(file || ''), ref));
+  try {
+    if (!read) throw new Error('no files to read from');
+    return { text: read(rel).replace(/\r\n?/g, '\n').replace(/\n+$/, '') };
+  } catch (err) {
+    return { error: `${ref}: ${err.message}` };
+  }
 }
 
 const escapeAttr = (s) => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
@@ -452,11 +474,13 @@ const TASK_OR_LIST = new RegExp(`${TASK_ITEM}|<(/?)[ou]l\\b`, 'g');
 
 /**
  * Markers left by `expand` at the head of a list item become checkboxes, or
- * radio buttons, that carry their source line; the radio buttons of one list
- * share a name, so only one can be chosen. Anywhere else (say, an indented
- * code block) they go back to the `[ ]` or `( )` that was typed.
+ * radio buttons, that carry their source line, and that line as it reads
+ * with the box checked and unchecked; the radio buttons of one list share a
+ * name, so only one can be chosen. Anywhere else (say, an indented code
+ * block) they go back to the `[ ]` or `( )` that was typed. `lineAt(n)` is
+ * line `n` as written.
  */
-export function tasks(html) {
+export function tasks(html, lineAt = () => '') {
   const lists = [];
   let count = 0;
   return html
@@ -470,9 +494,12 @@ export function tasks(html) {
       const cls = rest.startsWith(' class="')
         ? rest.replace(' class="', ' class="task ')
         : ` class="task"${rest}`;
+      const text = lineAt(Number(line));
+      const as = (on) => (checked && on ? text : text.replace(TASK, (t, lead, b) => `${lead}${b ? '[' : '('}${on ? 'x' : ' '}${b ? ']' : ')'}`));
+      const lines = ` data-on="${escapeAttr(as(true))}" data-off="${escapeAttr(as(false))}"`;
       const input = kind === 't'
-        ? `<input type="checkbox" class="task-box" data-line="${line}"${checked}>`
-        : `<input type="radio" class="choice-box" name="choice-${lists.at(-1)}" data-line="${line}"${checked}>`;
+        ? `<input type="checkbox" class="task-box" data-line="${line}"${lines}${checked}>`
+        : `<input type="radio" class="choice-box" name="choice-${lists.at(-1)}" data-line="${line}"${lines}${checked}>`;
       return `${open}${cls}${input} `;
     })
     .replace(MARKER, (m, line, kind, box) => (kind === 't' ? `[${box}]` : `(${box})`));
@@ -483,17 +510,23 @@ const seal = (s) => encodeURIComponent(s).replace(/[!'()*~_.-]/g, (c) => `%${c.c
 const escape = (s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 const FIELD_MARK = new RegExp(`${FIELD_OPEN}(\\d+)${FIELD_SEP}(\\d+)${FIELD_SEP}([^${FIELD_SEP}]*)${FIELD_SEP}([^${FIELD_CLOSE}]*)${FIELD_CLOSE}\\n?`, 'g');
 
+const FIELD_HEAD = /^@[ \t]+[^:\n]*?[^:\s][ \t]*:+/;
+
 /**
  * Markers left by `expand` for `@ Label: value` become form fields, one to a
  * line, carrying their source line and the value as typed so the preview
- * can open the blank for editing and write it back. A blank of more than
- * one line says how many, for the stylesheet.
+ * can open the blank for editing and write it back: the line as written,
+ * and its head, up to the colons, for a new value to follow. A blank of
+ * more than one line says how many, for the stylesheet. `lineAt(n)` is line
+ * `n` as written.
  */
-export function fields(html) {
+export function fields(html, lineAt = () => '') {
   return html.replace(FIELD_MARK, (m, line, lines, label, value) => {
     const v = escape(decodeURIComponent(value));
+    const text = lineAt(Number(line));
+    const source = ` data-text="${escapeAttr(text)}" data-head="${escapeAttr(FIELD_HEAD.exec(text)?.[0] ?? '')}"`;
     const tall = lines > 1 ? ` data-lines="${lines}" style="--lines: ${lines}"` : '';
-    return `<span class="field" data-line="${line}"${tall}><span class="field-label">${escape(decodeURIComponent(label))}</span>`
+    return `<span class="field" data-line="${line}"${source}${tall}><span class="field-label">${escape(decodeURIComponent(label))}</span>`
       + `<span class="field-value" data-value="${v}">${v}</span></span>`;
   });
 }

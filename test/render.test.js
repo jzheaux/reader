@@ -86,20 +86,27 @@ test('GitHub alerts become callouts', () => {
 
 test('task items become checkboxes that know their line', () => {
   const { body } = render('# todo\n\n- [ ] take out the trash\n- [x] dishes\n\n1. [X] done\n');
-  assert.match(body, /<li class="task"><input type="checkbox" class="task-box" data-line="2"> take out the trash<\/li>/);
-  assert.match(body, /<li class="task"><input type="checkbox" class="task-box" data-line="3" checked> dishes<\/li>/);
-  assert.match(body, /data-line="5" checked> done/);
+  assert.match(body, /<li class="task"><input type="checkbox" class="task-box" data-line="2" [^>]*> take out the trash<\/li>/);
+  assert.match(body, /<li class="task"><input type="checkbox" class="task-box" data-line="3" [^>]* checked> dishes<\/li>/);
+  assert.match(body, /data-line="5" [^>]* checked> done/);
+});
+
+test('a task box knows its line checked and unchecked, as written', () => {
+  const { body } = render('- [ ] trash\n- [X] dishes\n- ( ) red\n');
+  assert.match(body, /data-line="0" data-on="- \[x\] trash" data-off="- \[ \] trash">/);
+  assert.match(body, /data-line="1" data-on="- \[X\] dishes" data-off="- \[ \] dishes" checked>/);
+  assert.match(body, /data-line="2" data-on="- \(x\) red" data-off="- \( \) red">/);
 });
 
 test('choice items become radio buttons, one group to a list', () => {
   const { body } = render('- ( ) red\n- (x) blue\n  - ( ) navy\n  - ( ) sky\n- ( ) green\n\ntext\n\n- ( ) yes\n- ( ) no\n');
-  assert.match(body, /<li class="task"><input type="radio" class="choice-box" name="choice-1" data-line="0"> red<\/li>/);
-  assert.match(body, /name="choice-1" data-line="1" checked> blue/);
-  assert.match(body, /name="choice-2" data-line="2"> navy/);
-  assert.match(body, /name="choice-2" data-line="3"> sky/);
-  assert.match(body, /name="choice-1" data-line="4"> green/);
-  assert.match(body, /name="choice-3" data-line="8"> yes/);
-  assert.match(body, /name="choice-3" data-line="9"> no/);
+  assert.match(body, /<li class="task"><input type="radio" class="choice-box" name="choice-1" data-line="0" [^>]*> red<\/li>/);
+  assert.match(body, /name="choice-1" data-line="1" [^>]* checked> blue/);
+  assert.match(body, /name="choice-2" data-line="2" [^>]*> navy/);
+  assert.match(body, /name="choice-2" data-line="3" [^>]*> sky/);
+  assert.match(body, /name="choice-1" data-line="4" [^>]*> green/);
+  assert.match(body, /name="choice-3" data-line="8" [^>]*> yes/);
+  assert.match(body, /name="choice-3" data-line="9" [^>]*> no/);
 });
 
 test('choice boxes not heading a list item are left as typed', () => {
@@ -163,7 +170,7 @@ test('::: styles every block until the closing :::', () => {
   const style = `class="font" style="color: red; --font: 'georgia'"`;
   assert.match(body, new RegExp(`<h1 ${style}>H</h1>`));
   assert.match(body, new RegExp(`<p ${style}>text</p>`));
-  assert.match(body, /<li class="font task" style="[^"]*"><input type="checkbox" class="task-box" data-line="4"> task<\/li>/);
+  assert.match(body, /<li class="font task" style="[^"]*"><input type="checkbox" class="task-box" data-line="4" [^>]*> task<\/li>/);
   assert.match(body, /<td class="font" style="text-align:right; color: red; --font: 'georgia'">2<\/td>/);
   assert.match(body, /<hr>/);
   assert.match(body, /<code>\[c\]\{red\}\n<\/code>/);
@@ -266,8 +273,8 @@ test('a size with no numbers, or in code, is left as written', () => {
 test('a fence naming a puzzle is wrapped for the preview, numbered in order', () => {
   const { body, puzzles } = render('```sudoku\n5 3 .\n```\n\n```js\nx\n```\n\n```sudoku\n.\n```\n', { puzzleBase: 2 });
   assert.equal(puzzles, 2);
-  assert.match(body, /<div class="puzzle" data-kind="sudoku" data-puzzle="2"><pre><code class="language-sudoku">5 3 \.\n<\/code><\/pre><\/div>/);
-  assert.match(body, /data-puzzle="3"/);
+  assert.match(body, /<div class="puzzle" data-kind="sudoku" data-puzzle="2" data-from="1" data-to="2"><pre><code class="language-sudoku">5 3 \.\n<\/code><\/pre><\/div>/);
+  assert.match(body, /data-puzzle="3" data-from="9" data-to="10"/);
   assert.match(body, /<pre><code class="language-js">x\n<\/code><\/pre>/);
   assert.doesNotMatch(body, /data-kind="js"/);
 });
@@ -275,31 +282,31 @@ test('a fence naming a puzzle is wrapped for the preview, numbered in order', ()
 test('a tracks fence is a puzzle too', () => {
   const { body, puzzles } = render('```tracks\n1\n━  1\nA: left 1  B: right 1\n```\n');
   assert.equal(puzzles, 1);
-  assert.match(body, /<div class="puzzle" data-kind="tracks" data-puzzle="0">/);
+  assert.match(body, /<div class="puzzle" data-kind="tracks" data-puzzle="0" /);
 });
 
 test('a wordsearch fence is a puzzle too', () => {
   const { body } = render('```wordsearch\nA B\nC D\nwords: AB\n```\n');
-  assert.match(body, /<div class="puzzle" data-kind="wordsearch" data-puzzle="0">/);
+  assert.match(body, /<div class="puzzle" data-kind="wordsearch" data-puzzle="0" /);
 });
 
 test('a coord fence is a puzzle too', () => {
   const { body } = render('```coord\ngrid: 4 x 4\n(0, 0) (1, 1)\nplotted: 0\n```\n');
-  assert.match(body, /<div class="puzzle" data-kind="coord" data-puzzle="0">/);
+  assert.match(body, /<div class="puzzle" data-kind="coord" data-puzzle="0" /);
 });
 
 test('@ lines become form fields that know their line and value', () => {
   const { body } = render('# Form\n\n@ My Name: Josh\n@ Date:\n@ Time: 10:30 -> *noon* <b>\n');
-  assert.match(body, /<span class="field" data-line="2"><span class="field-label">My Name<\/span><span class="field-value" data-value="Josh">Josh<\/span><\/span>/);
-  assert.match(body, /data-line="3"><span class="field-label">Date<\/span><span class="field-value" data-value=""><\/span>/);
+  assert.match(body, /<span class="field" data-line="2" data-text="@ My Name: Josh" data-head="@ My Name:"><span class="field-label">My Name<\/span><span class="field-value" data-value="Josh">Josh<\/span><\/span>/);
+  assert.match(body, /data-line="3" data-text="@ Date:" data-head="@ Date:"><span class="field-label">Date<\/span><span class="field-value" data-value=""><\/span>/);
   assert.match(body, /data-value="10:30 -&gt; \*noon\* &lt;b&gt;">10:30 -&gt; \*noon\* &lt;b&gt;</);
 });
 
 test('@ lines with more colons are that many lines tall', () => {
   const { body } = render('@ Notes ::: it went well\n@ Bio::\n@ Name: Josh\n');
-  assert.match(body, /<span class="field" data-line="0" data-lines="3" style="--lines: 3"><span class="field-label">Notes<\/span><span class="field-value" data-value="it went well">/);
-  assert.match(body, /data-line="1" data-lines="2" style="--lines: 2"><span class="field-label">Bio<\/span><span class="field-value" data-value="">/);
-  assert.match(body, /<span class="field" data-line="2"><span class="field-label">Name</);
+  assert.match(body, /<span class="field" data-line="0" data-text="@ Notes ::: it went well" data-head="@ Notes :::" data-lines="3" style="--lines: 3"><span class="field-label">Notes<\/span><span class="field-value" data-value="it went well">/);
+  assert.match(body, /data-line="1" [^>]* data-lines="2" style="--lines: 2"><span class="field-label">Bio<\/span><span class="field-value" data-value="">/);
+  assert.match(body, /<span class="field" data-line="2" [^>]*><span class="field-label">Name</);
 });
 
 test('@ lines in code, indented, without a label or mid-sentence are left as typed', () => {
@@ -323,4 +330,12 @@ test('a puzzle can keep its board in a file next to the document', () => {
   assert.match(hosts[0], /data-source="\+--\+\n\|SE\|\n\+--\+"/);
   assert.doesNotMatch(hosts[1], /data-source/);
   assert.match(hosts[2], /data-source-error="gone\.maze: no such file: gc\/gone\.maze"/);
+});
+
+test('a puzzle knows the lines inside its fence, even unclosed', () => {
+  const { body } = render('# Hi\n\n```sudoku\n1 2\n3 4\n```\n\n```maze\n```\n\n```coord\ngrid: 1 x 1\n', { line: 10 });
+  const hosts = body.match(/<div class="puzzle"[^>]*>/g);
+  assert.match(hosts[0], /data-from="13" data-to="15"/);
+  assert.match(hosts[1], /data-from="18" data-to="18"/);
+  assert.match(hosts[2], /data-from="21" data-to="22"/);
 });

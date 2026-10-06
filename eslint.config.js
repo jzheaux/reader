@@ -18,10 +18,10 @@ export default [
     files: ['bin/**/*.js', 'src/**/*.js', 'test/**/*.js', '*.config.js'],
     languageOptions: { sourceType: 'module', globals: globals.node },
   },
-  // The app is a module; the preview's puzzle scripts are classic scripts
-  // sharing `window.Puzzles`.
+  // The app and what it imports are modules; the preview's puzzle scripts are
+  // classic scripts sharing `window.Puzzles`.
   {
-    files: ['static/app.js'],
+    files: ['static/app.js', 'static/edits.js'],
     languageOptions: { sourceType: 'module', globals: globals.browser },
   },
   {

@@ -106,21 +106,31 @@
     if (t) t.scrollIntoView({ behavior: 'smooth' });
   });
 
-  // A task's checkbox asks the editor to rewrite its `[ ]`, and a radio
-  // button its list's `( )`s; the re-render that follows is what makes the
-  // change stick.
+  // Edits to the file go up as lines to replace: lines `from` up to `to`,
+  // which read `before`, become `after` (see edits.js). `undo` asks for the
+  // edit to go on the editor's undo stack; `drawn` says the page already
+  // shows it, so it needn't be rendered again.
+  const edit = (edits, opts = {}) => window.parent.postMessage({ type: 'edit', edits, ...opts }, '*');
+
+  // A task's checkbox rewrites its `[ ]`, and a radio button its list's
+  // `( )`s, as one edit; the re-render that follows is what makes the change
+  // stick. Each box knows its line checked and unchecked.
+  const boxLine = (b, on) => {
+    const line = Number(b.dataset.line);
+    // `defaultChecked` is what the file said when the page was drawn.
+    return { from: line, to: line + 1, before: [b.defaultChecked ? b.dataset.on : b.dataset.off], after: [on ? b.dataset.on : b.dataset.off] };
+  };
   document.addEventListener('change', (e) => {
     const box = e.target;
-    if (!box.matches) return;
-    if (box.matches('input.task-box')) {
-      window.parent.postMessage({ type: 'task', line: Number(box.dataset.line), checked: box.checked }, '*');
-    } else if (box.matches('input.choice-box')) {
-      // A radio button says which line was chosen, and which lines are its
-      // list's other choices, to be cleared.
-      const group = [...document.querySelectorAll('input.choice-box')]
-        .filter((b) => b.name === box.name).map((b) => Number(b.dataset.line));
-      window.parent.postMessage({ type: 'choice', line: Number(box.dataset.line), group }, '*');
-    }
+    if (!box.matches || !box.matches('input.task-box, input.choice-box')) return;
+    const group = box.type === 'radio'
+      ? [...document.querySelectorAll('input.choice-box')].filter((b) => b.name === box.name)
+      : [box];
+    const edits = group.map((b) => boxLine(b, b === box ? box.checked : false))
+      .filter((x) => x.before[0] !== x.after[0]);
+    // Until the next render, the page is what the file says.
+    for (const b of group) b.defaultChecked = b.checked;
+    if (edits.length) edit(edits, { undo: true });
   });
 
   // A form field (`@ Label: value`, a line of blank for each colon): a
@@ -164,7 +174,12 @@
       slot.textContent = after;
       slot.dataset.value = after;
       if (after !== before) {
-        window.parent.postMessage({ type: 'field', line: Number(field.dataset.line), before, after }, '*');
+        // The line as written, with the new value after its colons.
+        const line = Number(field.dataset.line);
+        const was = field.dataset.text;
+        const now = after ? `${field.dataset.head} ${after}` : field.dataset.head;
+        field.dataset.text = now;
+        edit([{ from: line, to: line + 1, before: [was], after: [now] }]);
       }
     };
     // A re-render is about to replace the field: let it go quietly and say

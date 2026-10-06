@@ -1,3 +1,5 @@
+import { applyEdits } from './edits.js';
+
 const $ = (id) => document.getElementById(id);
 const el = {
   rootName: $('rootName'), crumb: $('crumb'), saveState: $('saveState'),
@@ -452,173 +454,52 @@ function insertLink() {
   replaceSelection(text, sel.length + 3, text.length - 1);
 }
 
-// Mirrors TASK in src/render.js: the `[ ]` at the head of a list item.
-const TASK = /^([ \t]*(?:[>~][ \t]*)*(?:[-*+]|\d{1,9}[.)])[ \t]+)\[([ xX])\](?=[ \t]|$)/;
-// And its radio button, `( )`.
-const CHOICE = /^([ \t]*(?:[>~][ \t]*)*(?:[-*+]|\d{1,9}[.)])[ \t]+)\(([ xX])\)(?=[ \t]|$)/;
-
 /**
- * A checkbox in the preview was clicked: rewrite that line's `[ ]` / `[x]`
- * as an edit, so it's undoable and saved like typing. Like a field, it works
- * in read mode too, where it's written without the editor's focus. If the
- * line no longer holds a task (the preview was a keystroke behind), just
- * re-render.
+ * The rendered page (or a slide) asked for an edit: a checkbox ticked, a
+ * field filled in, a puzzle played. It names the lines it was drawn from and
+ * what they said (see edits.js); if they've changed since, the page was
+ * behind, so it's drawn again instead. It works in read mode too: ticking a
+ * box or filling in a form isn't editing the file.
+ *
+ * `undo` puts the edit on the editor's undo stack, which means passing it
+ * through the editor's focus; not in read mode or while presenting, though,
+ * and not for a field or puzzle, which would lose the keyboard. `drawn` says the page shows the
+ * edit already and needn't be rendered again for it.
  */
-function setTask(line, checked) {
-  if (state.current?.type !== 'md' || !Number.isInteger(line)) return;
+function applyEdit({ edits, undo = false, drawn = false }, { fromStage = false } = {}) {
+  if (state.current?.type !== 'md') return;
   const t = el.editor;
-  const lines = t.value.split('\n');
-  const m = line < lines.length && TASK.exec(lines[line]);
-  if (!m) return renderNow();
-  const want = checked ? 'x' : ' ';
-  if ((m[2] === ' ') === !checked) return renderNow();
-
-  let at = m[1].length + 1;
-  for (let i = 0; i < line; i++) at += lines[i].length + 1;
-  if (state.reading) {
-    const { scrollTop } = t;
-    t.setRangeText(want, at, at + 1);
-    t.scrollTop = scrollTop;
-    return onEditorInput();
-  }
-  const { selectionStart, selectionEnd, scrollTop } = t;
-  t.focus({ preventScroll: true });
-  t.setSelectionRange(at, at + 1);
-  if (!document.execCommand('insertText', false, want)) {
-    t.setRangeText(want, at, at + 1);
-    t.dispatchEvent(new Event('input'));
-  }
-  t.setSelectionRange(selectionStart, selectionEnd);
-  t.scrollTop = scrollTop;
-}
-
-/**
- * A radio button in the preview was chosen: mark its line `(x)` and clear
- * the rest of its list, as one edit, undoable and saved like typing; in read
- * mode, written without the editor's focus. If any of those lines no longer
- * holds a choice (the file changed under it), just re-render.
- */
-function setChoice({ line, group }) {
-  if (state.current?.type !== 'md' || !Number.isInteger(line) || !Array.isArray(group)) return;
-  const t = el.editor;
-  const lines = t.value.split('\n');
-  const all = [...new Set([...group, line])].filter(Number.isInteger).sort((a, b) => a - b);
-  if (all.some((n) => n >= lines.length || !CHOICE.test(lines[n]))) return renderNow();
-  const first = all[0];
-  const last = all[all.length - 1];
-  const want = lines.slice(first, last + 1).map((text, i) => {
-    const n = first + i;
-    if (!all.includes(n)) return text;
-    return text.replace(CHOICE, (m, lead) => `${lead}(${n === line ? 'x' : ' '})`);
-  }).join('\n');
-
-  let at = 0;
-  for (let i = 0; i < first; i++) at += lines[i].length + 1;
-  const end = at + lines.slice(first, last + 1).join('\n').length;
-  if (want === t.value.slice(at, end)) return renderNow();
-  const { selectionStart, selectionEnd, scrollTop } = t;
-  if (state.reading) {
-    t.setRangeText(want, at, end);
-    t.scrollTop = scrollTop;
-    return onEditorInput();
-  }
-  t.focus({ preventScroll: true });
-  t.setSelectionRange(at, end);
-  if (!document.execCommand('insertText', false, want)) {
-    t.setRangeText(want, at, end);
-    t.dispatchEvent(new Event('input'));
-  }
-  t.setSelectionRange(selectionStart, selectionEnd);
-  t.scrollTop = scrollTop;
-}
-
-// Mirrors FIELD in src/render.js: `@ Label: value` at the margin.
-const FIELD = /^(@[ \t]+[^:\n]*?[^:\s][ \t]*:+)[ \t]*(.*?)[ \t]*$/;
-
-/**
- * A field in the preview was filled in: write its value onto that line,
- * saved like typing. Like a puzzle, it works in read mode too, since filling
- * in a form isn't editing the file. If the line no longer holds what the
- * field started from (the file changed under it), just re-render.
- */
-function setField({ line, before, after }) {
-  if (state.current?.type !== 'md' || !Number.isInteger(line) || typeof after !== 'string') return;
-  const t = el.editor;
-  const lines = t.value.split('\n');
-  const m = line < lines.length && FIELD.exec(lines[line]);
-  if (!m || m[2] !== before) return renderNow();
-  const value = after.replace(/\s+/g, ' ').trim();
-  const want = value ? `${m[1]} ${value}` : m[1];
-
-  let at = 0;
-  for (let i = 0; i < line; i++) at += lines[i].length + 1;
-  const end = at + lines[line].length;
-  // Not through the editor's focus, which would take it from the field
-  // being tabbed to next.
-  const { scrollTop } = t;
-  t.setRangeText(want, at, end);
-  t.scrollTop = scrollTop;
-  onEditorInput();
-}
-
-// Mirrors PUZZLES in src/render.js: fences that hold a puzzle.
-const PUZZLES = new Set(['sudoku', 'tracks', 'wordsearch', 'coord', 'maze']);
-const FENCE = /^ {0,3}(`{3,}|~{3,})[ \t]*([^`\s]*)/;
-
-/**
- * Where the `index`-th puzzle fence is, counting in document order as the
- * renderer does: { kind, open, close } as line numbers, `close` being the
- * closing fence's line (or the line count, if it was never closed).
- */
-function findPuzzle(lines, index) {
-  let fence = null;
-  let k = -1;
-  for (let i = 0; i < lines.length; i++) {
-    const f = FENCE.exec(lines[i]);
-    if (fence) {
-      const closes = f && f[1][0] === fence.mark[0] && f[1].length >= fence.mark.length
-        && !lines[i].trim().slice(f[1].length).trim();
-      if (!closes) continue;
-      if (fence.k === index) return { kind: fence.kind, open: fence.open, close: i };
-      fence = null;
-    } else if (f) {
-      const puzzle = PUZZLES.has(f[2]);
-      if (puzzle) k++;
-      fence = { mark: f[1], kind: f[2], open: i, k: puzzle ? k : -1 };
-    }
-  }
-  return fence?.k === index ? { kind: fence.kind, open: fence.open, close: lines.length } : null;
-}
-
-/**
- * A puzzle in the preview (or on a slide) was played: write its new text into
- * the fence it was drawn from, saved like typing. It works in read mode too:
- * filling in a puzzle isn't editing the file. The puzzle has already redrawn
- * itself, so the preview isn't rendered again. If the fence no longer holds
- * what the puzzle started from (the file changed under it), re-render instead.
- */
-function setPuzzle({ index, kind, before, after }, { fromStage = false } = {}) {
-  if (state.current?.type !== 'md' || !Number.isInteger(index) || typeof after !== 'string') return;
-  const t = el.editor;
-  const lines = t.value.split('\n');
-  const p = findPuzzle(lines, index);
-  if (!p || p.kind !== kind || lines.slice(p.open + 1, p.close).join('\n') !== before) {
+  const change = applyEdits(t.value, edits);
+  if (!change || (change.start === change.end && !change.text)) {
     renderNow();
     if (deck.open) loadDeck().then((ok) => ok && showSlide());
     return;
   }
-  let start = 0;
-  for (let i = 0; i <= p.open; i++) start += lines[i].length + 1;
-  let end = start;
-  for (let i = p.open + 1; i < p.close; i++) end += lines[i].length + 1;
-  const { scrollTop } = t;
-  t.setRangeText(after ? `${after}\n` : '', start, Math.min(end, t.value.length));
+  const lines = t.value.split('\n').length;
+  const { selectionStart, selectionEnd, scrollTop } = t;
+  if (undo && !state.reading && !deck.open) {
+    t.focus({ preventScroll: true });
+    t.setSelectionRange(change.start, change.end);
+    if (!document.execCommand('insertText', false, change.text)) {
+      t.setRangeText(change.text, change.start, change.end);
+      t.dispatchEvent(new Event('input'));
+    }
+    t.setSelectionRange(selectionStart, selectionEnd);
+  } else {
+    t.setRangeText(change.text, change.start, change.end);
+    if (drawn) {
+      updateDirty();
+      updateCounts();
+      scheduleSave();
+      // Lines below moved, so what the page knows of them is out of date.
+      if (t.value.split('\n').length !== lines) scheduleRender();
+    } else {
+      onEditorInput();
+    }
+  }
   t.scrollTop = scrollTop;
-  updateDirty();
-  updateCounts();
-  scheduleSave();
   if (fromStage) {
-    // The slide shows the move already; bring the deck and the (hidden)
+    // The slide shows the edit already; bring the deck and the (hidden)
     // preview up to date for when they're next drawn.
     scheduleRender();
     scheduleDeckReload();
@@ -920,15 +801,12 @@ function wire() {
     if (deck.open && e.source === el.stage.contentWindow) {
       if (e.data?.type === 'key') deckKey(e.data);
       else if (e.data?.type === 'click') (e.data.left ? back : next)();
-      else if (e.data?.type === 'puzzle') setPuzzle(e.data, { fromStage: true });
+      else if (e.data?.type === 'edit') applyEdit(e.data, { fromStage: true });
       return;
     }
     if (e.source !== el.preview.contentWindow) return;
-    if (e.data?.type === 'task') setTask(e.data.line, e.data.checked);
-    else if (e.data?.type === 'choice') setChoice(e.data);
+    if (e.data?.type === 'edit') applyEdit(e.data);
     else if (e.data?.type === 'key') onKey({ ...e.data, preventDefault() {} });
-    else if (e.data?.type === 'puzzle') setPuzzle(e.data);
-    else if (e.data?.type === 'field') setField(e.data);
   });
 
   el.readBtn.addEventListener('click', () => setReading(!state.reading));
