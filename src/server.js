@@ -6,7 +6,7 @@
  *   GET  /api/file?path=       { text, mtime }
  *   PUT  /api/file             { path, text, baseMtime, force?, explicit? }
  *   POST /api/new              { name? }
- *   POST /api/render           { text, path? } -> { css, body }
+ *   POST /api/render           { text, path? } -> { css, body, deck }
  *   POST /api/slides           { text, path? } -> { css, title, slides: [{ body, notes, line }] }
  *   GET  /content/<path>       raw bytes (PDFs, images a note links to)
  *
@@ -26,7 +26,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createContent } from './content.js';
 import { render, PUZZLES } from './render.js';
-import { slides } from './slides.js';
+import { slides, isDeck } from './slides.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 export const STATIC_DIR = path.join(HERE, '..', 'static');
@@ -105,7 +105,7 @@ export function createServer({ root }) {
     const body = await readJson(req);
 
     if (route === '/api/render' && req.method === 'POST') {
-      return sendJson(res, render(body.text, { file: body.path, read }));
+      return sendJson(res, { ...render(body.text, { file: body.path, read }), deck: isDeck(body.text) });
     }
     if (route === '/api/slides' && req.method === 'POST') {
       return sendJson(res, slides(body.text, { file: body.path, read }));

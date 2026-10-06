@@ -38,6 +38,12 @@ test('render puts asides in the gutter column', async () => {
   assert.match(out.body, /<h1 class="gm-title">note<\/h1>/);
   assert.match(out.css, /--gm-aside-col/);
   assert.equal(out.asides, 1);
+  assert.equal(out.deck, false);
+});
+
+test('render says whether the text is a deck, for the Present button', async () => {
+  const out = await (await json('POST', '/api/render', { text: '---\ntitle: x\n---\n\n# One\n\n---\n\n# Two\n' })).json();
+  assert.equal(out.deck, true);
 });
 
 test('slides splits a deck and lifts its notes', async () => {

@@ -215,6 +215,7 @@ async function renderNow({ resetScroll = false } = {}) {
     return toast(`render: ${err.message}`, true);
   }
   if (seq !== state.renderSeq) return;
+  updatePresentable(out.deck);
   await state.previewReady;
   el.preview.contentWindow.postMessage({
     type: 'render',
@@ -375,7 +376,6 @@ async function reloadFromDisk() {
   setConflict(false);
   updateDirty();
   updateCounts();
-  updatePresentable();
   renderNow();
   if (deck.open) loadDeck().then((ok) => (ok ? showSlide() : closeDeck()));
 }
@@ -515,7 +515,6 @@ function scheduleDeckReload() {
 function onEditorInput() {
   updateDirty();
   updateCounts();
-  updatePresentable();
   scheduleRender();
   scheduleSave();
 }
@@ -568,14 +567,9 @@ function setReading(on) {
 // each other exactly, a step at a time, crossing slides at either end; `N`
 // and `P` move a whole slide and arrive with all of it showing.
 
-// Mirrors split() in src/slides.js closely enough to decide whether to offer
-// Present: a `---` line after any front matter.
-const FRONT_MATTER = /^---[ \t]*\n(?:[ \t]*(?:[\w-]+[ \t]*:.*)?\n)*?---[ \t]*(?:\n|$)/;
-const SLIDE_BREAK = /^---[ \t]*$/m;
-
-function updatePresentable() {
-  const md = state.current?.type === 'md';
-  el.presentBtn.hidden = !(md && SLIDE_BREAK.test(el.editor.value.replace(FRONT_MATTER, '')));
+/** Present is offered for a file the server says is a deck when it renders it. */
+function updatePresentable(deck = false) {
+  el.presentBtn.hidden = !(state.current?.type === 'md' && deck);
 }
 
 async function present() {
