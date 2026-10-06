@@ -445,6 +445,7 @@ $ cd ~/code/jzheaux/reader
 $ npm install
 $ npm link          # puts `reader` on your PATH
 $ npm test
+$ npm run lint
 ```
 
 ## Layout of the code
@@ -462,4 +463,4 @@ $ npm test
 | `static/puzzles/` | one file per kind of puzzle |
 | `static/speaker.html` | the speaker view for a deck being presented |
 
-PDF.js is vendored in `static/vendor/`.
+PDF.js is vendored in `static/vendor/`; its version and license are noted there.
