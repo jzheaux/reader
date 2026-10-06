@@ -14,6 +14,10 @@
  * rebinding) and mutating requests that aren't JSON (a cross-site form post
  * can't set that content type without a CORS preflight, which we never
  * answer).
+ *
+ * Files from the content directory are served sandboxed: an HTML or SVG file
+ * there, opened from a link in a note, would otherwise run its scripts as
+ * this app and could read and write every file through the API.
  */
 
 import fs from 'node:fs';
@@ -49,6 +53,11 @@ const TYPES = {
 
 const LOOPBACK = new Set(['127.0.0.1', 'localhost', '[::1]']);
 
+// No scripts, no forms, and an opaque origin, for anything opened straight
+// from /content/. PDFs are left out: browsers won't show one in a sandbox,
+// and a PDF can't reach the API anyway.
+const CONTENT_SANDBOX = { 'Content-Security-Policy': 'sandbox' };
+
 export function createServer({ root }) {
   const content = createContent(root);
 
@@ -81,7 +90,7 @@ export function createServer({ root }) {
       if (route.startsWith('/content/')) {
         const rel = decodeURIComponent(route.slice('/content/'.length));
         const { abs } = content.statFile(rel);
-        return sendFile(res, abs);
+        return sendFile(res, abs, path.extname(abs).toLowerCase() === '.pdf' ? {} : CONTENT_SANDBOX);
       }
       return serveStatic(res, route);
     }
@@ -124,13 +133,14 @@ export function createServer({ root }) {
   return { server, content };
 }
 
-function send(res, status, body, type) {
+function send(res, status, body, type, headers = {}) {
   const buf = Buffer.isBuffer(body) ? body : Buffer.from(String(body), 'utf8');
   res.writeHead(status, {
     'Content-Type': type,
     'Content-Length': buf.length,
     'Cache-Control': 'no-store',
     'X-Content-Type-Options': 'nosniff',
+    ...headers,
   });
   res.end(res.req?.method === 'HEAD' ? undefined : buf);
 }
@@ -139,9 +149,9 @@ function sendJson(res, obj, status = 200) {
   send(res, status, JSON.stringify(obj), 'application/json; charset=utf-8');
 }
 
-function sendFile(res, abs) {
+function sendFile(res, abs, headers) {
   const type = TYPES[path.extname(abs).toLowerCase()] || 'application/octet-stream';
-  send(res, 200, fs.readFileSync(abs), type);
+  send(res, 200, fs.readFileSync(abs), type, headers);
 }
 
 function readJson(req) {

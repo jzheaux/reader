@@ -10,6 +10,9 @@ let server, base, root;
 before(async () => {
   root = fs.mkdtempSync(path.join(os.tmpdir(), 'reader-srv-'));
   fs.writeFileSync(path.join(root, 'note.md'), '# Note\n\n* a point\n\n~ my aside\n');
+  fs.writeFileSync(path.join(root, 'page.html'), '<script>fetch("/api/tree")</script>');
+  fs.writeFileSync(path.join(root, 'pic.svg'), '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>');
+  fs.writeFileSync(path.join(root, 'doc.pdf'), '%PDF-1.4\n');
   ({ server } = createServer({ root }));
   await new Promise((r) => server.listen(0, '127.0.0.1', r));
   base = `http://127.0.0.1:${server.address().port}`;
@@ -24,7 +27,7 @@ test('serves the UI and the tree', async () => {
   const html = await (await fetch(base + '/')).text();
   assert.match(html, /<textarea id="editor"/);
   const { files } = await (await fetch(base + '/api/tree')).json();
-  assert.deepEqual(files.map((f) => f.path), ['note.md']);
+  assert.deepEqual(files.map((f) => f.path).sort(), ['doc.pdf', 'note.md']);
 });
 
 test('render puts asides in the gutter column', async () => {
@@ -68,4 +71,15 @@ test('refuses escapes, non-JSON writes and foreign hosts', async () => {
     http.get(base + '/api/tree', { headers: { Host: 'evil.example:80' } }, (r) => resolve(r.statusCode));
   });
   assert.equal(status, 403);
+});
+
+test('serves content files sandboxed, so their scripts never run as the app', async () => {
+  for (const file of ['page.html', 'pic.svg', 'note.md']) {
+    const res = await fetch(`${base}/content/${file}`);
+    assert.equal(res.status, 200);
+    assert.equal(res.headers.get('content-security-policy'), 'sandbox', file);
+  }
+  const pdf = await fetch(`${base}/content/doc.pdf`);
+  assert.equal(pdf.status, 200);
+  assert.equal(pdf.headers.get('content-security-policy'), null);
 });
