@@ -38,13 +38,12 @@ export function slides(src, { file, read } = {}) {
   const title = meta.title || (file ? path.basename(file, path.extname(file)) : 'Untitled');
   let css = '';
   const out = [];
-  // Puzzles are numbered across the whole file, as the editor counts them.
-  let puzzleBase = 0;
+  // Kept by features across the slides, to number things through the deck.
+  const shared = {};
   for (const { text, line } of chunks) {
     const { body, notes } = lift(text);
     if (!body.trim() && !notes) continue;
-    const r = render(body, { file, puzzleBase, read, line });
-    puzzleBase += r.puzzles;
+    const r = render(body, { file, read, line, shared });
     css ||= `${r.css}\n${CSS}`;
     out.push({ body: unmast(r.body), notes, line });
   }

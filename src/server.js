@@ -25,7 +25,7 @@ import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createContent } from './content.js';
-import { render, PUZZLES } from './render.js';
+import { render } from './render.js';
 import { slides, isDeck } from './slides.js';
 import { FEATURES } from '../features/index.js';
 
@@ -52,13 +52,12 @@ const TYPES = {
   '.svg': 'image/svg+xml',
 };
 
-// The scripts features draw into the preview frame, served from their own
-// directories, and nothing else from there.
-const FEATURE_SCRIPTS = new Map(FEATURES.filter((f) => f.preview).map((f) => [`/features/${f.name}/preview.js`, f.preview]));
-
-// Every kind of puzzle and every feature's script, for the preview to load.
-const PREVIEW_SCRIPTS = [...[...PUZZLES].map((kind) => `/puzzles/${kind}.js`), ...FEATURE_SCRIPTS.keys()]
-  .map((src) => `<script src="${src}"></script>`).join('\n');
+// The scripts features draw into the preview frame, in order, served from
+// their own directories, and nothing else from there.
+const FEATURES_DIR = fileURLToPath(new URL('../features/', import.meta.url));
+const FEATURE_SCRIPTS = new Map(FEATURES.flatMap((f) => [f.preview ?? []].flat()
+  .map((file) => [`/features/${path.relative(FEATURES_DIR, file).split(path.sep).join('/')}`, file])));
+const PREVIEW_SCRIPTS = [...FEATURE_SCRIPTS.keys()].map((src) => `<script src="${src}"></script>`).join('\n');
 
 const LOOPBACK = new Set(['127.0.0.1', 'localhost', '[::1]']);
 

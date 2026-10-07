@@ -92,9 +92,13 @@ test('serves content files sandboxed, so their scripts never run as the app', as
 
 test('the preview loads a script for each kind of puzzle and each feature that has one', async () => {
   const html = await (await fetch(base + '/preview.html')).text();
+  assert.match(html, /<script src="\/features\/puzzles\/preview\.js"><\/script>/);
   for (const kind of ['sudoku', 'tracks', 'wordsearch', 'coord', 'maze']) {
-    assert.match(html, new RegExp(`<script src="/puzzles/${kind}\\.js"></script>`));
+    assert.match(html, new RegExp(`<script src="/features/puzzles/kinds/${kind}\\.js"></script>`));
+    assert.equal((await fetch(`${base}/features/puzzles/kinds/${kind}.js`)).status, 200);
   }
+  // The core comes before the kinds that register with it.
+  assert.ok(html.indexOf('/features/puzzles/preview.js') < html.indexOf('/features/puzzles/kinds/'));
   for (const name of ['fields', 'tasks']) {
     assert.match(html, new RegExp(`<script src="/features/${name}/preview\\.js"></script>`));
     const res = await fetch(`${base}/features/${name}/preview.js`);
@@ -103,7 +107,7 @@ test('the preview loads a script for each kind of puzzle and each feature that h
   }
   assert.doesNotMatch(html, /<!-- scripts -->/);
   // Only the scripts features name are served from there.
-  for (const other of ['/features/fields/index.js', '/features/qa/preview.js', '/features/index.js']) {
+  for (const other of ['/features/fields/index.js', '/features/qa/preview.js', '/features/index.js', '/features/puzzles/index.js', '/puzzles/sudoku.js']) {
     assert.equal((await fetch(base + other)).status, 404, other);
   }
 });

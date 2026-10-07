@@ -17,9 +17,10 @@
  * keys. Esc hands them back.
  *
  * A move goes up as an edit to the lines inside the fence, which the server
- * names as `data-from` and `data-to` (see edits.js).
+ * names as `data-from` and `data-to` (see edits.js), each line starting with
+ * `data-prefix` for a puzzle in a quote or a list.
  *
- * Each kind lives in puzzles/<kind>.js and registers itself here with
+ * Each kind lives in kinds/<kind>.js and registers itself here with
  * `mount(host, text, ui, post)`: draw the puzzle into `host` from `text`
  * (false if the text can't be read), keep what the reader was doing in `ui`,
  * and call `post(before, after)` with the fence's text after each move.
@@ -56,8 +57,10 @@
       // are, since the page isn't rendered again after a move.
       const from = Number(host.dataset.from);
       let to = Number(host.dataset.to);
+      const prefix = host.dataset.prefix ?? '';
+      const fenced = (t) => lines(t).map((l) => prefix + l);
       const send = (before, after) => {
-        const edit = { from, to, before: lines(before), after: lines(after) };
+        const edit = { from, to, before: fenced(before), after: fenced(after) };
         to = from + edit.after.length;
         Preview.edit([edit], { drawn: true });
       };

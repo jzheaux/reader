@@ -4,13 +4,15 @@
  *
  *   { name, plugin?, html?, css?, raw?, preview? }
  *
- * `plugin` is a markdown-it plugin, applied after gutter-md's own; `html`, a
- * pass over the finished page's HTML, for what the tokens don't reach (the
- * masthead, say); `css`, if any, is added to the rendered page's stylesheet; `preview`, if any, is the path of
- * a script the server loads into the preview frame, where it can use
- * static/preview-api.js. A `raw` feature reads the file as
- * written, so it is applied before render.js's own source pass (which still
- * holds the syntax not yet made into features); the rest come after it.
+ * - `plugin`: a markdown-it plugin, applied after gutter-md's own.
+ * - `html`: a pass over the finished page's HTML, for what the tokens don't
+ *   reach (the masthead, say).
+ * - `css`: added to the rendered page's stylesheet.
+ * - `raw`: the feature reads the file as written, so it is applied before
+ *   render.js's own source pass; the rest come after it.
+ * - `preview`: the path of a script the server loads into the preview frame,
+ *   where it can use static/preview-api.js, or a list of them, loaded in
+ *   order.
  */
 
 import fields from './fields/index.js';
@@ -26,8 +28,9 @@ import search from './search/index.js';
 import arrows from './arrows/index.js';
 import math from './math/index.js';
 import emoji from './emoji/index.js';
+import puzzles from './puzzles/index.js';
 
 // styles comes after qa and attributions: a `:::` block marks a line after
 // qa has made it a list item, and after an attribution's dash is marked, as
 // it does any other.
-export const FEATURES = [fields, tasks, qa, sizes, alerts, attributions, styles, scripture, scriptureLds, search, math, arrows, emoji];
+export const FEATURES = [fields, tasks, qa, sizes, alerts, attributions, styles, scripture, scriptureLds, search, math, arrows, emoji, puzzles];

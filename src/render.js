@@ -7,9 +7,7 @@
  * swapped for these on every keystroke.
  */
 
-import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import MarkdownIt from 'markdown-it';
 import { gutterMd, columns } from 'gutter-md';
 import { FEATURES } from '../features/index.js';
@@ -27,10 +25,14 @@ for (const f of FEATURES.filter((f) => f.plugin && !f.raw)) md.use(f.plugin);
 /**
  * `line` is the line of the file `src` starts on, when it is only part of
  * one (a slide), so whatever is written back by line number finds its line.
+ * `file` is the document's path, and `read(path)` reads another file from
+ * the content directory, for features that may (a puzzle's board). `shared`
+ * is kept by features across the renders of one document's parts (a deck's
+ * slides), to number things through the whole of it.
  */
-export function render(src, { file, puzzleBase = 0, read, line = 0 } = {}) {
+export function render(src, { file, read, line = 0, shared = {} } = {}) {
   const text = src || '';
-  const env = { lineBase: line };
+  const env = { lineBase: line, file, read, shared };
   const tokens = md.parse(text, env);
   const meta = env.frontMatter || {};
   const asides = env.asides || [];
@@ -43,99 +45,12 @@ export function render(src, { file, puzzleBase = 0, read, line = 0 } = {}) {
   const page = columns(md, tokens, env, { headings, title });
   // Then each feature's pass over the finished page, if it has one.
   const body = FEATURES.reduce((html, f) => (f.html ? f.html(html) : html), figures(page.body.trim()));
-  const played = puzzles(body, puzzleBase, fences(text, { file, read, line }));
   return {
     css: [page.css.trim(), CSS, ...FEATURES.map((f) => f.css).filter(Boolean)].join('\n'),
-    body: played.html,
+    body,
     asides: asides.length,
-    puzzles: played.count,
   };
 }
-
-// Fences naming a puzzle: one for each static/puzzles/<kind>.js, which draws
-// and plays it. The server loads them all into the preview.
-export const PUZZLE_DIR = fileURLToPath(new URL('../static/puzzles/', import.meta.url));
-export const PUZZLES = new Set(
-  fs.readdirSync(PUZZLE_DIR).filter((f) => f.endsWith('.js')).map((f) => f.slice(0, -'.js'.length)).sort(),
-);
-const PUZZLE_CODE = /<pre><code class="language-([\w-]+)">[\s\S]*?<\/code><\/pre>/g;
-const PUZZLE_FENCE = /^ {0,3}(`{3,}|~{3,})[ \t]*([^`\s]*)[ \t]*([^`]*?)[ \t]*$/;
-
-/**
- * A fenced block naming a puzzle (```sudoku) is wrapped for the preview to
- * draw and play, numbered in document order from `base` so the preview can
- * tell it's the same puzzle after a re-render. The text stays inside, as
- * written, and `data-from` and `data-to` say which lines of the file it is
- * (from the first inside the fence up to the closing one), for a move to be
- * written back to.
- *
- * A puzzle can keep its board in a file of its own, named after the kind
- * (```maze mazes/one.maze), so a big one doesn't fill the page; the fence
- * then holds only what's been played. The file's text (or why it couldn't
- * be read) is carried along for the preview to put in front of the fence's.
- */
-export function puzzles(html, base = 0, fences = []) {
-  let n = base;
-  let k = 0;
-  const out = html.replace(PUZZLE_CODE, (m, kind) => {
-    if (!PUZZLES.has(kind)) return m;
-    const f = fences[k++];
-    const lines = f ? ` data-from="${f.from}" data-to="${f.to}"` : '';
-    const source = !f?.source ? ''
-      : f.source.error ? ` data-source-error="${escapeAttr(f.source.error)}"`
-        : ` data-source="${escapeAttr(f.source.text)}"`;
-    return `<div class="puzzle" data-kind="${kind}" data-puzzle="${n++}"${lines}${source}>${m}</div>`;
-  });
-  return { html: out, count: n - base };
-}
-
-/**
- * Each puzzle fence in `text`, in order: { from, to, source }. `from` and `to`
- * are the lines inside it, counting from `line`; `to` is the closing fence,
- * or the end of the text if it was never closed. `source` is null for a
- * fence that names no board file, else { text } or { error }. A file is
- * found next to the document `file`, and read with `read(path)` (paths from
- * the content root).
- */
-export function fences(text, { file, read, line = 0 } = {}) {
-  const out = [];
-  const lines = text.split('\n');
-  let fence = null;
-  let open = null;
-  for (let i = 0; i < lines.length; i++) {
-    const f = PUZZLE_FENCE.exec(lines[i]);
-    if (fence) {
-      if (f && f[1][0] === fence[0] && f[1].length >= fence.length && !f[2] && !f[3]) {
-        fence = null;
-        if (open) open.to = line + i;
-        open = null;
-      }
-      continue;
-    }
-    if (!f) continue;
-    fence = f[1];
-    if (!PUZZLES.has(f[2])) continue;
-    // Never closed, it runs to the end of the text, short of the empty line
-    // after a last newline, which markdown leaves out of the code.
-    const end = lines.at(-1) === '' ? lines.length - 1 : lines.length;
-    open = { from: line + i + 1, to: line + end, source: board(f[3], file, read) };
-    out.push(open);
-  }
-  return out;
-}
-
-function board(ref, file, read) {
-  if (!ref) return null;
-  const rel = path.posix.normalize(path.posix.join(path.posix.dirname(file || ''), ref));
-  try {
-    if (!read) throw new Error('no files to read from');
-    return { text: read(rel).replace(/\r\n?/g, '\n').replace(/\n+$/, '') };
-  } catch (err) {
-    return { error: `${ref}: ${err.message}` };
-  }
-}
-
-const escapeAttr = (s) => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
 
 const FENCE = /^\s{0,3}(`{3,}|~{3,})/;
 const CODE_SPAN = /(`+)[^`][\s\S]*?\1|`+/g;
