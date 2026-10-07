@@ -16,6 +16,16 @@
       node.classList.toggle('step-hidden', later && !dim);
       node.classList.toggle('step-dim', later && dim);
     }
+    // A fence written `{1-3|5}` moves its highlight a range at a time, from
+    // the step it shows with.
+    for (const pre of document.querySelectorAll('pre[data-focus-steps]')) {
+      const shows = pre.closest('[data-step]');
+      if (!shows) continue;
+      const at = Math.min(Number(pre.dataset.focusSteps), Math.max(1, k - Number(shows.dataset.step) + 1));
+      for (const line of pre.querySelectorAll('.line')) {
+        line.classList.toggle('hl', (line.dataset.focus || '').split(' ').includes(String(at)));
+      }
+    }
   }
 
   window.addEventListener('message', (e) => {

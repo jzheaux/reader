@@ -31,8 +31,10 @@ import arrows from './arrows/index.js';
 import math from './math/index.js';
 import emoji from './emoji/index.js';
 import puzzles from './puzzles/index.js';
+import highlight from './highlight/index.js';
 
 // styles comes after qa and attributions: a `:::` block marks a line after
 // qa has made it a list item, and after an attribution's dash is marked, as
-// it does any other.
-export const FEATURES = [asides, fields, tasks, qa, sizes, alerts, attributions, styles, scripture, scriptureLds, search, math, arrows, emoji, puzzles];
+// it does any other. highlight comes before puzzles, which wraps the fence
+// rule it finds.
+export const FEATURES = [asides, fields, tasks, qa, sizes, alerts, attributions, styles, scripture, scriptureLds, search, math, arrows, emoji, highlight, puzzles];

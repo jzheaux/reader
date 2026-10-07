@@ -64,7 +64,8 @@ test('slides renders each slide without a masthead and keeps its notes', () => {
   assert.doesNotMatch(out.slides[0].body, /gm-masthead|gm-title/);
   assert.match(out.slides[0].body, /<h1[^>]*>One<\/h1>/);
   assert.equal(out.slides[0].notes, 'say hello');
-  assert.match(out.slides[1].body, /&lt;!-- not a note --&gt;/);
+  // Still in the fence, as highlighted code.
+  assert.match(out.slides[1].body.replace(/<\/?span[^>]*>/g, ''), /&lt;!-- not a note --&gt;/);
   assert.equal(out.slides[1].notes, '');
   assert.equal(out.slides[2].notes, 'only notes,\n  indented');
   assert.match(out.css, /--gm-base: clamp/);

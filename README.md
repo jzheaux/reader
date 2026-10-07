@@ -314,6 +314,24 @@ A few GitHub conventions show as they do there:
   | `Space` or `Enter`, or click | plot the next point there |
   | `⌫` | take back the last point |
 
+A code fence is highlighted for its language (`c`, `bash`, `asciidoc`,
+`js`, and the rest highlight.js knows); a fence in a language it doesn't
+know, or none, is left plain. Braces after the language pick out lines,
+counted from 1 inside the fence: `{3,5-7}` makes them stand out and the
+rest fade, and `{numbers}` numbers every line. Ranges separated by `|`
+take turns: on a slide, the first stands out when the fence appears, and
+each `n` moves on to the next.
+
+````markdown
+```c {numbers 2|4-5}
+#include <stdio.h>
+int main(void) {
+  printf("hi\n");
+  return 0;
+}
+```
+````
+
 An image's size goes after its address as `=WxH`, in pixels, as in the
 markdown-it-imsize convention. Leave one side out to keep the image's
 proportions: `=100x` sets only the width, `=x200` only the height. A title
@@ -458,7 +476,7 @@ $ npm run lint
 | `src/content.js` | the content directory: listing, safe paths, saves, backups |
 | `src/render.js` | markdown → `{css, body}` for the preview: one markdown-it, with every feature, laid out in columns |
 | `src/columns.js` | the two-column layout: the speaker's passages beside the asides written against them, under the masthead |
-| `features/` | one directory per piece of syntax: its markdown-it plugin, CSS, tests and, if it can be clicked, the `preview.js` that makes it so (so far: `asides`, `fields`, `tasks`, `qa`, `sizes`, `alerts`, `attributions`, `styles`, `scripture`, `scripture-lds`, `search`, `math`, `arrows`, `emoji`, `puzzles`) |
+| `features/` | one directory per piece of syntax: its markdown-it plugin, CSS, tests and, if it can be clicked, the `preview.js` that makes it so (so far: `asides`, `fields`, `tasks`, `qa`, `sizes`, `alerts`, `attributions`, `styles`, `scripture`, `scripture-lds`, `search`, `math`, `arrows`, `emoji`, `highlight`, `puzzles`) |
 | `src/slides.js` | a `slides`-format deck → rendered slides and their notes |
 | `static/app/` | the app, a module each: `main.js` (start, events, keys), `files.js`, `render.js` (the preview), `saving.js`, `editing.js`, `modes.js` (layout, read mode), `deck.js` (presenting), `pdf.js`, `status.js`, `api.js`, `state.js` |
 | `static/preview.html` | the sandboxed preview frame |

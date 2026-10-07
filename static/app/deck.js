@@ -17,11 +17,13 @@ import * as moves from './moves.js';
 // (speaker.html) that follows along over a BroadcastChannel and can drive.
 //
 // A slide shows one step at a time: each block (paragraph, quote, code,
-// table, ...) and each list item is a step, in reading order. A slide's
-// opening heading is not a step; it shows with the slide. `n` and `p` undo
-// each other exactly, a step at a time, crossing slides at either end. `N`
-// shows the rest of the slide, or the next one whole; `P` goes back to the
-// start of the slide, or to the start of the previous one. See moves.js.
+// table, ...) and each list item is a step, in reading order, and a fence
+// written `{1-3|5}` takes a step more for each range after its first. A
+// slide's opening heading is not a step; it shows with the slide. `n` and
+// `p` undo each other exactly, a step at a time, crossing slides at either
+// end. `N` shows the rest of the slide, or the next one whole; `P` goes
+// back to the start of the slide, or to the start of the previous one. See
+// moves.js.
 
 /** Present is offered for a file the server says is a deck when it renders it. */
 export function updatePresentable(isDeck = false) {
@@ -70,6 +72,7 @@ export async function loadDeck() {
 // What counts as a step, among the blocks of a slide.
 const LIST = 'ul, ol';
 const HEADING = /^H[1-6]$/;
+const FOCUS = 'pre[data-focus-steps]';
 
 /**
  * Numbers a slide's steps: `data-step="k"` on everything that appears with
@@ -85,13 +88,24 @@ export function steps(body) {
     for (const block of pair.querySelector(':scope > .gm-speaker')?.children || []) {
       if (opening && HEADING.test(block.tagName)) { opening = false; continue; }
       opening = false;
-      if (block.matches(LIST)) for (const li of block.querySelectorAll('li')) li.dataset.step = ++n;
-      else block.dataset.step = ++n;
+      if (block.matches(LIST)) for (const li of block.querySelectorAll('li')) n = step(li, n);
+      else n = step(block, n);
     }
     if (n === before) continue;
     for (const aside of pair.querySelectorAll(':scope > .gm-asides > *')) aside.dataset.step = n;
   }
   return { body: doc.body.innerHTML, steps: n };
+}
+
+/**
+ * Gives `node` the step after `n`, and returns the last step it takes: one,
+ * plus one for each further range a fence in it moves through
+ * (`data-focus-steps`, from a fence written `{1-3|5}`).
+ */
+function step(node, n) {
+  node.dataset.step = ++n;
+  const fence = node.matches(FOCUS) ? node : node.querySelector(FOCUS);
+  return n + (fence ? Number(fence.dataset.focusSteps) - 1 : 0);
 }
 
 /** Puts the current slide on the stage; with `render: false`, only its reveal. */

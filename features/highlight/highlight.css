@@ -1,0 +1,52 @@
+/* code's colours, as highlight.js names its parts: quiet, on the page's
+ * warm paper, closer to GitHub's light theme than to an editor's */
+pre code.hljs {
+  --hl-keyword: #a1324a;
+  --hl-string: #2f6f3e;
+  --hl-number: #1f5f99;
+  --hl-comment: #8a8780;
+  --hl-title: #6a3fa0;
+  --hl-type: #946200;
+  --hl-meta: #5b6b7f;
+  --hl-deletion: #a1324a;
+  --hl-addition: #2f6f3e;
+  color: var(--gm-ink);
+}
+.hljs-keyword, .hljs-selector-tag, .hljs-built_in, .hljs-literal, .hljs-doctag { color: var(--hl-keyword); }
+.hljs-string, .hljs-regexp, .hljs-template-tag, .hljs-symbol, .hljs-link { color: var(--hl-string); }
+.hljs-number, .hljs-variable, .hljs-template-variable, .hljs-attr, .hljs-attribute, .hljs-selector-attr { color: var(--hl-number); }
+.hljs-comment, .hljs-quote { color: var(--hl-comment); font-style: italic; }
+.hljs-title, .hljs-section, .hljs-selector-id, .hljs-selector-class, .hljs-name { color: var(--hl-title); }
+.hljs-type, .hljs-params, .hljs-property, .hljs-selector-pseudo { color: var(--hl-type); }
+.hljs-meta, .hljs-tag, .hljs-subst, .hljs-bullet { color: var(--hl-meta); }
+.hljs-section, .hljs-strong { font-weight: 600; }
+.hljs-emphasis { font-style: italic; }
+.hljs-deletion { color: var(--hl-deletion); background: #fbeef0; }
+.hljs-addition { color: var(--hl-addition); background: #edf6ef; }
+
+/* a fence whose lines are picked out: a line each, wide as the longest,
+ * so a highlighted one is a band right across */
+pre.code-lines > code { display: grid; }
+pre.code-lines .line {
+  display: block;
+  min-height: 1lh;
+  margin: 0 -0.85rem;
+  padding: 0 0.85rem;
+  transition: opacity .18s, background-color .18s;
+}
+pre.code-focus .line { opacity: .45; }
+pre.code-focus .line.hl { opacity: 1; background: #f0ebde; box-shadow: inset 2px 0 var(--gm-accent); }
+
+/* numbered: the count sits in a gutter as wide as the last number */
+pre.code-numbers > code { counter-reset: line; }
+pre.code-numbers .line::before {
+  counter-increment: line;
+  content: counter(line);
+  display: inline-block;
+  width: calc(var(--digits, 2) * 1ch);
+  margin-right: 1.4ch;
+  text-align: right;
+  color: var(--gm-ink-soft);
+  opacity: .6;
+  user-select: none;
+}

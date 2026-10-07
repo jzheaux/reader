@@ -11,7 +11,7 @@ test('a fence naming a puzzle is wrapped for the preview, numbered in order', ()
   assert.equal(shared.puzzles, 4);
   assert.match(body, /<div class="puzzle" data-kind="sudoku" data-puzzle="2" data-from="1" data-to="2"><pre><code class="language-sudoku">5 3 \.\n<\/code><\/pre><\/div>/);
   assert.match(body, /data-puzzle="3" data-from="9" data-to="10"/);
-  assert.match(body, /<pre><code class="language-js">x\n<\/code><\/pre>/);
+  assert.match(body, /<pre><code class="hljs language-js">x\n<\/code><\/pre>/);
   assert.doesNotMatch(body, /data-kind="js"/);
 });
 
