@@ -1,0 +1,247 @@
+/* reader's two-column layout (src/columns.js); from gutter-md's default theme
+ *
+ * Two voices, two typographic registers: the speaker set in a book serif, the
+ * listener in a lighter italic sans, so a glance tells you whose words you are
+ * reading before you have read any of them.
+ */
+
+:root {
+  --gm-speaker-col: 1fr;
+  --gm-aside-col: 0.62fr;
+  --gm-gutter: 2.2rem;
+
+  --gm-ink: #1a1a1a;
+  --gm-ink-soft: #555;
+  --gm-aside-ink: #4a5a72;
+  --gm-rule: #d9d6d0;
+  --gm-aside-rule: #b9c4d4;
+  --gm-accent: #7a8ba3;
+  --gm-paper: #fff;
+
+  --gm-serif: "Iowan Old Style", Charter, "Palatino Linotype", Palatino, Georgia, serif;
+  --gm-sans: "Avenir Next", Avenir, "Helvetica Neue", Inter, system-ui, sans-serif;
+  --gm-mono: "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+
+  --gm-base: 10.75pt;
+  --gm-lead: 1.5;
+}
+
+* { box-sizing: border-box; }
+
+html { font-size: var(--gm-base); }
+
+body {
+  margin: 0;
+  background: var(--gm-paper);
+  color: var(--gm-ink);
+  font-family: var(--gm-serif);
+  line-height: var(--gm-lead);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.gm-doc {
+  max-width: 62rem;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem 3rem;
+}
+
+/* ---------- masthead ---------------------------------------------------- */
+
+.gm-masthead {
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1.5px solid var(--gm-rule);
+}
+
+.gm-title {
+  font-size: 1.9rem;
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0 0 0.45rem;
+}
+
+.gm-byline {
+  font-family: var(--gm-sans);
+  font-size: 0.82rem;
+  color: var(--gm-ink-soft);
+  letter-spacing: 0.02em;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 1.1rem;
+}
+
+.gm-byline .gm-tag {
+  color: var(--gm-accent);
+}
+
+/* ---------- column headings --------------------------------------------- */
+
+.gm-colheads {
+  display: grid;
+  grid-template-columns: var(--gm-speaker-col) var(--gm-aside-col);
+  column-gap: var(--gm-gutter);
+  font-family: var(--gm-sans);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--gm-ink-soft);
+  padding-bottom: 0.4rem;
+  margin-bottom: 0.9rem;
+  border-bottom: 0.75px solid var(--gm-rule);
+}
+
+.gm-colheads .gm-h-aside { color: var(--gm-accent); }
+
+/* ---------- the aligned grid -------------------------------------------- */
+
+/* Each pair is its own grid so the two columns stay locked together while the
+ * page still breaks between and inside pairs naturally. */
+.gm-pair {
+  display: grid;
+  grid-template-columns: var(--gm-speaker-col) var(--gm-aside-col);
+  column-gap: var(--gm-gutter);
+  align-items: start;
+}
+
+/* A row's two cells must start on the same line, so the leading margin is
+ * stripped all the way down the first-child chain of each cell -- otherwise a
+ * list's own top margin pushes the speaker down and the alignment reads as
+ * accidental. */
+/* `*:first-child` rather than `:where(:first-child)` on purpose: :where()
+ * carries no specificity and would lose to the element rules below, leaving
+ * the two columns a few pixels out of true. */
+.gm-speaker *:first-child,
+.gm-aside-cell *:first-child,
+.gm-speaker > *:first-child,
+.gm-aside-cell > *:first-child { margin-top: 0; }
+
+.gm-speaker > *:last-child,
+.gm-aside-cell > *:last-child { margin-bottom: 0; }
+
+/* Chunks that continue a list from the previous row must not re-indent or
+ * re-mark; the list's own margins were already paid above. */
+.gm-speaker ul, .gm-speaker ol { margin: 0.3rem 0; padding-left: 1.35rem; }
+.gm-speaker li { margin: 0.18rem 0; }
+.gm-speaker li::marker { color: var(--gm-ink-soft); font-size: 0.92em; }
+.gm-speaker p { margin: 0.42rem 0; }
+
+.gm-speaker ul.gm-cont, .gm-speaker ol.gm-cont { margin-top: 0; }
+.gm-speaker li.gm-cont { list-style: none; margin-top: 0; }
+.gm-speaker li.gm-cont > *:first-child { margin-top: 0; }
+
+/* ---------- the listener's voice ---------------------------------------- */
+
+.gm-aside-cell {
+  font-family: var(--gm-sans);
+  font-style: italic;
+  font-size: 0.86rem;
+  line-height: 1.45;
+  color: var(--gm-aside-ink);
+  border-left: 2px solid var(--gm-aside-rule);
+  padding-left: 0.85rem;
+  break-inside: avoid;
+}
+
+.gm-aside-cell p { margin: 0 0 0.5rem; }
+.gm-aside-cell p:last-child { margin-bottom: 0; }
+.gm-aside-cell + .gm-aside-cell { margin-top: 0.6rem; }
+
+/* When your thinking runs denser than the speaker's outline, consecutive rows
+ * put one aside directly under another. A little air keeps them legible as
+ * separate thoughts. */
+.gm-asides { padding-bottom: 0.7rem; }
+
+/* The tilde is kept as a visible mark of authorship -- it is the notation the
+ * document is written in, not just syntax to be compiled away. */
+.gm-aside-cell .gm-mark {
+  font-style: normal;
+  font-family: var(--gm-mono);
+  color: var(--gm-accent);
+  margin-right: 0.3em;
+  font-size: 0.95em;
+}
+
+.gm-aside-cell ul, .gm-aside-cell ol {
+  margin: 0.3rem 0;
+  padding-left: 1.1rem;
+}
+
+/* Inline layout (single column) */
+.gm-aside {
+  font-family: var(--gm-sans);
+  font-style: italic;
+  font-size: 0.88rem;
+  color: var(--gm-aside-ink);
+  border-left: 2px solid var(--gm-aside-rule);
+  padding-left: 0.8rem;
+  margin: 0.5rem 0 0.6rem;
+}
+.gm-aside p { margin: 0 0 0.4rem; }
+.gm-aside p:last-child { margin-bottom: 0; }
+
+/* ---------- shared prose ------------------------------------------------- */
+
+h1, h2, h3, h4 { font-weight: 600; line-height: 1.25; }
+.gm-speaker h1 { font-size: 1.35rem; margin: 1rem 0 0.4rem; }
+.gm-speaker h2 { font-size: 1.15rem; margin: 0.9rem 0 0.35rem; }
+.gm-speaker h3 { font-size: 1rem; margin: 0.8rem 0 0.3rem; }
+
+code {
+  font-family: var(--gm-mono);
+  font-size: 0.86em;
+  background: #f3f2ef;
+  padding: 0.1em 0.32em;
+  border-radius: 3px;
+}
+
+pre {
+  font-family: var(--gm-mono);
+  font-size: 0.8rem;
+  background: #f7f6f3;
+  border: 0.75px solid var(--gm-rule);
+  border-radius: 4px;
+  padding: 0.7rem 0.85rem;
+  overflow-x: auto;
+  line-height: 1.45;
+}
+pre code { background: none; padding: 0; font-size: inherit; }
+
+blockquote {
+  margin: 0.6rem 0;
+  padding-left: 0.9rem;
+  border-left: 2px solid var(--gm-rule);
+  color: var(--gm-ink-soft);
+}
+
+a { color: inherit; text-decoration-color: var(--gm-accent); text-underline-offset: 2px; }
+
+hr { border: none; border-top: 0.75px solid var(--gm-rule); margin: 1.2rem 0; }
+
+table { border-collapse: collapse; font-size: 0.9em; }
+th, td { border: 0.75px solid var(--gm-rule); padding: 0.3rem 0.5rem; text-align: left; }
+
+/* ---------- print -------------------------------------------------------- */
+
+@page {
+  size: letter;
+  margin: 0.75in 0.7in 0.85in;
+}
+
+@media print {
+  .gm-doc { max-width: none; margin: 0; padding: 0; }
+  .gm-masthead { break-after: avoid; }
+  .gm-colheads { break-after: avoid; }
+  .gm-pair { break-inside: auto; }
+  h1, h2, h3, h4 { break-after: avoid; }
+  pre, blockquote { break-inside: avoid; }
+}
+
+/* ---------- screen preview ---------------------------------------------- */
+
+@media screen and (max-width: 46rem) {
+  .gm-pair, .gm-colheads { grid-template-columns: 1fr; }
+  .gm-aside-cell { margin: 0.4rem 0 0.9rem; }
+  .gm-colheads .gm-h-aside { display: none; }
+}

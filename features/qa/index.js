@@ -9,12 +9,12 @@
  *   Q (audience): Is this a pendulum swing or an integration?
  *   A (Thomas): An integration.
  *
- * Before anything else reads the source -- gutter-md's asides included, so
+ * Before anything else reads the source -- the asides included, so
  * that an aside ends where an exchange's line begins -- each such line
  * becomes a `+` list item (so it never joins a `-` or `*` list above it), and
  * one that carries on the item before it is indented into that item. Who
  * spoke is kept, by line, in `env.qa`; once the text is parsed, the items on
- * those lines are labelled, finding their lines through gutter-md's
+ * those lines are labelled, finding their lines through the asides feature's
  * `env.sourceLines`.
  */
 

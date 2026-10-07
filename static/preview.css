@@ -1,7 +1,7 @@
 /* the preview sits in a pane, not on a page: less top padding */
 .gm-doc { padding-top: 1.75rem; }
 
-/* gutter-md drops to one column below 46rem, sized for a whole window. A
+/* the layout drops to one column below 46rem, sized for a whole window. A
  * pane is narrower than that, so keep the gutter down to phone width. */
 @media screen and (min-width: 30rem) {
   .gm-pair, .gm-colheads { grid-template-columns: var(--gm-speaker-col) var(--gm-aside-col); }

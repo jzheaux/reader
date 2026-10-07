@@ -1,7 +1,7 @@
 {
   "name": "reader",
   "version": "0.1.0",
-  "description": "A local two-pane reader/editor for a directory of markdown: rendered on the left, editable on the right, with aside-markdown support.",
+  "description": "A local two-pane reader/editor for a directory of markdown: rendered on the left, editable on the right, with asides set in a column of their own.",
   "type": "module",
   "bin": {
     "reader": "./bin/reader.js"
@@ -15,7 +15,6 @@
     "node": ">=18"
   },
   "dependencies": {
-    "gutter-md": "file:../aside-markdown",
     "markdown-it": "^14.3.2",
     "markdown-it-emoji": "^3.1.0"
   },

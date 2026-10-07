@@ -1,21 +1,20 @@
 /**
  * Markdown (with `~` asides) -> { css, body } for the preview pane.
  *
- * One markdown-it parses every document: gutter-md's asides and front
- * matter, then each feature's plugin. gutter-md lays the tokens out in its
- * two columns, and the preview iframe, loaded once, has its style and body
- * swapped for these on every keystroke.
+ * One markdown-it parses every document, with each feature's plugin
+ * (features/), asides and front matter among them. columns.js lays the
+ * tokens out in two columns, and the preview iframe, loaded once, has its
+ * style and body swapped for these on every keystroke.
  */
 
 import path from 'node:path';
 import MarkdownIt from 'markdown-it';
-import { gutterMd, columns } from 'gutter-md';
+import { columns } from './columns.js';
 import { FEATURES } from '../features/index.js';
 
-// Asides are kept out of the speaker's tokens (`inline: false`), for the
-// columns to place beside them. Features that read the file as written go
-// before this file's own source pass, `expand`; the rest after it.
-const md = new MarkdownIt({ html: false, linkify: true, typographer: true, breaks: false }).use(gutterMd, { inline: false });
+// Features that read the file as written (and asides) go before this file's
+// own source pass, `expand`; the rest after it.
+const md = new MarkdownIt({ html: false, linkify: true, typographer: true, breaks: false });
 for (const f of FEATURES.filter((f) => f.plugin && f.raw)) md.use(f.plugin);
 md.core.ruler.before('aside_extract', 'reader_expand', (state) => {
   if (!state.inlineMode && !state.env.__aside) state.src = expand(state.src);

@@ -132,7 +132,7 @@ function unquote(v) {
   return /^(["']).*\1$/.test(v) ? v.slice(1, -1) : v;
 }
 
-/** A slide is not a document: drop the title masthead gutter-md puts on top. */
+/** A slide is not a document: drop the title masthead the layout puts on top. */
 function unmast(body) {
   return body.replace(/<header class="gm-masthead">[\s\S]*?<\/header>\s*/, '');
 }

@@ -16,9 +16,10 @@ exactly.
 
 ## Asides
 
-Rendering is done by [gutter-md](../aside-markdown), so `~` lines are
-**asides**: your own voice, set in a gutter column level with the line you
-were reacting to.
+A line starting `~` is an **aside**: your own voice, set in a column of
+its own beside the text, level with the line you were reacting to. It
+doesn't change the shape of what it's written in: a list stays one list
+with an aside between its items.
 
 ```markdown
 I continue to mourn things that I loved being in the stream of.
@@ -324,8 +325,8 @@ still goes before it.
 ```
 
 Everything else is ordinary markdown. Front matter (`Title`, `Author`, `Date`,
-`Tags`, `Speaker`, `Listener`) becomes the masthead, exactly as in gutter-md;
-without a `Title` the file name is used.
+`Tags`, `Speaker`, `Listener`) becomes the masthead; without a `Title` the
+file name is used. `Speaker` and `Listener` head the two columns.
 
 ## Reading and presenting
 
@@ -438,7 +439,7 @@ path that would leave `dir`, including through symlinks.
 
 ## Install
 
-Node 18+. `gutter-md` is taken from the sibling checkout:
+Node 18+.
 
 ```console
 $ cd ~/code/jzheaux/reader
@@ -455,8 +456,9 @@ $ npm run lint
 | `bin/reader.js` | CLI |
 | `src/server.js` | HTTP API and static files |
 | `src/content.js` | the content directory: listing, safe paths, saves, backups |
-| `src/render.js` | markdown → `{css, body}` for the preview: one markdown-it, with gutter-md and the features, laid out in gutter-md's columns |
-| `features/` | one directory per piece of syntax: its markdown-it plugin, CSS, tests and, if it can be clicked, the `preview.js` that makes it so (so far: `fields`, `tasks`, `qa`, `sizes`, `alerts`, `attributions`, `styles`, `scripture`, `scripture-lds`, `search`, `math`, `arrows`, `emoji`, `puzzles`) |
+| `src/render.js` | markdown → `{css, body}` for the preview: one markdown-it, with every feature, laid out in columns |
+| `src/columns.js` | the two-column layout: the speaker's passages beside the asides written against them, under the masthead |
+| `features/` | one directory per piece of syntax: its markdown-it plugin, CSS, tests and, if it can be clicked, the `preview.js` that makes it so (so far: `asides`, `fields`, `tasks`, `qa`, `sizes`, `alerts`, `attributions`, `styles`, `scripture`, `scripture-lds`, `search`, `math`, `arrows`, `emoji`, `puzzles`) |
 | `src/slides.js` | a `slides`-format deck → rendered slides and their notes |
 | `static/app.js` | sidebar, editor, live preview, autosave, PDF view, read mode, deck |
 | `static/preview.html` | the sandboxed preview frame |

@@ -4,8 +4,8 @@
  * Some syntax has to be found in the file before anything else reads it --
  * a checkbox or a field remembers the line it was written on, and the line
  * as written, to be edited later -- even when it ends up in an aside, which
- * gutter-md parses apart from the rest. Such a feature reads each line first
- * (`readLines`, as a core rule before gutter-md's `aside_extract`), keeps
+ * is parsed apart from the rest. Such a feature reads each line first
+ * (`readLines`, as a core rule before the asides feature's `aside_extract`), keeps
  * what it found on `env`, and leaves a placeholder in the text: a number
  * between two private-use characters, which markdown passes through
  * untouched. Once the text is parsed, it turns its placeholders into tokens
@@ -15,8 +15,8 @@
 const FENCE = /^\s{0,3}(`{3,}|~{3,})/;
 
 /**
- * Adds `rule` to read the source before gutter-md takes the asides out, or
- * after normalizing it when gutter-md isn't in use.
+ * Adds `rule` to read the source before the asides come out, or after
+ * normalizing it when the asides feature isn't in use.
  */
 export function beforeAsides(md, name, rule) {
   try {
