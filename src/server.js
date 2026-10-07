@@ -18,6 +18,9 @@
  * Files from the content directory are served sandboxed: an HTML or SVG file
  * there, opened from a link in a note, would otherwise run its scripts as
  * this app and could read and write every file through the API.
+ *
+ * Each page has a Content-Security-Policy (PAGE_POLICIES): no page runs an
+ * inline script, so markup that slipped into a rendered note couldn't either.
  */
 
 import fs from 'node:fs';
@@ -60,6 +63,51 @@ const FEATURE_SCRIPTS = new Map(FEATURES.flatMap((f) => [f.preview ?? []].flat()
 const PREVIEW_SCRIPTS = [...FEATURE_SCRIPTS.keys()].map((src) => `<script src="${src}"></script>`).join('\n');
 
 const LOOPBACK = new Set(['127.0.0.1', 'localhost', '[::1]']);
+
+// What each page may load. Nothing inline runs anywhere: every script is a
+// file of the app's own. The preview may take inline styles, since the
+// rendered document brings its own (the theme, a ::: block's colors, an
+// image's size), and images from anywhere a note points; it fetches
+// nothing, and only the app may frame it. Neither the app nor the speaker
+// view may be framed at all.
+const POLICY = (directives) => Object.entries(directives).map(([k, v]) => `${k} ${v}`).join('; ');
+const LOCKED = {
+  'default-src': "'none'",
+  'base-uri': "'none'",
+  'form-action': "'none'",
+  'object-src': "'none'",
+};
+const PAGE_POLICIES = {
+  'index.html': POLICY({
+    ...LOCKED,
+    'script-src': "'self'",
+    'style-src': "'self'",
+    'img-src': "'self' data:",
+    'font-src': "'self' data:",
+    'connect-src': "'self'",
+    'frame-src': "'self'",
+    'worker-src': "'self'",
+    'frame-ancestors': "'none'",
+  }),
+  'speaker.html': POLICY({
+    ...LOCKED,
+    'script-src': "'self'",
+    'style-src': "'self'",
+    'img-src': "'self' data:",
+    'frame-src': "'self'",
+    'frame-ancestors': "'none'",
+  }),
+  'preview.html': POLICY({
+    ...LOCKED,
+    // A note's links and images resolve from the content directory.
+    'base-uri': "'self'",
+    'script-src': "'self'",
+    'style-src': "'self' 'unsafe-inline'",
+    'img-src': '* data: blob:',
+    'font-src': "'self' data:",
+    'frame-ancestors': "'self'",
+  }),
+};
 
 // No scripts, no forms, and an opaque origin, for anything opened straight
 // from /content/. PDFs are left out: browsers won't show one in a sandbox,
@@ -136,11 +184,12 @@ export function createServer({ root }) {
     if (!abs.startsWith(STATIC_DIR + path.sep) || !fs.existsSync(abs) || !fs.statSync(abs).isFile()) {
       return send(res, 404, 'not found', 'text/plain');
     }
+    const policy = PAGE_POLICIES[rel] ? { 'Content-Security-Policy': PAGE_POLICIES[rel] } : {};
     if (rel === 'preview.html') {
       const html = fs.readFileSync(abs, 'utf8').replace('<!-- scripts -->', PREVIEW_SCRIPTS);
-      return send(res, 200, html, TYPES['.html']);
+      return send(res, 200, html, TYPES['.html'], policy);
     }
-    return sendFile(res, abs);
+    return sendFile(res, abs, policy);
   }
 
   return { server, content };

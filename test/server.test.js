@@ -111,3 +111,21 @@ test('the preview loads a script for each kind of puzzle and each feature that h
     assert.equal((await fetch(base + other)).status, 404, other);
   }
 });
+
+test('each page says what it may load: its own scripts only, nothing inline', async () => {
+  const policy = async (url) => (await fetch(base + url)).headers.get('content-security-policy');
+  for (const page of ['/', '/speaker.html', '/preview.html']) {
+    const csp = await policy(page);
+    assert.match(csp, /default-src 'none'/, page);
+    assert.match(csp, /script-src 'self'(;|$)/, page);
+    assert.match(csp, /object-src 'none'/, page);
+  }
+  assert.match(await policy('/'), /frame-ancestors 'none'/);
+  assert.match(await policy('/'), /style-src 'self'(;|$)/);
+  assert.match(await policy('/preview.html'), /frame-ancestors 'self'/);
+  assert.match(await policy('/preview.html'), /style-src 'self' 'unsafe-inline'/);
+  for (const page of ['index.html', 'speaker.html', 'preview.html']) {
+    const html = await (await fetch(`${base}/${page}`)).text();
+    assert.doesNotMatch(html, /<script>|<script(?![^>]*\bsrc=)[^>]*>|\son[a-z]+=/, `${page} has no inline script`);
+  }
+});

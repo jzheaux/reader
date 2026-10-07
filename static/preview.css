@@ -1,0 +1,37 @@
+/* the preview sits in a pane, not on a page: less top padding */
+.gm-doc { padding-top: 1.75rem; }
+
+/* gutter-md drops to one column below 46rem, sized for a whole window. A
+ * pane is narrower than that, so keep the gutter down to phone width. */
+@media screen and (min-width: 30rem) {
+  .gm-pair, .gm-colheads { grid-template-columns: var(--gm-speaker-col) var(--gm-aside-col); }
+  .gm-aside-cell { margin: 0; }
+  .gm-aside-cell + .gm-aside-cell { margin-top: 0.6rem; }
+  .gm-colheads .gm-h-aside { display: block; }
+}
+@media screen and (max-width: 46rem) {
+  :root { --gm-gutter: 1.4rem; }
+  .gm-doc { padding-left: 1.1rem; padding-right: 1.1rem; }
+}
+
+/* a slide's steps not yet shown: hidden in the deck, faint in the
+ * speaker view. Either way they keep their space, so nothing moves. */
+[data-step] { transition: opacity .18s, visibility .18s; }
+.step-hidden { visibility: hidden; opacity: 0; }
+.step-dim { opacity: .25; }
+
+/* the image an image link points to, shown while the link is hovered:
+ * a small matted print, tipped up off the top right of the link. It's
+ * flourish, not content, so it stays small. */
+.peek {
+  position: fixed; z-index: 10; pointer-events: none;
+  max-width: clamp(110px, 16vw, 190px); max-height: clamp(90px, 22vh, 170px);
+  padding: 5px; background: var(--gm-paper, #fff);
+  border: 1px solid var(--gm-rule, #d9d6d0); border-radius: 3px;
+  box-shadow: 0 1px 2px rgba(0,0,0,.08), 0 6px 18px rgba(0,0,0,.14);
+  transform: rotate(-2deg); transform-origin: 0 100%;
+  animation: peek-in .16s ease-out;
+}
+@keyframes peek-in {
+  from { opacity: 0; transform: rotate(-2deg) translate(-4px, 6px) scale(.92); }
+}
