@@ -8,6 +8,7 @@ import { baseFor } from './render.js';
 import { save } from './saving.js';
 import { setReading } from './modes.js';
 import { toast } from './status.js';
+import * as moves from './moves.js';
 
 //
 // A file in the format of https://github.com/maaslalani/slides -- slides
@@ -18,8 +19,9 @@ import { toast } from './status.js';
 // A slide shows one step at a time: each block (paragraph, quote, code,
 // table, ...) and each list item is a step, in reading order. A slide's
 // opening heading is not a step; it shows with the slide. `n` and `p` undo
-// each other exactly, a step at a time, crossing slides at either end; `N`
-// and `P` move a whole slide and arrive with all of it showing.
+// each other exactly, a step at a time, crossing slides at either end. `N`
+// shows the rest of the slide, or the next one whole; `P` goes back to the
+// start of the slide, or to the start of the previous one. See moves.js.
 
 /** Present is offered for a file the server says is a deck when it renders it. */
 export function updatePresentable(isDeck = false) {
@@ -127,30 +129,22 @@ export function go(i, reveal = 0) {
   showSlide({ render });
 }
 
-const full = () => deck.reveal >= deck.slides[deck.index].steps;
+const move = (to) => {
+  const { index, reveal } = to(deck.slides.map((s) => s.steps), deck);
+  go(index, reveal);
+};
 
 /** n: one more step, or on to the next slide with none of it showing. */
-export function next() {
-  if (!full()) go(deck.index, deck.reveal + 1);
-  else go(deck.index + 1, 0);
-}
+export const next = () => move(moves.next);
 
 /** p: one step fewer, or back to the previous slide with all of it showing. */
-export function back() {
-  if (deck.reveal > 0) go(deck.index, deck.reveal - 1);
-  else go(deck.index - 1, Infinity);
-}
+export const back = () => move(moves.back);
 
 /** N: the rest of this slide, or the next slide whole. */
-export function nextWhole() {
-  if (!full()) go(deck.index, Infinity);
-  else go(deck.index + 1, Infinity);
-}
+export const nextWhole = () => move(moves.nextWhole);
 
-/** P: the previous slide whole. */
-export function backWhole() {
-  go(deck.index - 1, Infinity);
-}
+/** P: back to the start of this slide, or to the start of the previous one. */
+export const backWhole = () => move(moves.backWhole);
 
 export function closeDeck() {
   if (!deck.open) return;
@@ -216,5 +210,6 @@ export function deckKey(e) {
 let deckTimer = 0;
 export function scheduleDeckReload() {
   clearTimeout(deckTimer);
-  deckTimer = setTimeout(() => deck.open && loadDeck(), RENDER_DELAY * 3);
+  // The stage shows the edited slide, at its new step numbers, right away.
+  deckTimer = setTimeout(async () => deck.open && (await loadDeck()) && showSlide(), RENDER_DELAY * 3);
 }
