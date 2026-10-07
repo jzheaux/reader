@@ -460,7 +460,7 @@ $ npm run lint
 | `src/columns.js` | the two-column layout: the speaker's passages beside the asides written against them, under the masthead |
 | `features/` | one directory per piece of syntax: its markdown-it plugin, CSS, tests and, if it can be clicked, the `preview.js` that makes it so (so far: `asides`, `fields`, `tasks`, `qa`, `sizes`, `alerts`, `attributions`, `styles`, `scripture`, `scripture-lds`, `search`, `math`, `arrows`, `emoji`, `puzzles`) |
 | `src/slides.js` | a `slides`-format deck → rendered slides and their notes |
-| `static/app.js` | sidebar, editor, live preview, autosave, PDF view, read mode, deck |
+| `static/app/` | the app, a module each: `main.js` (start, events, keys), `files.js`, `render.js` (the preview), `saving.js`, `editing.js`, `modes.js` (layout, read mode), `deck.js` (presenting), `pdf.js`, `status.js`, `api.js`, `state.js` |
 | `static/preview.html` | the sandboxed preview frame |
 | `static/preview-api.js` | what the frame offers the scripts drawn into it: `Preview.edit`, `Preview.register` |
 | `static/preview.js` | the frame itself: rendering, slide steps, image peeks, shortcuts |

@@ -28,7 +28,7 @@ export default [
   // (its own, the puzzles' and the features') are classic scripts sharing
   // `window.Preview` and `window.Puzzles`.
   {
-    files: ['static/app.js', 'static/edits.js'],
+    files: ['static/app/*.js', 'static/edits.js'],
     languageOptions: { sourceType: 'module', globals: globals.browser },
   },
   {
