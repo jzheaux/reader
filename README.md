@@ -456,10 +456,12 @@ $ npm run lint
 | `src/server.js` | HTTP API and static files |
 | `src/content.js` | the content directory: listing, safe paths, saves, backups |
 | `src/render.js` | markdown → `{css, body}` for the preview: one markdown-it, with gutter-md and the features, laid out in gutter-md's columns |
-| `features/` | one directory per piece of syntax, each a markdown-it plugin with its CSS and tests (so far: `fields`, `tasks`, `qa`) |
+| `features/` | one directory per piece of syntax: its markdown-it plugin, CSS, tests and, if it can be clicked, the `preview.js` that makes it so (so far: `fields`, `tasks`, `qa`) |
 | `src/slides.js` | a `slides`-format deck → rendered slides and their notes |
 | `static/app.js` | sidebar, editor, live preview, autosave, PDF view, read mode, deck |
 | `static/preview.html` | the sandboxed preview frame |
+| `static/preview-api.js` | what the frame offers the scripts drawn into it: `Preview.edit`, `Preview.register` |
+| `static/preview.js` | the frame itself: rendering, slide steps, image peeks, shortcuts |
 | `static/edits.js` | edits the preview asks for, checked against the lines they were drawn from |
 | `static/puzzles.js` | puzzles in the preview: drawn from their fences, played, posted back |
 | `static/puzzles/` | one file per kind of puzzle; a file here is a fence name |

@@ -27,6 +27,7 @@ import { fileURLToPath } from 'node:url';
 import { createContent } from './content.js';
 import { render, PUZZLES } from './render.js';
 import { slides, isDeck } from './slides.js';
+import { FEATURES } from '../features/index.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 export const STATIC_DIR = path.join(HERE, '..', 'static');
@@ -51,8 +52,13 @@ const TYPES = {
   '.svg': 'image/svg+xml',
 };
 
-// Every kind of puzzle, for the preview to load.
-const PUZZLE_SCRIPTS = [...PUZZLES].map((kind) => `<script src="/puzzles/${kind}.js"></script>`).join('\n');
+// The scripts features draw into the preview frame, served from their own
+// directories, and nothing else from there.
+const FEATURE_SCRIPTS = new Map(FEATURES.filter((f) => f.preview).map((f) => [`/features/${f.name}/preview.js`, f.preview]));
+
+// Every kind of puzzle and every feature's script, for the preview to load.
+const PREVIEW_SCRIPTS = [...[...PUZZLES].map((kind) => `/puzzles/${kind}.js`), ...FEATURE_SCRIPTS.keys()]
+  .map((src) => `<script src="${src}"></script>`).join('\n');
 
 const LOOPBACK = new Set(['127.0.0.1', 'localhost', '[::1]']);
 
@@ -90,6 +96,7 @@ export function createServer({ root }) {
       }
       if (route === '/api/tree') return sendJson(res, { files: content.list() });
       if (route === '/api/file') return sendJson(res, content.read(url.searchParams.get('path')));
+      if (FEATURE_SCRIPTS.has(route)) return sendFile(res, FEATURE_SCRIPTS.get(route));
       if (route.startsWith('/content/')) {
         const rel = decodeURIComponent(route.slice('/content/'.length));
         const { abs } = content.statFile(rel);
@@ -131,7 +138,7 @@ export function createServer({ root }) {
       return send(res, 404, 'not found', 'text/plain');
     }
     if (rel === 'preview.html') {
-      const html = fs.readFileSync(abs, 'utf8').replace('<!-- puzzles -->', PUZZLE_SCRIPTS);
+      const html = fs.readFileSync(abs, 'utf8').replace('<!-- scripts -->', PREVIEW_SCRIPTS);
       return send(res, 200, html, TYPES['.html']);
     }
     return sendFile(res, abs);

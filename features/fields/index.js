@@ -12,6 +12,7 @@
  */
 
 import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { beforeAsides, readLines, placeholder, splitText, escapeHtml, escapeAttr } from '../source.js';
 
 const FIELD = /^@[ \t]+([^:\n]*?[^:\s])[ \t]*(:+)[ \t]*(.*?)[ \t]*$/;
@@ -60,6 +61,8 @@ export default {
   name: 'fields',
   plugin: fields,
   css: fs.readFileSync(new URL('./fields.css', import.meta.url), 'utf8'),
+  // Drawn into the preview frame, to make it clickable.
+  preview: fileURLToPath(new URL('./preview.js', import.meta.url)),
   // Reads the file as written, before render.js's own source pass.
   raw: true,
 };

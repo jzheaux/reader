@@ -10,6 +10,7 @@
  */
 
 import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { beforeAsides, readLines, placeholder, splitText, escapeAttr } from '../source.js';
 
 const TASK = /^([ \t]*(?:[>~][ \t]*)*(?:[-*+]|\d{1,9}[.)])[ \t]+)(?:\[([ xX])\]|\(([ xX])\))(?=[ \t]|$)/;
@@ -90,6 +91,8 @@ export default {
   name: 'tasks',
   plugin: tasks,
   css: fs.readFileSync(new URL('./tasks.css', import.meta.url), 'utf8'),
+  // Drawn into the preview frame, to make it clickable.
+  preview: fileURLToPath(new URL('./preview.js', import.meta.url)),
   // Reads the file as written, before render.js's own source pass.
   raw: true,
 };

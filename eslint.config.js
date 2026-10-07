@@ -18,14 +18,15 @@ export default [
     files: ['bin/**/*.js', 'src/**/*.js', 'features/**/*.js', 'test/**/*.js', '*.config.js'],
     languageOptions: { sourceType: 'module', globals: globals.node },
   },
-  // The app and what it imports are modules; the preview's puzzle scripts are
-  // classic scripts sharing `window.Puzzles`.
+  // The app and what it imports are modules; the preview frame's scripts
+  // (its own, the puzzles' and the features') are classic scripts sharing
+  // `window.Preview` and `window.Puzzles`.
   {
     files: ['static/app.js', 'static/edits.js'],
     languageOptions: { sourceType: 'module', globals: globals.browser },
   },
   {
-    files: ['static/puzzles.js', 'static/puzzles/*.js'],
-    languageOptions: { sourceType: 'script', globals: { ...globals.browser, Puzzles: 'readonly' } },
+    files: ['static/preview-api.js', 'static/preview.js', 'static/puzzles.js', 'static/puzzles/*.js', 'features/*/preview.js'],
+    languageOptions: { sourceType: 'script', globals: { ...globals.browser, Preview: 'readonly', Puzzles: 'readonly' } },
   },
 ];

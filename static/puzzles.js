@@ -59,7 +59,7 @@
       const send = (before, after) => {
         const edit = { from, to, before: lines(before), after: lines(after) };
         to = from + edit.after.length;
-        window.parent.postMessage({ type: 'edit', edits: [edit], drawn: true }, '*');
+        Preview.edit([edit], { drawn: true });
       };
       const post = (before, after) => {
         if (!lead) return send(before, after);
@@ -137,6 +137,15 @@
 .puzzle-error { font-family: var(--gm-sans); font-size: 0.8rem; color: #c62828; margin: 0 0 0.3rem; }
 @media print { .puzzle-bar, .puzzle-help { display: none; } }
 `);
+
+  // A puzzle being played keeps the keyboard through a re-render.
+  Preview.register({
+    keep: () => {
+      const playing = document.hasFocus() && document.activeElement?.closest?.('.puzzle');
+      return playing ? Number(playing.dataset.puzzle) : null;
+    },
+    restore: (root, playing) => hydrate(root, playing),
+  });
 
   window.Puzzles = { register, hydrate, owns, frame };
 })();
