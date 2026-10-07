@@ -24,9 +24,10 @@ import scripture from './scripture/index.js';
 import scriptureLds from './scripture-lds/index.js';
 import search from './search/index.js';
 import arrows from './arrows/index.js';
+import math from './math/index.js';
 import emoji from './emoji/index.js';
 
 // styles comes after qa and attributions: a `:::` block marks a line after
 // qa has made it a list item, and after an attribution's dash is marked, as
 // it does any other.
-export const FEATURES = [fields, tasks, qa, sizes, alerts, attributions, styles, scripture, scriptureLds, search, arrows, emoji];
+export const FEATURES = [fields, tasks, qa, sizes, alerts, attributions, styles, scripture, scriptureLds, search, math, arrows, emoji];

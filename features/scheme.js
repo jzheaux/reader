@@ -22,7 +22,14 @@
 
 const BEFORE = /[\w\\]/;
 
-export function schemeLinks(md, { name, scheme, path, link }) {
+/**
+ * The rule underneath: `scheme:path[label]` found at its colon, and
+ * `make(state, path, label, at)` called to push its tokens (or to return
+ * false, leaving the text as typed; in silent mode it only answers whether
+ * it would). `at` is where the scheme starts in `state.src`, and `end`
+ * where the closing bracket ends.
+ */
+export function schemeRule(md, { name, scheme, path, make }) {
   const after = new RegExp(`^(${path.source})\\[([^\\]\\n]*)\\]`);
   md.inline.ruler.before('linkify', name, (state, silent) => {
     const colon = state.pos;
@@ -32,10 +39,31 @@ export function schemeLinks(md, { name, scheme, path, link }) {
     if (start > 0 && BEFORE.test(state.src[start - 1])) return false;
     if (!state.pending.endsWith(scheme)) return false;
     const m = after.exec(state.src.slice(colon + 1, state.posMax));
-    const found = m && link(m[1], m[2]);
-    if (!found) return false;
-    if (!silent) {
-      state.pending = state.pending.slice(0, -scheme.length);
+    if (!m) return false;
+    const end = colon + 1 + m[0].length;
+    if (silent) {
+      if (!make(null, m[1], m[2], { start, end })) return false;
+    } else {
+      const pending = state.pending;
+      state.pending = pending.slice(0, -scheme.length);
+      if (!make(state, m[1], m[2], { start, end })) {
+        state.pending = pending;
+        return false;
+      }
+    }
+    state.pos = end;
+    return true;
+  });
+}
+
+export function schemeLinks(md, { name, scheme, path, link }) {
+  schemeRule(md, {
+    name,
+    scheme,
+    path,
+    make: (state, where, text) => {
+      const found = link(where, text);
+      if (!found || !state) return Boolean(found);
       const open = state.push('link_open', 'a', 1);
       open.attrs = [...(found.attrs || []), ['href', state.md.normalizeLink(found.href)]];
       // The label is markdown, its brackets and backslashes as typed.
@@ -47,8 +75,7 @@ export function schemeLinks(md, { name, scheme, path, link }) {
       state.tokens.push(...label);
       state.tokens_meta.push(...label.map(() => null));
       state.push('link_close', 'a', -1);
-    }
-    state.pos = colon + 1 + m[0].length;
-    return true;
+      return true;
+    },
   });
 }

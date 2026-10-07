@@ -42,7 +42,7 @@ export function render(src, { file, puzzleBase = 0, read, line = 0 } = {}) {
 
   const page = columns(md, tokens, env, { headings, title });
   // Then each feature's pass over the finished page, if it has one.
-  const body = FEATURES.reduce((html, f) => (f.html ? f.html(html) : html), maths(figures(page.body.trim())));
+  const body = FEATURES.reduce((html, f) => (f.html ? f.html(html) : html), figures(page.body.trim()));
   const played = puzzles(body, puzzleBase, fences(text, { file, read, line }));
   return {
     css: [page.css.trim(), CSS, ...FEATURES.map((f) => f.css).filter(Boolean)].join('\n'),
@@ -143,21 +143,11 @@ const CODE_SPAN = /(`+)[^`][\s\S]*?\1|`+/g;
 const RFC = /(?<![\w\\])rfc:(\d{1,5})(?:#([\w.-]+))?\[([^\]\n]*)\]/g;
 const RFC_EDITOR = 'https://www.rfc-editor.org/rfc';
 
-// `math:[…]` is carried as open and close markers, the open one saying
-// whether it stood alone on its line.
-const MATH_INLINE = '\uE00A';
-const MATH_DISPLAY = '\uE00B';
-const MATH_CLOSE = '\uE00C';
-const MATH = /(?<![\w\\])math:\[([^\]\n]*)\]/g;
-const MATH_ALONE = /^[ \t]*math:\[[^\]\n]*\][ \t]*$/;
-
 /**
  * The source-level pass, run before markdown sees the text:
  *
  * - `rfc:9110[]` and `rfc:9110#section-15.5[]` -> links to the RFC Editor,
  *   labelled "RFC 9110" and "RFC 9110 §15.5" unless the brackets say otherwise.
- * - `math:[recognition >> judgment]` -> an expression, its operators set as
- *   symbols; alone on its line, it is displayed like an equation.
  *
  * Like shortcodes, the source keeps what was typed, and code is left alone.
  * Line numbers are preserved. It runs as a markdown-it core rule, after the
@@ -176,36 +166,9 @@ export function expand(src) {
       fence = f[1];
       return line;
     }
-    const alone = MATH_ALONE.test(line);
     return outsideCode(line, (text) => text
-      .replace(MATH, (m, expr) => `${alone ? MATH_DISPLAY : MATH_INLINE}${math(expr)}${MATH_CLOSE}`)
       .replace(RFC, (m, num, anchor, label) => mdLink(rfcLink(num, anchor, label))));
   }).join('\n');
-}
-
-// Longest first, so `<->` isn't read as `<-` and `>`.
-const OPERATORS = [
-  ['<->', '\u2194'], ['->', '\u2192'], ['<-', '\u2190'], ['>=', '\u2265'], ['<=', '\u2264'],
-  ['!=', '\u2260'], ['~=', '\u2248'], ['>>', '\u226B'], ['<<', '\u226A'], ['+-', '\u00B1'],
-  ['.:', '\u2234'], ['*', '\u00D7'], ['>', '>'], ['<', '<'], ['=', '='], ['+', '+'],
-];
-const OPERATOR = new RegExp(
-  `\\s*(${OPERATORS.map(([op]) => op.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})\\s*`,
-  'g',
-);
-const SYMBOL = new Map(OPERATORS);
-
-/**
- * The inside of `math:[…]`: operators become their symbols, spaced as a
- * relation is, with a no-break space before so a line never starts with one.
- * A `-` becomes a minus unless it joins two words, and `inf` becomes ∞.
- */
-export function math(expr) {
-  return expr
-    .replace(OPERATOR, (m, op) => `\u00A0${SYMBOL.get(op)} `)
-    .replace(/(?<!\w)-|-(?!\w)/g, '\u2212')
-    .replace(/\binf\b/g, '\u221E')
-    .trim();
 }
 
 function mdLink({ label, href }) {
@@ -240,19 +203,6 @@ export function figures(html) {
   });
 }
 
-/**
- * `math:[…]` markers become spans; one alone on its line takes its
- * paragraph with it, centered like a displayed equation.
- */
-export function maths(html) {
-  return html
-    .replace(new RegExp(`<p((?: [^>]*)?)>${MATH_DISPLAY}`, 'g'), (m, attrs) => (/ class="/.test(attrs)
-      ? `<p${attrs.replace(/ class="([^"]*)"/, ' class="$1 math-display"')}><span class="math">`
-      : `<p class="math-display"${attrs}><span class="math">`))
-    .replace(new RegExp(`[${MATH_INLINE}${MATH_DISPLAY}]`, 'g'), '<span class="math">')
-    .replaceAll(MATH_CLOSE, '</span>');
-}
-
 const CSS = `
 figure { margin: 0.8rem 0; }
 figure img { display: block; max-width: 100%; height: auto; }
@@ -275,8 +225,7 @@ th {
 }
 tbody tr:nth-child(even) td { background: #faf9f7; }
 
-.math { font-family: var(--gm-serif); font-style: normal; }
-p.math-display { text-align: center; font-size: 1.15em; margin: 0.9rem 0; }
+
 `;
 
 function outsideCode(line, fn) {
