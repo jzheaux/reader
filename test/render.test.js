@@ -1,7 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { render, emojify, expand, searchLink, math } from '../src/render.js';
-import { ldsLink } from '../src/lds.js';
+import { render, emojify, expand, math } from '../src/render.js';
 
 test('shortcodes become emoji in text and asides', () => {
   const { body } = render('Done :tada: :+1:\n\n~ so :heart: this\n');
@@ -23,35 +22,6 @@ test('attributes are never rewritten', () => {
     emojify('<a href="https://x.test/:tada:/">:tada:</a>'),
     '<a href="https://x.test/:tada:/">🎉</a>',
   );
-});
-
-test('scripture references become Blue Letter Bible links', () => {
-  const { body } = render(
-    'scripture:[Isaiah 2:1-5] and scripture:[Isaiah 2:1-5, NIV]\n\n~ scripture:isaiah/2/1-5[plowshares]\n',
-  );
-  assert.match(body, /<a href="https:\/\/www\.blueletterbible\.org\/rsv\/isaiah\/2\/1-5">Isaiah 2:1-5<\/a>/);
-  assert.match(body, /<a href="https:\/\/www\.blueletterbible\.org\/niv\/isaiah\/2\/1-5">Isaiah 2:1-5, NIV<\/a>/);
-  assert.match(body, /<a href="https:\/\/www\.blueletterbible\.org\/rsv\/isaiah\/2\/1-5">plowshares<\/a>/);
-});
-
-test('scripture books, chapters and dashes', () => {
-  assert.equal(expand('scripture:[Psalm 23]'), '[Psalm 23](https://www.blueletterbible.org/rsv/psalm/23)');
-  assert.equal(
-    expand('scripture:[1 John 4:7\u20138, KJV]'),
-    '[1 John 4:7\u20138, KJV](https://www.blueletterbible.org/kjv/1john/4/7-8)',
-  );
-  assert.equal(expand('scripture:isaiah/2/1-5[]'), '[isaiah/2/1-5](https://www.blueletterbible.org/rsv/isaiah/2/1-5)');
-});
-
-test('scripture in code, unreadable references and other words are left alone', () => {
-  for (const src of [
-    '`scripture:[Micah 4:3]`',
-    '```\nscripture:[Micah 4:3]\n```',
-    'scripture:[hello]',
-    'noscripture:[Micah 4:3]',
-  ]) {
-    assert.equal(expand(src), src);
-  }
 });
 
 test('rfc: links to the RFC Editor', () => {
@@ -84,29 +54,6 @@ test('GitHub alerts become callouts', () => {
   assert.match(body, /<blockquote>\n<p>\[!NOPE\]\nplain<\/p>/);
 });
 
-test('arrows, but not in code, comments or when escaped', () => {
-  assert.equal(expand('a -> b <- c <-> d'), 'a → b ← c ↔ d');
-  for (const src of ['`a -> b`', '<!-- x -->', '\\-> and \\<-', '```\n->\n```', 'a => b <= c']) {
-    assert.equal(expand(src), src);
-  }
-});
-
-test('search: links to Google, the same with pluses or brackets', () => {
-  assert.deepEqual(searchLink('my+many+worded+term', 'My Many Worded Term'), {
-    href: 'https://www.google.com/search?q=my+many+worded+term',
-    label: 'My Many Worded Term',
-  });
-  assert.deepEqual(searchLink('', 'My Many Worded Term'), {
-    href: 'https://www.google.com/search?q=My+Many+Worded+Term',
-    label: 'My Many Worded Term',
-  });
-  assert.deepEqual(searchLink('a+b', ''), { href: 'https://www.google.com/search?q=a+b', label: 'a b' });
-  assert.equal(searchLink('', ' '), null);
-  const { body } = render('search:[comensality] and `search:[x]` and nosearch:[x]\n');
-  assert.match(body, /<a class="search" href="https:\/\/www\.google\.com\/search\?q=comensality">comensality<\/a>/);
-  assert.match(body, /<code>search:\[x\]<\/code> and nosearch:\[x\]/);
-});
-
 test('a blockquote closing with -- gets an attribution', () => {
   const { body } = render(
     '> The road of excess\n> -- [William Blake](https://x.test)\n\n> one\n>\n> -- scripture:[Psalm 23]\n\n> a\n> -- b\n> c\n',
@@ -119,27 +66,6 @@ test('a blockquote closing with -- gets an attribution', () => {
 test('tables render', () => {
   const { body } = render('| a | b |\n|---|:-:|\n| 1 | 2 |\n');
   assert.match(body, /<table>\n<thead>\n<tr>\n<th>a<\/th>\n<th style="text-align:center">b<\/th>/);
-});
-
-const LDS = 'https://www.churchofjesuschrist.org/study/scriptures';
-
-test('scripture-lds: links to the standard works by book', () => {
-  const href = (ref) => ldsLink('', ref)?.href;
-  assert.equal(href('D&C 88:26'), `${LDS}/dc-testament/dc/88?lang=eng&id=p26#p26`);
-  assert.equal(href('Doctrine and Covenants 88'), `${LDS}/dc-testament/dc/88?lang=eng`);
-  assert.equal(href('1 Ne 3:7'), `${LDS}/bofm/1-ne/3?lang=eng&id=p7#p7`);
-  assert.equal(href('Words of Mormon 1:7'), `${LDS}/bofm/w-of-m/1?lang=eng&id=p7#p7`);
-  assert.equal(href('JS\u2014H 1:17\u201319, 25'), `${LDS}/pgp/js-h/1?lang=eng&id=p17-p19,p25#p17`);
-  assert.equal(href('Articles of Faith 1:13'), `${LDS}/pgp/a-of-f/1?lang=eng&id=p13#p13`);
-  assert.equal(href('A of F 13'), `${LDS}/pgp/a-of-f/1?lang=eng&id=p13#p13`);
-  assert.equal(href('Isaiah 2:1-5'), `${LDS}/ot/isa/2?lang=eng&id=p1-p5#p1`);
-  assert.equal(href('1 John 4:8'), `${LDS}/nt/1-jn/4?lang=eng&id=p8#p8`);
-  assert.equal(href('Hesitations 3:1'), undefined);
-  assert.deepEqual(ldsLink('dc/88/26', 'quickened'), { href: `${LDS}/dc-testament/dc/88?lang=eng&id=p26#p26`, label: 'quickened' });
-  assert.equal(expand('scripture-lds:[Moroni 10:4]'), `[Moroni 10:4](${LDS}/bofm/moro/10?lang=eng&id=p4#p4)`);
-  for (const src of ['scripture-lds:[hello]', '`scripture-lds:[Alma 32:21]`', 'scripture-lds:[Nope 1:1]']) {
-    assert.equal(expand(src), src);
-  }
 });
 
 test('math: sets operators as symbols', () => {

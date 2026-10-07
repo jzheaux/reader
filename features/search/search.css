@@ -1,0 +1,13 @@
+a.search {
+  color: inherit;
+  text-decoration: underline dotted var(--gm-accent);
+  text-underline-offset: 0.2em;
+}
+a.search::after {
+  content: "\2315";
+  display: inline-block;
+  margin-left: 0.15em;
+  color: var(--gm-accent);
+  font-size: 1.1em;
+  line-height: 1;
+}

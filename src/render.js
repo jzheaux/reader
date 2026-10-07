@@ -13,7 +13,6 @@ import { fileURLToPath } from 'node:url';
 import MarkdownIt from 'markdown-it';
 import { gutterMd, columns } from 'gutter-md';
 import EMOJI from 'markdown-it-emoji/lib/data/full.mjs';
-import { ldsLink } from './lds.js';
 import { FEATURES } from '../features/index.js';
 
 // Asides are kept out of the speaker's tokens (`inline: false`), for the
@@ -43,10 +42,10 @@ export function render(src, { file, puzzleBase = 0, read, line = 0 } = {}) {
   const title = meta.title || (file ? path.basename(file, path.extname(file)) : 'Untitled');
 
   const page = columns(md, tokens, env, { headings, title });
-  const body = emojify(maths(searches(quotes(alerts(figures(sizes(page.body.trim())))))));
+  const body = emojify(maths(quotes(alerts(figures(sizes(page.body.trim()))))));
   const played = puzzles(body, puzzleBase, fences(text, { file, read, line }));
   return {
-    css: [page.css.trim(), CSS, ...FEATURES.map((f) => f.css)].join('\n'),
+    css: [page.css.trim(), CSS, ...FEATURES.map((f) => f.css).filter(Boolean)].join('\n'),
     body: played.html,
     asides: asides.length,
     puzzles: played.count,
@@ -160,18 +159,8 @@ export function emojify(html) {
   });
 }
 
-const BLB = 'https://www.blueletterbible.org';
-const DEFAULT_VERSION = 'rsv';
-const SCRIPTURE = /(?<![\w\\])scripture:([\w/.:-]*)\[([^\]\n]*)\]/g;
-const WITH_VERSION = /^(.+?)(?:\s*,\s*([a-z0-9]+))?$/i;
-const REFERENCE = /^((?:[1-3]\s*)?[a-z][a-z .]*?)\s+(\d+)(?::([\d\s,\-\u2013]+))?$/i;
 const FENCE = /^\s{0,3}(`{3,}|~{3,})/;
 const CODE_SPAN = /(`+)[^`][\s\S]*?\1|`+/g;
-
-const SCRIPTURE_LDS = /(?<![\w\\])scripture-lds:([\w/.:-]*)\[([^\]\n]*)\]/g;
-
-const SEARCH = /(?<![\w\\])search:([^\s[\]]*)\[([^\]\n]*)\]/g;
-const GOOGLE = 'https://www.google.com/search?q=';
 
 const RFC = /(?<![\w\\])rfc:(\d{1,5})(?:#([\w.-]+))?\[([^\]\n]*)\]/g;
 const RFC_EDITOR = 'https://www.rfc-editor.org/rfc';
@@ -199,17 +188,8 @@ const QUOTED = /^[ \t]*(?:~[ \t]*)*>/;
 /**
  * The source-level pass, run before markdown sees the text:
  *
- * - `scripture:[Isaiah 2:1-5]`, `scripture:[Isaiah 2:1-5, NIV]` and
- *   `scripture:isaiah/2/1-5[plowshares]` -> links to Blue Letter Bible, RSV
- *   unless a version follows a comma. A bracketed reference that doesn't read
- *   as `Book ch[:vs]` is left alone.
- * - `scripture-lds:[D&C 88:26]` and `scripture-lds:dc/88/26[label]` -> the
- *   same for any of the standard works, on churchofjesuschrist.org.
  * - `rfc:9110[]` and `rfc:9110#section-15.5[]` -> links to the RFC Editor,
  *   labelled "RFC 9110" and "RFC 9110 §15.5" unless the brackets say otherwise.
- * - `search:[many worded term]` and `search:many+worded+term[label]` -> a
- *   Google search, marked as something still to look into.
- * - `->`, `<-` and `<->` -> arrows.
  * - `math:[recognition >> judgment]` -> an expression, its operators set as
  *   symbols; alone on its line, it is displayed like an equation.
  * - `> -- Author` closing a blockquote -> that quote's attribution.
@@ -243,22 +223,7 @@ export function expand(src) {
         return `![${alt}](${src} "${SIZE_OPEN}${w}x${h}${SIZE_CLOSE}${inner}")`;
       })
       .replace(MATH, (m, expr) => `${alone ? MATH_DISPLAY : MATH_INLINE}${math(expr)}${MATH_CLOSE}`)
-      .replace(SCRIPTURE_LDS, (m, p, label) => {
-        const link = ldsLink(p, label);
-        return link ? mdLink(link) : m;
-      })
-      .replace(SCRIPTURE, (m, p, label) => {
-        const link = scriptureLink(p, label);
-        return link ? mdLink(link) : m;
-      })
-      .replace(RFC, (m, num, anchor, label) => mdLink(rfcLink(num, anchor, label)))
-      .replace(SEARCH, (m, q, label) => {
-        const link = searchLink(q, label);
-        return link ? mdLink(link) : m;
-      })
-      .replace(/(?<!\\)<->/g, '\u2194')
-      .replace(/(?<![-<\\])->/g, '\u2192')
-      .replace(/(?<!\\)<-(?![-<>])/g, '\u2190'));
+      .replace(RFC, (m, num, anchor, label) => mdLink(rfcLink(num, anchor, label))));
   }).join('\n');
 }
 
@@ -302,28 +267,7 @@ export function rfcLink(num, anchor, label) {
   return { href, label: `RFC ${n} ${where}` };
 }
 
-export function searchLink(q, label) {
-  const text = label.trim();
-  const terms = q
-    ? q.split('+').map((t) => { try { return decodeURIComponent(t); } catch { return t; } })
-    : text.split(/\s+/);
-  const words = terms.filter(Boolean);
-  if (!words.length) return null;
-  return { href: GOOGLE + words.map(encodeURIComponent).join('+'), label: text || words.join(' ') };
-}
 
-export function scriptureLink(p, label) {
-  const where = p.replace(/^\/+|\/+$/g, '');
-  const text = label.trim();
-  if (where) return { href: `${BLB}/${DEFAULT_VERSION}/${where}`, label: text || where };
-  const [, ref, version = DEFAULT_VERSION] = WITH_VERSION.exec(text) ?? [];
-  const r = ref && REFERENCE.exec(ref.trim());
-  if (!r) return null;
-  const book = r[1].replace(/[\s.]+/g, '').toLowerCase();
-  let href = `${BLB}/${version.toLowerCase()}/${book}/${r[2]}`;
-  if (r[3]) href += '/' + r[3].replace(/\s+/g, '').replace(/\u2013/g, '-');
-  return { href, label: text };
-}
 
 const SIZED = new RegExp(`(<img [^>]*?) title="${SIZE_OPEN}(\\d*)x(\\d*)${SIZE_CLOSE}([^"]*)"`, 'g');
 
@@ -399,11 +343,6 @@ export function quotes(html) {
     .replaceAll(BYLINE, '-- ');
 }
 
-const SEARCH_LINK = /<a href="https:\/\/www\.google\.com\/search\?/g;
-
-export function searches(html) {
-  return html.replace(SEARCH_LINK, (m) => m.replace('<a ', '<a class="search" '));
-}
 
 /**
  * `math:[…]` markers become spans; one alone on its line takes its
@@ -483,20 +422,6 @@ blockquote > p.quote-by {
   margin-top: 0.35rem;
 }
 p.quote-by::before { content: "\\2014\\2009"; }
-
-a.search {
-  color: inherit;
-  text-decoration: underline dotted var(--gm-accent);
-  text-underline-offset: 0.2em;
-}
-a.search::after {
-  content: "\\2315";
-  display: inline-block;
-  margin-left: 0.15em;
-  color: var(--gm-accent);
-  font-size: 1.1em;
-  line-height: 1;
-}
 
 
 table { margin: 0.8rem 0; }
