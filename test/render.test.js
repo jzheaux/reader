@@ -1,28 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { render, emojify, expand, math } from '../src/render.js';
-
-test('shortcodes become emoji in text and asides', () => {
-  const { body } = render('Done :tada: :+1:\n\n~ so :heart: this\n');
-  assert.match(body, /Done 🎉 👍/);
-  assert.match(body, /so ❤️ this/);
-  assert.doesNotMatch(body, /:tada:|:heart:/);
-});
-
-test('code, unknown names and times are left alone', () => {
-  const { body } = render('`:tada:` and :not_an_emoji: at 10:30:45\n\n```\n:tada:\n```\n');
-  assert.match(body, /<code>:tada:<\/code>/);
-  assert.match(body, /<pre><code[^>]*>:tada:\n<\/code><\/pre>/);
-  assert.match(body, /:not_an_emoji:/);
-  assert.match(body, /10:30:45/);
-});
-
-test('attributes are never rewritten', () => {
-  assert.equal(
-    emojify('<a href="https://x.test/:tada:/">:tada:</a>'),
-    '<a href="https://x.test/:tada:/">🎉</a>',
-  );
-});
+import { render, expand, math } from '../src/render.js';
 
 test('rfc: links to the RFC Editor', () => {
   assert.equal(expand('rfc:9110[]'), '[RFC 9110](https://www.rfc-editor.org/rfc/rfc9110.html)');

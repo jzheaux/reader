@@ -12,18 +12,17 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import MarkdownIt from 'markdown-it';
 import { gutterMd, columns } from 'gutter-md';
-import EMOJI from 'markdown-it-emoji/lib/data/full.mjs';
 import { FEATURES } from '../features/index.js';
 
 // Asides are kept out of the speaker's tokens (`inline: false`), for the
 // columns to place beside them. Features that read the file as written go
 // before this file's own source pass, `expand`; the rest after it.
 const md = new MarkdownIt({ html: false, linkify: true, typographer: true, breaks: false }).use(gutterMd, { inline: false });
-for (const f of FEATURES.filter((f) => f.raw)) md.use(f.plugin);
+for (const f of FEATURES.filter((f) => f.plugin && f.raw)) md.use(f.plugin);
 md.core.ruler.before('aside_extract', 'reader_expand', (state) => {
   if (!state.inlineMode && !state.env.__aside) state.src = expand(state.src);
 });
-for (const f of FEATURES.filter((f) => !f.raw)) md.use(f.plugin);
+for (const f of FEATURES.filter((f) => f.plugin && !f.raw)) md.use(f.plugin);
 
 /**
  * `line` is the line of the file `src` starts on, when it is only part of
@@ -42,7 +41,8 @@ export function render(src, { file, puzzleBase = 0, read, line = 0 } = {}) {
   const title = meta.title || (file ? path.basename(file, path.extname(file)) : 'Untitled');
 
   const page = columns(md, tokens, env, { headings, title });
-  const body = emojify(maths(quotes(alerts(figures(sizes(page.body.trim()))))));
+  // Then each feature's pass over the finished page, if it has one.
+  const body = FEATURES.reduce((html, f) => (f.html ? f.html(html) : html), maths(quotes(alerts(figures(sizes(page.body.trim()))))));
   const played = puzzles(body, puzzleBase, fences(text, { file, read, line }));
   return {
     css: [page.css.trim(), CSS, ...FEATURES.map((f) => f.css).filter(Boolean)].join('\n'),
@@ -136,28 +136,6 @@ function board(ref, file, read) {
 }
 
 const escapeAttr = (s) => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
-
-const SHORTCODE = /:([a-z0-9_+-]+):/gi;
-const RAW = new Set(['code', 'pre']);
-
-/**
- * `:tada:` -> 🎉 in rendered text. The source keeps the shortcode; only the
- * preview shows the emoji. Tags and attributes are left alone, and so is
- * anything inside <code> or <pre>, where the colons are meant literally.
- * Unknown names stay as written.
- */
-export function emojify(html) {
-  let raw = 0;
-  return html.replace(/(<[^>]*>)|([^<]+)/g, (m, tag, text) => {
-    if (tag) {
-      const t = /^<(\/?)([a-z0-9]+)/i.exec(tag);
-      if (t && RAW.has(t[2].toLowerCase())) raw = Math.max(0, raw + (t[1] ? -1 : 1));
-      return tag;
-    }
-    if (raw) return text;
-    return text.replace(SHORTCODE, (code, name) => EMOJI[name.toLowerCase()] ?? code);
-  });
-}
 
 const FENCE = /^\s{0,3}(`{3,}|~{3,})/;
 const CODE_SPAN = /(`+)[^`][\s\S]*?\1|`+/g;
