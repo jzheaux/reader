@@ -42,7 +42,7 @@ export function render(src, { file, puzzleBase = 0, read, line = 0 } = {}) {
 
   const page = columns(md, tokens, env, { headings, title });
   // Then each feature's pass over the finished page, if it has one.
-  const body = FEATURES.reduce((html, f) => (f.html ? f.html(html) : html), maths(quotes(alerts(figures(sizes(page.body.trim()))))));
+  const body = FEATURES.reduce((html, f) => (f.html ? f.html(html) : html), maths(quotes(alerts(figures(page.body.trim())))));
   const played = puzzles(body, puzzleBase, fences(text, { file, read, line }));
   return {
     css: [page.css.trim(), CSS, ...FEATURES.map((f) => f.css).filter(Boolean)].join('\n'),
@@ -146,12 +146,6 @@ const RFC_EDITOR = 'https://www.rfc-editor.org/rfc';
 // A quote's `--` becomes a marker at the head of its attribution.
 const BYLINE = '\uE007';
 
-// An image's size rides through markdown at the head of its title, between
-// these markers, for `sizes` to take back out.
-const SIZE_OPEN = '\uE00E';
-const SIZE_CLOSE = '\uE00F';
-const IMG_SIZE = /!\[([^\]\n]*)\]\([ \t]*(<[^>\n]*>|[^\s()]+)(?:[ \t]+("[^"\n]*"|'[^'\n]*'|\([^()\n]*\)))?[ \t]+=(\d*)x(\d*)[ \t]*\)/g;
-
 // `math:[…]` is carried as open and close markers, the open one saying
 // whether it stood alone on its line.
 const MATH_INLINE = '\uE00A';
@@ -171,8 +165,6 @@ const QUOTED = /^[ \t]*(?:~[ \t]*)*>/;
  * - `math:[recognition >> judgment]` -> an expression, its operators set as
  *   symbols; alone on its line, it is displayed like an equation.
  * - `> -- Author` closing a blockquote -> that quote's attribution.
- * - `![alt](img.png =100x200)`, `=100x` or `=x200` -> an image of that size
- *   in pixels, a missing side scaled to keep its proportions. `sizes` sets it.
  *
  * Like shortcodes, the source keeps what was typed, and code is left alone.
  * Line numbers are preserved. It runs as a markdown-it core rule, after the
@@ -195,11 +187,6 @@ export function expand(src) {
     const next = lines[n + 1];
     if (next === undefined || !QUOTED.test(next)) line = line.replace(ATTRIBUTION, `$1${BYLINE}`);
     return outsideCode(line, (text) => text
-      .replace(IMG_SIZE, (m, alt, src, title, w, h) => {
-        if (!w && !h) return m;
-        const inner = title ? title.slice(1, -1).replace(/\\?"/g, '\\"') : '';
-        return `![${alt}](${src} "${SIZE_OPEN}${w}x${h}${SIZE_CLOSE}${inner}")`;
-      })
       .replace(MATH, (m, expr) => `${alone ? MATH_DISPLAY : MATH_INLINE}${math(expr)}${MATH_CLOSE}`)
       .replace(RFC, (m, num, anchor, label) => mdLink(rfcLink(num, anchor, label))));
   }).join('\n');
@@ -246,20 +233,6 @@ export function rfcLink(num, anchor, label) {
 }
 
 
-
-const SIZED = new RegExp(`(<img [^>]*?) title="${SIZE_OPEN}(\\d*)x(\\d*)${SIZE_CLOSE}([^"]*)"`, 'g');
-
-/**
- * The size `expand` left in an image's title becomes its style, and the
- * title goes back to what was written, or away if there wasn't one. A style
- * rather than width and height attributes, which `height: auto` would beat.
- */
-export function sizes(html) {
-  return html.replace(SIZED, (m, img, w, h, title) => {
-    const style = [w && `width: ${w}px`, h && `height: ${h}px`].filter(Boolean).join('; ');
-    return `${img}${title ? ` title="${title}"` : ''} style="${style}"`;
-  });
-}
 
 const FIGURE = /<p>(<img src="[^"]*" alt="([^"]*)"(?: title="([^"]*)")?(?: style="[^"]*")?>)<\/p>/g;
 

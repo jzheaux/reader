@@ -60,20 +60,6 @@ test('math: alone on a line is displayed, and inline otherwise', () => {
   assert.match(body, /so <span class="math">a\u00A0&gt; b<\/span> here, <code>math:\[c\]<\/code>/);
 });
 
-test('=WxH after an image sets its size, either side optional', () => {
-  const { body } = render('## Hi ![](a.svg =100x200)\n\n![logo](b.svg =x80)\n\n![cat](c.jpg "Ginger" =120x)\n');
-  assert.match(body, /<h2>Hi <img src="a.svg" alt="" style="width: 100px; height: 200px"><\/h2>/);
-  assert.match(body, /<img src="b.svg" alt="logo" style="height: 80px"><figcaption>logo</);
-  assert.match(body, /<img src="c.jpg" alt="cat" title="Ginger" style="width: 120px"><figcaption>Ginger</);
-  assert.doesNotMatch(body, /\uE00E|\uE00F|=\d/);
-});
-
-test('a size with no numbers, or in code, is left as written', () => {
-  const { body } = render('![x](a.png =x)\n\n`![](a.png =1x2)`\n');
-  assert.match(body, /!\[x\]\(a\.png =x\)/);
-  assert.match(body, /<code>!\[\]\(a\.png =1x2\)<\/code>/);
-});
-
 test('a fence naming a puzzle is wrapped for the preview, numbered in order', () => {
   const { body, puzzles } = render('```sudoku\n5 3 .\n```\n\n```js\nx\n```\n\n```sudoku\n.\n```\n', { puzzleBase: 2 });
   assert.equal(puzzles, 2);
