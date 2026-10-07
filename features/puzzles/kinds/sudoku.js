@@ -1,5 +1,5 @@
 /**
- * Sudoku, played in the rendered page. See puzzles.js.
+ * Sudoku, played in the rendered page. See ../preview.js.
  *
  *   ```sudoku
  *   5 3 . | . 7 . | . . .    5 3 4 | . 7 . | . . .
@@ -121,6 +121,9 @@
     return bad;
   }
 
+  /** A full board, no number repeated in a row, column or box. */
+  const isSolved = (s) => s.board.every(Boolean) && !conflicts(s.board).size;
+
   const SUDOKU_KEYS = [
     ['← → ↑ ↓', 'move'],
     ['1–9', 'fill in a number (again to erase it)'],
@@ -131,6 +134,10 @@
   ];
 
   Puzzles.register('sudoku', {
+    parse: parseSudoku,
+    format: formatSudoku,
+    solved: isSolved,
+    rules: { conflicts },
     mount(host, text, ui, post) {
       const s = parseSudoku(text);
       if (!s) return false;
@@ -177,7 +184,7 @@
             cell.textContent = '';
           }
         }
-        const solved = !bad.size && s.board.every(Boolean);
+        const solved = isSolved(s);
         host.classList.toggle('solved', solved);
         host.classList.toggle('pencil', Boolean(ui.pencil));
         bar.textContent = solved

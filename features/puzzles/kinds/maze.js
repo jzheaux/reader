@@ -1,5 +1,5 @@
 /**
- * Mazes, played in the rendered page. See puzzles.js.
+ * Mazes, played in the rendered page. See ../preview.js.
  *
  *   ```maze                         ```maze mazes/one.maze
  *   +--+--+--+                      path: D2 R
@@ -265,6 +265,9 @@
     return null;
   }
 
+  /** The way taken so far ends at E. */
+  const isSolved = (m) => same(m.path[m.path.length - 1], m.end);
+
   const MAZE_KEYS = [
     ['← → ↑ ↓', 'go that way, on to the next turn-off'],
     ['drag', 'draw your way (drag back to take it back)'],
@@ -286,6 +289,10 @@
   const PAD = 0.3;
 
   Puzzles.register('maze', {
+    parse: parseMaze,
+    format: formatMaze,
+    solved: isSolved,
+    rules: { walk, extend, route },
     mount(host, text, ui, post) {
       const m = parseMaze(text);
       if (!m) return false;
@@ -348,7 +355,7 @@
         parts.push(walls);
         svg.replaceChildren(...parts);
 
-        const done = same(head(), m.end);
+        const done = isSolved(m);
         host.classList.toggle('solved', done);
         bar.textContent = done ? 'You made it through! 🎉' : flash || `${m.path.length - 1} steps · ? for keys`;
         help.hidden = !ui.help;

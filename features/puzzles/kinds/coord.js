@@ -1,5 +1,5 @@
 /**
- * Coordinate graph mystery picture, played in the rendered page. See puzzles.js.
+ * Coordinate graph mystery picture, played in the rendered page. See ../preview.js.
  *
  *   ```coord
  *   grid: 20 x 24
@@ -55,6 +55,9 @@
     return null;
   }
 
+  /** Every point plotted: the picture is complete. */
+  const isComplete = (s) => s.plotted === s.total;
+
   const COORD_KEYS = [
     ['← → ↑ ↓', 'move the pencil (with ⇧, five at a time)'],
     ['Space or Enter', 'plot the next point here'],
@@ -72,6 +75,10 @@
   }
 
   Puzzles.register('coord', {
+    parse: parseCoord,
+    format: formatCoord,
+    solved: isComplete,
+    rules: { nth },
     mount(host, text, ui, post) {
       const s = parseCoord(text);
       if (!s) return false;
@@ -162,7 +169,7 @@
           return ol;
         }));
 
-        const complete = s.plotted === s.total;
+        const complete = isComplete(s);
         host.classList.toggle('solved', complete);
         bar.textContent = complete
           ? 'Picture complete! 🎉'

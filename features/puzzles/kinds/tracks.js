@@ -1,5 +1,5 @@
 /**
- * Train tracks, played in the rendered page. See puzzles.js.
+ * Train tracks, played in the rendered page. See ../preview.js.
  *
  *   ```tracks
  *   2 2 8 8 8 6 5 0
@@ -104,6 +104,95 @@
     return lines.join('\n');
   }
 
+  /** The track in square `i`: given or laid. */
+  const trackAt = (s, i) => s.given[i] || s.mine[i];
+
+  /** The square next to `i` toward `d`, or -1 off the grid. */
+  function nextSquare({ n }, i, d) {
+    const r = Math.floor(i / n) + STEP[d][0];
+    const c = (i % n) + STEP[d][1];
+    return r >= 0 && r < n && c >= 0 && c < n ? r * n + c : -1;
+  }
+
+  /** Is `d` the way out of the grid from square `i`, at A or B? */
+  const exitsAt = (s, i, d) => ['A', 'B'].some((ab) => s.ends[ab].cell === i && s.ends[ab].out === d);
+
+  /** Can square `i` take track toward `d`? */
+  const canGo = (s, i, d) => (s.given[i]
+    ? Boolean(s.given[i] & d)
+    : !s.cross[i] && (Boolean(s.mine[i] & d) || bits(s.mine[i]).length < 2));
+
+  /**
+   * Lays track from square `i` toward `d`, or picks it up if it's already
+   * there: 'added', 'removed', or 'blocked' if it can't go that way.
+   */
+  function layTrack(s, i, d) {
+    const j = nextSquare(s, i, d);
+    if (j < 0) {
+      if (!exitsAt(s, i, d) || s.given[i]) return 'blocked';
+      if (s.mine[i] & d) { s.mine[i] &= ~d; return 'removed'; }
+      if (!canGo(s, i, d)) return 'blocked';
+      s.mine[i] |= d;
+      return 'added';
+    }
+    const back = OPP[d];
+    if ((trackAt(s, i) & d) && (trackAt(s, j) & back)) {
+      if (s.given[i] && s.given[j]) return 'blocked';
+      if (!s.given[i]) s.mine[i] &= ~d;
+      if (!s.given[j]) s.mine[j] &= ~back;
+      return 'removed';
+    }
+    if (!canGo(s, i, d) || !canGo(s, j, back)) return 'blocked';
+    if (!s.given[i]) s.mine[i] |= d;
+    if (!s.given[j]) s.mine[j] |= back;
+    return 'added';
+  }
+
+  /** Takes the laid track out of square `i`, and its mark. */
+  function clearSquare(s, i) {
+    if (s.given[i]) return;
+    for (const d of bits(s.mine[i])) {
+      const j = nextSquare(s, i, d);
+      if (j >= 0 && !s.given[j]) s.mine[j] &= ~OPP[d];
+    }
+    s.mine[i] = 0;
+    s.cross[i] = false;
+  }
+
+  /** How many squares have track, in each row and column and in all. */
+  function tally(s) {
+    const { n } = s;
+    const counts = { rows: Array(n).fill(0), cols: Array(n).fill(0), total: 0 };
+    for (let i = 0; i < n * n; i++) {
+      if (!trackAt(s, i)) continue;
+      counts.rows[Math.floor(i / n)]++;
+      counts.cols[i % n]++;
+      counts.total++;
+    }
+    return counts;
+  }
+
+  /** One track from A out through B, through every square with track, matching the counts. */
+  function solved(s, counts = tally(s)) {
+    if (counts.rows.some((k, r) => k !== s.rows[r]) || counts.cols.some((k, c) => k !== s.cols[c])) return false;
+    const { A, B } = s.ends;
+    const seen = new Set();
+    let cur = A.cell;
+    let came = A.out;
+    for (;;) {
+      const m = trackAt(s, cur);
+      if (!(m & came) || bits(m).length !== 2 || seen.has(cur)) return false;
+      seen.add(cur);
+      const out = m & ~came;
+      if (cur === B.cell && out === B.out) break;
+      const next = nextSquare(s, cur, out);
+      if (next < 0 || !(trackAt(s, next) & OPP[out])) return false;
+      came = OPP[out];
+      cur = next;
+    }
+    return seen.size === counts.total;
+  }
+
   const TRACKS_KEYS = [
     ['← → ↑ ↓', 'move'],
     ['⇧ + arrow', 'lay track that way (again to pick it up)'],
@@ -122,6 +211,10 @@
   }
 
   Puzzles.register('tracks', {
+    parse: parseTracks,
+    format: formatTracks,
+    solved,
+    rules: { layTrack, clearSquare, tally },
     mount(host, text, ui, post) {
       const s = parseTracks(text);
       if (!s) return false;
@@ -129,75 +222,8 @@
       let source = text;
       if (ui.cursor == null || ui.cursor >= n * n) ui.cursor = s.ends.A.cell;
 
-      const at = (i) => s.given[i] || s.mine[i];
-      const neighbor = (i, d) => {
-        const r = Math.floor(i / n) + STEP[d][0];
-        const c = (i % n) + STEP[d][1];
-        return r >= 0 && r < n && c >= 0 && c < n ? r * n + c : -1;
-      };
-      const isExit = (i, d) => ['A', 'B'].some((ab) => s.ends[ab].cell === i && s.ends[ab].out === d);
-
-      /** Can square `i` take track toward `d`? */
-      const open = (i, d) => (s.given[i]
-        ? Boolean(s.given[i] & d)
-        : !s.cross[i] && (Boolean(s.mine[i] & d) || bits(s.mine[i]).length < 2));
-
-      /**
-       * Lays track from square `i` toward `d`, or picks it up if it's already
-       * there. 'blocked' if it can't go that way.
-       */
-      function lay(i, d) {
-        const j = neighbor(i, d);
-        if (j < 0) {
-          if (!isExit(i, d) || s.given[i]) return 'blocked';
-          if (s.mine[i] & d) { s.mine[i] &= ~d; return 'removed'; }
-          if (!open(i, d)) return 'blocked';
-          s.mine[i] |= d;
-          return 'added';
-        }
-        const back = OPP[d];
-        if ((at(i) & d) && (at(j) & back)) {
-          if (s.given[i] && s.given[j]) return 'blocked';
-          if (!s.given[i]) s.mine[i] &= ~d;
-          if (!s.given[j]) s.mine[j] &= ~back;
-          return 'removed';
-        }
-        if (!open(i, d) || !open(j, back)) return 'blocked';
-        if (!s.given[i]) s.mine[i] |= d;
-        if (!s.given[j]) s.mine[j] |= back;
-        return 'added';
-      }
-
-      function clear(i) {
-        if (s.given[i]) return;
-        for (const d of bits(s.mine[i])) {
-          const j = neighbor(i, d);
-          if (j >= 0 && !s.given[j]) s.mine[j] &= ~OPP[d];
-        }
-        s.mine[i] = 0;
-        s.cross[i] = false;
-      }
-
-      /** One track from A out through B, through every square with track. */
-      function solved(counts) {
-        if (counts.rows.some((k, r) => k !== s.rows[r]) || counts.cols.some((k, c) => k !== s.cols[c])) return false;
-        const { A, B } = s.ends;
-        const seen = new Set();
-        let cur = A.cell;
-        let came = A.out;
-        for (;;) {
-          const m = at(cur);
-          if (!(m & came) || bits(m).length !== 2 || seen.has(cur)) return false;
-          seen.add(cur);
-          const out = m & ~came;
-          if (cur === B.cell && out === B.out) break;
-          const next = neighbor(cur, out);
-          if (next < 0 || !(at(next) & OPP[out])) return false;
-          came = OPP[out];
-          cur = next;
-        }
-        return seen.size === counts.total;
-      }
+      const neighbor = (i, d) => nextSquare(s, i, d);
+      const isExit = (i, d) => exitsAt(s, i, d);
 
       const svg = el('svg', { viewBox: `0 0 ${n + 2} ${n + 2}`, class: 'tracks-board', role: 'img' });
       svg.style.setProperty('--span', n + 2);
@@ -229,14 +255,8 @@
       }
 
       function draw() {
-        const counts = { rows: Array(n).fill(0), cols: Array(n).fill(0), total: 0 };
-        for (let i = 0; i < n * n; i++) {
-          if (!at(i)) continue;
-          counts.rows[Math.floor(i / n)]++;
-          counts.cols[i % n]++;
-          counts.total++;
-        }
-        const done = solved(counts);
+        const counts = tally(s);
+        const done = solved(s, counts);
         const parts = [el('rect', { x: 1, y: 1, width: n, height: n, class: 'board' })];
         const cr = Math.floor(ui.cursor / n);
         const cc = ui.cursor % n;
@@ -291,7 +311,7 @@
         if (d) {
           const j = neighbor(ui.cursor, d);
           if (e.shiftKey) {
-            if (lay(ui.cursor, d) !== 'blocked' && j >= 0) ui.cursor = j;
+            if (layTrack(s, ui.cursor, d) !== 'blocked' && j >= 0) ui.cursor = j;
             return commit();
           }
           if (j >= 0) ui.cursor = j;
@@ -301,7 +321,7 @@
           case 'x': case 'X':
             if (!s.given[ui.cursor] && !s.mine[ui.cursor]) s.cross[ui.cursor] = !s.cross[ui.cursor];
             return commit();
-          case 'Backspace': case 'Delete': case ' ': clear(ui.cursor); return commit();
+          case 'Backspace': case 'Delete': case ' ': clearSquare(s, ui.cursor); return commit();
           case '?': ui.help = !ui.help; return draw();
           case 'Escape': return host.blur();
           default:
@@ -337,7 +357,7 @@
           const dc = Math.sign((i % n) - (drag % n));
           if (dr && dc) break;
           const d = dr < 0 ? N : dr > 0 ? S : dc > 0 ? E : W;
-          if (lay(drag, d) === 'blocked') break;
+          if (layTrack(s, drag, d) === 'blocked') break;
           drag = neighbor(drag, d);
           moved = true;
         }

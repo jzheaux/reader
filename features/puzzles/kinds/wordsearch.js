@@ -1,5 +1,5 @@
 /**
- * Word search, played in the rendered page. See puzzles.js.
+ * Word search, played in the rendered page. See ../preview.js.
  *
  *   ```wordsearch
  *   E B E L I E V E X
@@ -91,6 +91,45 @@
   const spell = (s, cells) => cells.map(([r, c]) => s.grid[r][c]).join('');
   const same = (a, b) => a && b && a[0] === b[0] && a[1] === b[1];
 
+  /**
+   * The squares from `a` to `b` were circled; what came of it, as
+   * { result, letters, word }:
+   *
+   * - 'single': one square, which is no circle at all
+   * - 'crooked': not a straight line
+   * - 'found': a listed word, now checked off; gray marks inside it are part
+   *   of it now
+   * - 'already': a listed word already found
+   * - 'marked': anything else, kept as a gray mark
+   * - 'erased': a gray mark circled again, which takes it away
+   */
+  function circleWord(s, a, b) {
+    const cells = line(s, a, b);
+    if (!cells) return { result: 'crooked' };
+    if (cells.length < 2) return { result: 'single' };
+    const letters = spell(s, cells);
+    const back = [...letters].reverse().join('');
+    const word = s.words.find((w) => key(w) === letters || key(w) === back);
+    if (!word) {
+      const k = s.marks.findIndex((m) => (same(m.a, a) && same(m.b, b)) || (same(m.a, b) && same(m.b, a)));
+      if (k >= 0) {
+        s.marks.splice(k, 1);
+        return { result: 'erased', letters };
+      }
+      s.marks.push({ a, b });
+      return { result: 'marked', letters };
+    }
+    if (s.found.some((f) => f.word === word)) return { result: 'already', letters, word };
+    // Stored the way it reads.
+    s.found.push(key(word) === letters ? { word, a, b } : { word, a: b, b: a });
+    const inside = new Set(cells.map(String));
+    s.marks = s.marks.filter((m) => !line(s, m.a, m.b).every((c) => inside.has(String(c))));
+    return { result: 'found', letters, word };
+  }
+
+  /** Every listed word found. */
+  const isSolved = (s) => s.found.length === s.words.length;
+
   const WORDSEARCH_KEYS = [
     ['← → ↑ ↓', 'move'],
     ['Space or Enter', 'start a word, then again at its last letter'],
@@ -108,6 +147,10 @@
   }
 
   Puzzles.register('wordsearch', {
+    parse: parseWordsearch,
+    format: formatWordsearch,
+    solved: isSolved,
+    rules: { line, circle: circleWord },
     mount(host, text, ui, post) {
       const s = parseWordsearch(text);
       if (!s) return false;
@@ -175,7 +218,7 @@
           return li;
         }));
 
-        const done = s.found.length === s.words.length;
+        const done = isSolved(s);
         host.classList.toggle('solved', done);
         bar.textContent = done
           ? 'All found! 🎉'
@@ -190,35 +233,16 @@
         draw();
       }
 
-      /** The squares from `a` to `b` were circled: keep them if they spell a word. */
+      /** The squares from `a` to `b` were circled: see circleWord. */
       function circle(a, b) {
         ui.anchor = null;
-        const cells = line(s, a, b);
-        if (!cells || cells.length < 2) {
-          if (cells?.length !== 1) say('Words go in a straight line');
-          return draw();
-        }
-        const letters = spell(s, cells);
-        const back = [...letters].reverse().join('');
-        const word = s.words.find((w) => key(w) === letters || key(w) === back);
-        if (!word) {
-          // Not on the list: a gray mark, or, circled again, no mark.
-          const k = s.marks.findIndex((m) => (same(m.a, a) && same(m.b, b)) || (same(m.a, b) && same(m.b, a)));
-          if (k >= 0) {
-            s.marks.splice(k, 1);
-            say(`Erased ${letters}`);
-          } else {
-            s.marks.push({ a, b });
-            say(`${letters} isn't on the list, so it's marked in gray`);
-          }
-          return commit();
-        }
-        if (s.found.some((f) => f.word === word)) { say(`Already found ${word}`); return draw(); }
-        // Store it the way it reads. Gray marks inside it are part of it now.
-        s.found.push(key(word) === letters ? { word, a, b } : { word, a: b, b: a });
-        const inside = new Set(cells.map(String));
-        s.marks = s.marks.filter((m) => !line(s, m.a, m.b).every((c) => inside.has(String(c))));
-        flash = '';
+        const { result, letters, word } = circleWord(s, a, b);
+        if (result === 'crooked') say('Words go in a straight line');
+        if (result === 'crooked' || result === 'single') return draw();
+        if (result === 'erased') say(`Erased ${letters}`);
+        if (result === 'marked') say(`${letters} isn't on the list, so it's marked in gray`);
+        if (result === 'already') { say(`Already found ${word}`); return draw(); }
+        if (result === 'found') flash = '';
         commit();
       }
 

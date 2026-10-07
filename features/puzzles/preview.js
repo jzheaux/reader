@@ -24,6 +24,9 @@
  * `mount(host, text, ui, post)`: draw the puzzle into `host` from `text`
  * (false if the text can't be read), keep what the reader was doing in `ui`,
  * and call `post(before, after)` with the fence's text after each move.
+ * Alongside, without the page, it gives `parse(text)` (its state, or null),
+ * `format(state)` (the text again), `solved(state)` and the `rules` a move
+ * follows, which kinds.test.js checks.
  */
 (() => {
   const KINDS = {};
