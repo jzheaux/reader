@@ -456,7 +456,7 @@ $ npm run lint
 | `src/server.js` | HTTP API and static files |
 | `src/content.js` | the content directory: listing, safe paths, saves, backups |
 | `src/render.js` | markdown → `{css, body}` for the preview: one markdown-it, with gutter-md and the features, laid out in gutter-md's columns |
-| `features/` | one directory per piece of syntax, each a markdown-it plugin with its CSS and tests (so far: `qa`) |
+| `features/` | one directory per piece of syntax, each a markdown-it plugin with its CSS and tests (so far: `fields`, `tasks`, `qa`) |
 | `src/slides.js` | a `slides`-format deck → rendered slides and their notes |
 | `static/app.js` | sidebar, editor, live preview, autosave, PDF view, read mode, deck |
 | `static/preview.html` | the sandboxed preview frame |

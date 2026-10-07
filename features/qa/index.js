@@ -19,6 +19,7 @@
  */
 
 import fs from 'node:fs';
+import { beforeAsides } from '../source.js';
 
 // A name may hold a link, whose address is in parentheses of its own.
 const QA = /^\\?([QA])(?:[ \t]*\(((?:[^()\n]|\([^()\n]*\))*)\))?:[ \t]+(?=\S)/;
@@ -31,11 +32,7 @@ const FENCE = /^\s{0,3}(`{3,}|~{3,})/;
 export const LEAD = /(?:\\?[QA](?:[ \t]*\((?:[^()\n]|\([^()\n]*\))*\))?:[ \t]+)?/;
 
 export function qa(md) {
-  try {
-    md.core.ruler.before('aside_extract', 'qa_lines', lines);
-  } catch {
-    md.core.ruler.after('normalize', 'qa_lines', lines);
-  }
+  beforeAsides(md, 'qa_lines', lines);
   // Last, after markdown's own rules: a paragraph split off here has no
   // source text of its own for them to check before they'd run.
   md.core.ruler.push('qa_items', items);

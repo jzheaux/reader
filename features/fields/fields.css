@@ -1,0 +1,51 @@
+.field {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5em;
+  margin: 0.3rem 0;
+  max-width: 32rem;
+  cursor: text;
+}
+.field[data-lines] { max-width: none; }
+/* As tall as a line of the blank, so it sits level with the first. */
+.field-label {
+  font-family: var(--gm-sans);
+  font-size: 0.85em;
+  line-height: calc(1.6em / 0.85);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--gm-ink-soft);
+  white-space: nowrap;
+}
+.field-label::after { content: ":"; }
+/* A shaded band for each line, with a sliver of page between them. */
+.field-value {
+  --gm-field-shade: rgba(127, 127, 127, 0.07);
+  flex: 1;
+  min-width: 6rem;
+  min-height: calc(var(--lines, 1) * 1.6em);
+  padding: 0 0.25em;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+  background: repeating-linear-gradient(to bottom,
+    var(--gm-field-shade) 0 calc(1.6em - 3px), transparent 0 1.6em);
+  border-radius: 2px;
+}
+.field:hover .field-value { --gm-field-shade: rgba(127, 127, 127, 0.12); }
+.field-value:has(> textarea) {
+  --gm-field-shade: color-mix(in srgb, var(--gm-accent) 14%, transparent);
+}
+.field-value > textarea {
+  all: unset;
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: calc(var(--lines, 1) * 1.6em);
+  font: inherit;
+  line-height: inherit;
+  color: inherit;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  overflow: hidden;
+  resize: none;
+}

@@ -1,0 +1,7 @@
+li.task { list-style: none; }
+li.task > .task-box, li.task > p > .task-box,
+li.task > .choice-box, li.task > p > .choice-box {
+  margin: 0 0.4em 0 -1.35rem;
+  vertical-align: -0.1em;
+  cursor: pointer;
+}

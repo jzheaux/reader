@@ -84,47 +84,6 @@ test('GitHub alerts become callouts', () => {
   assert.match(body, /<blockquote>\n<p>\[!NOPE\]\nplain<\/p>/);
 });
 
-test('task items become checkboxes that know their line', () => {
-  const { body } = render('# todo\n\n- [ ] take out the trash\n- [x] dishes\n\n1. [X] done\n');
-  assert.match(body, /<li class="task"><input type="checkbox" class="task-box" data-line="2" [^>]*> take out the trash<\/li>/);
-  assert.match(body, /<li class="task"><input type="checkbox" class="task-box" data-line="3" [^>]* checked> dishes<\/li>/);
-  assert.match(body, /data-line="5" [^>]* checked> done/);
-});
-
-test('a task box knows its line checked and unchecked, as written', () => {
-  const { body } = render('- [ ] trash\n- [X] dishes\n- ( ) red\n');
-  assert.match(body, /data-line="0" data-on="- \[x\] trash" data-off="- \[ \] trash">/);
-  assert.match(body, /data-line="1" data-on="- \[X\] dishes" data-off="- \[ \] dishes" checked>/);
-  assert.match(body, /data-line="2" data-on="- \(x\) red" data-off="- \( \) red">/);
-});
-
-test('choice items become radio buttons, one group to a list', () => {
-  const { body } = render('- ( ) red\n- (x) blue\n  - ( ) navy\n  - ( ) sky\n- ( ) green\n\ntext\n\n- ( ) yes\n- ( ) no\n');
-  assert.match(body, /<li class="task"><input type="radio" class="choice-box" name="choice-1" data-line="0" [^>]*> red<\/li>/);
-  assert.match(body, /name="choice-1" data-line="1" [^>]* checked> blue/);
-  assert.match(body, /name="choice-2" data-line="2" [^>]*> navy/);
-  assert.match(body, /name="choice-2" data-line="3" [^>]*> sky/);
-  assert.match(body, /name="choice-1" data-line="4" [^>]*> green/);
-  assert.match(body, /name="choice-3" data-line="8" [^>]*> yes/);
-  assert.match(body, /name="choice-3" data-line="9" [^>]*> no/);
-});
-
-test('choice boxes not heading a list item are left as typed', () => {
-  const { body } = render('```\n- ( ) fenced\n```\n\na ( ) b\n\n- ( )x\n');
-  assert.doesNotMatch(body, /radio/);
-  assert.match(body, /- \( \) fenced/);
-  assert.match(body, /a \( \) b/);
-});
-
-test('task boxes in code, or not heading a list item, are left as typed', () => {
-  const { body } = render('```\n- [ ] fenced\n```\n\nText\n\n    - [ ] indented\n\na [ ] b\n\n- [ ]x\n');
-  assert.doesNotMatch(body, /checkbox/);
-  assert.match(body, /- \[ \] fenced/);
-  assert.match(body, /- \[ \] indented/);
-  assert.match(body, /a \[ \] b/);
-  assert.doesNotMatch(body, /[]/);
-});
-
 test('arrows, but not in code, comments or when escaped', () => {
   assert.equal(expand('a -> b <- c <-> d'), 'a → b ← c ↔ d');
   for (const src of ['`a -> b`', '<!-- x -->', '\\-> and \\<-', '```\n->\n```', 'a => b <= c']) {
@@ -176,7 +135,7 @@ test('::: styles every block until the closing :::', () => {
   assert.match(body, /<code>\[c\]\{red\}\n<\/code>/);
   assert.match(body, new RegExp(`<p ${style}><span class="gm-mark">~</span>aside</p>`));
   assert.match(body, /<p>after<\/p>\n<p>:::<\/p>/);
-  assert.doesNotMatch(body, /[-]/);
+  assert.doesNotMatch(body, /[\uE000-\uE007]/);
 });
 
 test('nested ::: blocks take the innermost color and font first', () => {
@@ -230,7 +189,7 @@ test('=WxH after an image sets its size, either side optional', () => {
   assert.match(body, /<h2>Hi <img src="a.svg" alt="" style="width: 100px; height: 200px"><\/h2>/);
   assert.match(body, /<img src="b.svg" alt="logo" style="height: 80px"><figcaption>logo</);
   assert.match(body, /<img src="c.jpg" alt="cat" title="Ginger" style="width: 120px"><figcaption>Ginger</);
-  assert.doesNotMatch(body, /||=\d/);
+  assert.doesNotMatch(body, /\uE00E|\uE00F|=\d/);
 });
 
 test('a size with no numbers, or in code, is left as written', () => {
@@ -262,28 +221,6 @@ test('a wordsearch fence is a puzzle too', () => {
 test('a coord fence is a puzzle too', () => {
   const { body } = render('```coord\ngrid: 4 x 4\n(0, 0) (1, 1)\nplotted: 0\n```\n');
   assert.match(body, /<div class="puzzle" data-kind="coord" data-puzzle="0" /);
-});
-
-test('@ lines become form fields that know their line and value', () => {
-  const { body } = render('# Form\n\n@ My Name: Josh\n@ Date:\n@ Time: 10:30 -> *noon* <b>\n');
-  assert.match(body, /<span class="field" data-line="2" data-text="@ My Name: Josh" data-head="@ My Name:"><span class="field-label">My Name<\/span><span class="field-value" data-value="Josh">Josh<\/span><\/span>/);
-  assert.match(body, /data-line="3" data-text="@ Date:" data-head="@ Date:"><span class="field-label">Date<\/span><span class="field-value" data-value=""><\/span>/);
-  assert.match(body, /data-value="10:30 -&gt; \*noon\* &lt;b&gt;">10:30 -&gt; \*noon\* &lt;b&gt;</);
-});
-
-test('@ lines with more colons are that many lines tall', () => {
-  const { body } = render('@ Notes ::: it went well\n@ Bio::\n@ Name: Josh\n');
-  assert.match(body, /<span class="field" data-line="0" data-text="@ Notes ::: it went well" data-head="@ Notes :::" data-lines="3" style="--lines: 3"><span class="field-label">Notes<\/span><span class="field-value" data-value="it went well">/);
-  assert.match(body, /data-line="1" [^>]* data-lines="2" style="--lines: 2"><span class="field-label">Bio<\/span><span class="field-value" data-value="">/);
-  assert.match(body, /<span class="field" data-line="2" [^>]*><span class="field-label">Name</);
-});
-
-test('@ lines in code, indented, without a label or mid-sentence are left as typed', () => {
-  const { body } = render('```\n@ No: code\n```\n\nhello @ there: x\n\n @ Indented: x\n\n@ : empty\n\n@mention: hi\n');
-  assert.doesNotMatch(body, /class="field"/);
-  assert.match(body, /@ No: code/);
-  assert.match(body, /hello @ there: x/);
-  assert.match(body, /@mention: hi/);
 });
 
 test('a puzzle can keep its board in a file next to the document', () => {

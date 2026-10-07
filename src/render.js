@@ -16,27 +16,28 @@ import EMOJI from 'markdown-it-emoji/lib/data/full.mjs';
 import { ldsLink } from './lds.js';
 import { FEATURES } from '../features/index.js';
 import { LEAD as QA_LEAD } from '../features/qa/index.js';
+import { LEAD as TASK_LEAD } from '../features/tasks/index.js';
 
 // Asides are kept out of the speaker's tokens (`inline: false`), for the
-// columns to place beside them.
-const md = FEATURES.reduce(
-  (m, f) => m.use(f.plugin),
-  new MarkdownIt({ html: false, linkify: true, typographer: true, breaks: false }).use(gutterMd, { inline: false }),
-);
+// columns to place beside them. Features that read the file as written go
+// before this file's own source pass, `expand`; the rest after it.
+const md = new MarkdownIt({ html: false, linkify: true, typographer: true, breaks: false }).use(gutterMd, { inline: false });
+for (const f of FEATURES.filter((f) => f.raw)) md.use(f.plugin);
+md.core.ruler.before('aside_extract', 'reader_expand', (state) => {
+  if (!state.inlineMode && !state.env.__aside) state.src = expand(state.src);
+});
+for (const f of FEATURES.filter((f) => !f.raw)) md.use(f.plugin);
 
 /**
  * `line` is the line of the file `src` starts on, when it is only part of
  * one (a slide), so whatever is written back by line number finds its line.
  */
 export function render(src, { file, puzzleBase = 0, read, line = 0 } = {}) {
-  const text = expand(src || '', { line });
-  const env = {};
+  const text = src || '';
+  const env = { lineBase: line };
   const tokens = md.parse(text, env);
   const meta = env.frontMatter || {};
   const asides = env.asides || [];
-  // The line of the file, as written, that a marker's line number names.
-  const lines = (src || '').split('\n');
-  const lineAt = (n) => lines[n - line] ?? '';
 
   // Column headings ("Speaker" / "Listener") only help when the document
   // names its voices; a journal entry doesn't need them.
@@ -44,7 +45,7 @@ export function render(src, { file, puzzleBase = 0, read, line = 0 } = {}) {
   const title = meta.title || (file ? path.basename(file, path.extname(file)) : 'Untitled');
 
   const page = columns(md, tokens, env, { headings, title });
-  const body = emojify(styles(maths(searches(quotes(fields(tasks(alerts(figures(sizes(page.body.trim()))), lineAt), lineAt))))));
+  const body = emojify(styles(maths(searches(quotes(alerts(figures(sizes(page.body.trim()))))))));
   const played = puzzles(body, puzzleBase, fences(text, { file, read, line }));
   return {
     css: [page.css.trim(), CSS, ...FEATURES.map((f) => f.css)].join('\n'),
@@ -176,13 +177,6 @@ const GOOGLE = 'https://www.google.com/search?q=';
 
 const RFC = /(?<![\w\\])rfc:(\d{1,5})(?:#([\w.-]+))?\[([^\]\n]*)\]/g;
 const RFC_EDITOR = 'https://www.rfc-editor.org/rfc';
-const TASK = /^([ \t]*(?:[>~][ \t]*)*(?:[-*+]|\d{1,9}[.)])[ \t]+)(?:\[([ xX])\]|\(([ xX])\))(?=[ \t]|$)/;
-
-// A task's box is carried through markdown as a private-use marker holding
-// its line number and kind (`t` for a checkbox, `r` for a radio button), so
-// the rendered box knows which line to toggle.
-const MARK_OPEN = '\uE000';
-const MARK_CLOSE = '\uE001';
 
 // Styles ride through markdown the same way: a `:::` block leaves a marker
 // on each of its lines naming the styles, a `[text]{styles}` span wraps its
@@ -200,13 +194,6 @@ const BYLINE = '\uE007';
 const SIZE_OPEN = '\uE00E';
 const SIZE_CLOSE = '\uE00F';
 const IMG_SIZE = /!\[([^\]\n]*)\]\([ \t]*(<[^>\n]*>|[^\s()]+)(?:[ \t]+("[^"\n]*"|'[^'\n]*'|\([^()\n]*\)))?[ \t]+=(\d*)x(\d*)[ \t]*\)/g;
-// An `@ Label: value` line rides through markdown as one marker holding its
-// line number, label and value, the last two encoded so markdown leaves them
-// exactly as typed.
-const FIELD_OPEN = '\uE010';
-const FIELD_SEP = '\uE011';
-const FIELD_CLOSE = '\uE012';
-const FIELD = /^@[ \t]+([^:\n]*?[^:\s])[ \t]*(:+)[ \t]*(.*?)[ \t]*$/;
 
 // `math:[…]` is carried as open and close markers, the open one saying
 // whether it stood alone on its line.
@@ -223,7 +210,8 @@ const QUOTED = /^[ \t]*(?:~[ \t]*)*>/;
 const PREFIX = new RegExp(
   '^[ \\t]*(?:[>~][ \\t]*)*(?:(?:[-*+]|\\d{1,9}[.)])[ \\t]+)?'
   + QA_LEAD.source
-  + `(?:${MARK_OPEN}\\d+:[tr][ xX]${MARK_CLOSE}[ \\t]?)?(?:#{1,6}[ \\t]+)?${BYLINE}?`,
+  + TASK_LEAD.source
+  + `(?:#{1,6}[ \\t]+)?${BYLINE}?`,
 );
 const RULE = /^[ \t]*([-*_=])(?:[ \t]*\1)*[ \t]*$/;
 const DELIMITER_ROW = /^[ \t]*\|?[ \t]*:?-+:?[ \t]*(?:\|[ \t]*:?-+:?[ \t]*)*\|?[ \t]*$/;
@@ -248,19 +236,14 @@ const REFERENCE_DEF = /^[ \t]{0,3}\[[^\]]+\]:/;
  * - `[text]{red times-new-roman}` -> styled text, and `::: red` ... `:::` the
  *   same for every block in between.
  * - `> -- Author` closing a blockquote -> that quote's attribution.
- * - `@ My Name: Josh` at the margin -> a form field, labelled "My Name"
- *   and filled with "Josh", that `fields` makes fillable from the preview.
- *   Each colon is a line of blank: `@ Notes:::` is three lines tall.
- * - `- [ ]` and `- [x]` at the start of a list item -> a marker that `tasks`
- *   turns into a checkbox; `- ( )` and `- (x)`, a radio button, one choice
- *   to a list.
  * - `![alt](img.png =100x200)`, `=100x` or `=x200` -> an image of that size
  *   in pixels, a missing side scaled to keep its proportions. `sizes` sets it.
  *
  * Like shortcodes, the source keeps what was typed, and code is left alone.
- * Line numbers are preserved; those the markers carry count from `line`.
+ * Line numbers are preserved. It runs as a markdown-it core rule, after the
+ * features that read the file as written.
  */
-export function expand(src, { line: first = 0 } = {}) {
+export function expand(src) {
   let fence = null;
   const blocks = [];
   const lines = src.split('\n');
@@ -282,9 +265,6 @@ export function expand(src, { line: first = 0 } = {}) {
       else return line;
       return '';
     }
-    const at = first + n;
-    line = line.replace(TASK, (m, lead, box, radio) => `${lead}${MARK_OPEN}${at}:${box ? `t${box}` : `r${radio}`}${MARK_CLOSE}`);
-    line = line.replace(FIELD, (m, label, colons, value) => `${FIELD_OPEN}${at}${FIELD_SEP}${colons.length}${FIELD_SEP}${seal(label)}${FIELD_SEP}${seal(value)}${FIELD_CLOSE}`);
     const alone = MATH_ALONE.test(line);
     const next = lines[n + 1];
     if (next === undefined || !QUOTED.test(next)) line = line.replace(ATTRIBUTION, `$1${BYLINE}`);
@@ -447,69 +427,6 @@ export function alerts(html) {
     // A `[!NOTE]` alone in its paragraph closed that paragraph; one followed
     // by text on the next line did not, so open a new one for the text.
     return `<blockquote class="alert alert-${kind.toLowerCase()}">\n${head}${m.endsWith('</p>\n') ? '' : '<p>'}`;
-  });
-}
-
-const MARKER = new RegExp(`${MARK_OPEN}(\\d+):([tr])([ xX])${MARK_CLOSE}`, 'g');
-const TASK_ITEM = `(<li)((?: class="[^"]*")?>\\s*(?:<p>)?)${MARK_OPEN}(\\d+):([tr])([ xX])${MARK_CLOSE}[ \\t]?`;
-const TASK_OR_LIST = new RegExp(`${TASK_ITEM}|<(/?)[ou]l\\b`, 'g');
-
-/**
- * Markers left by `expand` at the head of a list item become checkboxes, or
- * radio buttons, that carry their source line, and that line as it reads
- * with the box checked and unchecked; the radio buttons of one list share a
- * name, so only one can be chosen. Anywhere else (say, an indented code
- * block) they go back to the `[ ]` or `( )` that was typed. `lineAt(n)` is
- * line `n` as written.
- */
-export function tasks(html, lineAt = () => '') {
-  const lists = [];
-  let count = 0;
-  return html
-    .replace(TASK_OR_LIST, (m, open, rest, line, kind, box, close) => {
-      if (!open) {
-        if (close) lists.pop();
-        else lists.push(++count);
-        return m;
-      }
-      const checked = box === ' ' ? '' : ' checked';
-      const cls = rest.startsWith(' class="')
-        ? rest.replace(' class="', ' class="task ')
-        : ` class="task"${rest}`;
-      const text = lineAt(Number(line));
-      const as = (on) => (checked && on ? text : text.replace(TASK, (t, lead, b) => `${lead}${b ? '[' : '('}${on ? 'x' : ' '}${b ? ']' : ')'}`));
-      const lines = ` data-on="${escapeAttr(as(true))}" data-off="${escapeAttr(as(false))}"`;
-      const input = kind === 't'
-        ? `<input type="checkbox" class="task-box" data-line="${line}"${lines}${checked}>`
-        : `<input type="radio" class="choice-box" name="choice-${lists.at(-1)}" data-line="${line}"${lines}${checked}>`;
-      return `${open}${cls}${input} `;
-    })
-    .replace(MARKER, (m, line, kind, box) => (kind === 't' ? `[${box}]` : `(${box})`));
-}
-
-// Percent-encoding, down to the punctuation markdown or `expand` might read.
-const seal = (s) => encodeURIComponent(s).replace(/[!'()*~_.-]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`);
-const escape = (s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
-const FIELD_MARK = new RegExp(`${FIELD_OPEN}(\\d+)${FIELD_SEP}(\\d+)${FIELD_SEP}([^${FIELD_SEP}]*)${FIELD_SEP}([^${FIELD_CLOSE}]*)${FIELD_CLOSE}\\n?`, 'g');
-
-const FIELD_HEAD = /^@[ \t]+[^:\n]*?[^:\s][ \t]*:+/;
-
-/**
- * Markers left by `expand` for `@ Label: value` become form fields, one to a
- * line, carrying their source line and the value as typed so the preview
- * can open the blank for editing and write it back: the line as written,
- * and its head, up to the colons, for a new value to follow. A blank of
- * more than one line says how many, for the stylesheet. `lineAt(n)` is line
- * `n` as written.
- */
-export function fields(html, lineAt = () => '') {
-  return html.replace(FIELD_MARK, (m, line, lines, label, value) => {
-    const v = escape(decodeURIComponent(value));
-    const text = lineAt(Number(line));
-    const source = ` data-text="${escapeAttr(text)}" data-head="${escapeAttr(FIELD_HEAD.exec(text)?.[0] ?? '')}"`;
-    const tall = lines > 1 ? ` data-lines="${lines}" style="--lines: ${lines}"` : '';
-    return `<span class="field" data-line="${line}"${source}${tall}><span class="field-label">${escape(decodeURIComponent(label))}</span>`
-      + `<span class="field-value" data-value="${v}">${v}</span></span>`;
   });
 }
 
@@ -726,66 +643,6 @@ tbody tr:nth-child(even) td { background: #faf9f7; }
 
 .math { font-family: var(--gm-serif); font-style: normal; }
 p.math-display { text-align: center; font-size: 1.15em; margin: 0.9rem 0; }
-
-.field {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.5em;
-  margin: 0.3rem 0;
-  max-width: 32rem;
-  cursor: text;
-}
-.field[data-lines] { max-width: none; }
-/* As tall as a line of the blank, so it sits level with the first. */
-.field-label {
-  font-family: var(--gm-sans);
-  font-size: 0.85em;
-  line-height: calc(1.6em / 0.85);
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  color: var(--gm-ink-soft);
-  white-space: nowrap;
-}
-.field-label::after { content: ":"; }
-/* A shaded band for each line, with a sliver of page between them. */
-.field-value {
-  --gm-field-shade: rgba(127, 127, 127, 0.07);
-  flex: 1;
-  min-width: 6rem;
-  min-height: calc(var(--lines, 1) * 1.6em);
-  padding: 0 0.25em;
-  line-height: 1.6;
-  overflow-wrap: anywhere;
-  background: repeating-linear-gradient(to bottom,
-    var(--gm-field-shade) 0 calc(1.6em - 3px), transparent 0 1.6em);
-  border-radius: 2px;
-}
-.field:hover .field-value { --gm-field-shade: rgba(127, 127, 127, 0.12); }
-.field-value:has(> textarea) {
-  --gm-field-shade: color-mix(in srgb, var(--gm-accent) 14%, transparent);
-}
-.field-value > textarea {
-  all: unset;
-  display: block;
-  box-sizing: border-box;
-  width: 100%;
-  min-height: calc(var(--lines, 1) * 1.6em);
-  font: inherit;
-  line-height: inherit;
-  color: inherit;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  overflow: hidden;
-  resize: none;
-}
-
-li.task { list-style: none; }
-li.task > .task-box, li.task > p > .task-box,
-li.task > .choice-box, li.task > p > .choice-box {
-  margin: 0 0.4em 0 -1.35rem;
-  vertical-align: -0.1em;
-  cursor: pointer;
-}
 `;
 
 function outsideCode(line, fn) {
