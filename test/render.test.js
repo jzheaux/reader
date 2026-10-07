@@ -225,37 +225,6 @@ test('math: alone on a line is displayed, and inline otherwise', () => {
   assert.match(body, /so <span class="math">a\u00A0&gt; b<\/span> here, <code>math:\[c\]<\/code>/);
 });
 
-test('Q: and A: lines become an exchange', () => {
-  const { body } = render('- a bullet\nQ: Why?\nA (Thomas): Because.\n\n   More.\nQ (audience): And?\nA: So.\n\n\\A: plain\n');
-  assert.match(body, /<li>a bullet<\/li>\n<\/ul>\n<ul>/);
-  assert.match(body, /<li class="qa qa-q">\n<p><span class="qa-label">Q<\/span>Why\?<\/p>/);
-  assert.match(body, /<li class="qa qa-a">\n<p><span class="qa-label">A<\/span><span class="qa-name">Thomas<\/span>Because\.<\/p>\n<p>More\.<\/p>/);
-  assert.match(body, /<span class="qa-label">Q<\/span><span class="qa-name">audience<\/span>And\?/);
-  assert.match(body, /<p>A: plain<\/p>/);
-  assert.doesNotMatch(body, /[\uE000-\uE00C]/);
-});
-
-test('an exchange inside ::: is styled too', () => {
-  const { body } = render('::: slategray\nQ: Styled?\nA: Yes.\n:::\n');
-  assert.match(body, /<li class="qa qa-q" style="color: slategray"><span class="qa-label">Q<\/span>Styled\?<\/li>/);
-  assert.match(body, /<li class="qa qa-a" style="color: slategray"><span class="qa-label">A<\/span>Yes\.<\/li>/);
-});
-
-test('a second A: or Q: in a row continues the one before', () => {
-  const loose = render('Q: Why?\nA (Thomas): One.\n\nA: Two.\n\nA (Thomas): Three.\nA: Four.\nQ: So?\n').body;
-  assert.match(loose, /<span class="qa-name">Thomas<\/span>One\.<\/p>\n<p>Two\.<\/p>\n<p>Three\.<\/p>\n<p>Four\.<\/p>\n<\/li>/);
-  assert.equal(loose.match(/class="qa qa-a"/g).length, 1);
-
-  const tight = render('A: b\nA: c\nA (Sarah): d\nA: e\nQ: f\nQ: g\n').body;
-  assert.match(tight, /<span class="qa-label">A<\/span>b<span class="qa-para"><\/span>c<\/li>/);
-  assert.match(tight, /<span class="qa-name">Sarah<\/span>d<span class="qa-para"><\/span>e<\/li>/);
-  assert.match(tight, /<span class="qa-label">Q<\/span>f<span class="qa-para"><\/span>g<\/li>/);
-
-  const apart = render('A: one\n\ntext\n\nA: two\n').body;
-  assert.equal(apart.match(/class="qa qa-a"/g).length, 2);
-  assert.doesNotMatch(loose + tight + apart, /[\uE000-\uE00D]/);
-});
-
 test('=WxH after an image sets its size, either side optional', () => {
   const { body } = render('## Hi ![](a.svg =100x200)\n\n![logo](b.svg =x80)\n\n![cat](c.jpg "Ginger" =120x)\n');
   assert.match(body, /<h2>Hi <img src="a.svg" alt="" style="width: 100px; height: 200px"><\/h2>/);

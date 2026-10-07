@@ -13,9 +13,9 @@ export default [
       'prefer-const': 'error',
     },
   },
-  // The server, the CLI and the tests.
+  // The server, the CLI, the renderer's features and the tests.
   {
-    files: ['bin/**/*.js', 'src/**/*.js', 'test/**/*.js', '*.config.js'],
+    files: ['bin/**/*.js', 'src/**/*.js', 'features/**/*.js', 'test/**/*.js', '*.config.js'],
     languageOptions: { sourceType: 'module', globals: globals.node },
   },
   // The app and what it imports are modules; the preview's puzzle scripts are

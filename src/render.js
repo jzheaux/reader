@@ -12,6 +12,8 @@ import { fileURLToPath } from 'node:url';
 import { parse, toHtml } from 'gutter-md';
 import EMOJI from 'markdown-it-emoji/lib/data/full.mjs';
 import { ldsLink } from './lds.js';
+import { FEATURES } from '../features/index.js';
+import { LEAD as QA_LEAD } from '../features/qa/index.js';
 
 /**
  * `line` is the line of the file `src` starts on, when it is only part of
@@ -29,11 +31,11 @@ export function render(src, { file, puzzleBase = 0, read, line = 0 } = {}) {
   const headings = Boolean(asides.length && (meta.speaker || meta.listener));
   const title = meta.title || (file ? path.basename(file, path.extname(file)) : 'Untitled');
 
-  const html = toHtml(text, { layout: 'columns', headings, title });
-  const body = emojify(styles(maths(exchanges(searches(quotes(fields(tasks(alerts(figures(sizes(between(html, '<body>', '</body>').trim()))), lineAt), lineAt)))))));
+  const html = toHtml(text, { layout: 'columns', headings, title, plugins: FEATURES.map((f) => f.plugin) });
+  const body = emojify(styles(maths(searches(quotes(fields(tasks(alerts(figures(sizes(between(html, '<body>', '</body>').trim()))), lineAt), lineAt))))));
   const played = puzzles(body, puzzleBase, fences(text, { file, read, line }));
   return {
-    css: `${between(html, '<style>', '</style>').trim()}\n${CSS}`,
+    css: [between(html, '<style>', '</style>').trim(), CSS, ...FEATURES.map((f) => f.css)].join('\n'),
     body: played.html,
     asides: asides.length,
     puzzles: played.count,
@@ -181,13 +183,6 @@ const SPAN_TEXT = '\uE005';
 const SPAN_CLOSE = '\uE006';
 const BYLINE = '\uE007';
 
-// A `Q:` or `A:` line becomes an item in a list of its own (`+`, so it never
-// joins a `-` or `*` list above it), headed by a marker naming who spoke. One
-// that carries on the item before it becomes a paragraph within that item.
-const QA_OPEN = '\uE008';
-const QA_CLOSE = '\uE009';
-const QA_MORE = '\uE00D';
-
 // An image's size rides through markdown at the head of its title, between
 // these markers, for `sizes` to take back out.
 const SIZE_OPEN = '\uE00E';
@@ -200,7 +195,6 @@ const FIELD_OPEN = '\uE010';
 const FIELD_SEP = '\uE011';
 const FIELD_CLOSE = '\uE012';
 const FIELD = /^@[ \t]+([^:\n]*?[^:\s])[ \t]*(:+)[ \t]*(.*?)[ \t]*$/;
-const QA = /^\\?([QA])(?:[ \t]*\(([^()\n]*)\))?:[ \t]+(?=\S)/;
 
 // `math:[…]` is carried as open and close markers, the open one saying
 // whether it stood alone on its line.
@@ -216,7 +210,7 @@ const ATTRIBUTION = /^([ \t]*(?:~[ \t]*)*(?:>[ \t]*)+)(?:--|\u2014)[ \t]+(?=\S)/
 const QUOTED = /^[ \t]*(?:~[ \t]*)*>/;
 const PREFIX = new RegExp(
   '^[ \\t]*(?:[>~][ \\t]*)*(?:(?:[-*+]|\\d{1,9}[.)])[ \\t]+)?'
-  + `(?:${QA_OPEN}[^${QA_CLOSE}]*${QA_CLOSE})?${QA_MORE}?`
+  + QA_LEAD.source
   + `(?:${MARK_OPEN}\\d+:[tr][ xX]${MARK_CLOSE}[ \\t]?)?(?:#{1,6}[ \\t]+)?${BYLINE}?`,
 );
 const RULE = /^[ \t]*([-*_=])(?:[ \t]*\1)*[ \t]*$/;
@@ -239,9 +233,6 @@ const REFERENCE_DEF = /^[ \t]{0,3}\[[^\]]+\]:/;
  * - `->`, `<-` and `<->` -> arrows.
  * - `math:[recognition >> judgment]` -> an expression, its operators set as
  *   symbols; alone on its line, it is displayed like an equation.
- * - `Q:` and `A:` (or `Q (name):`) at the start of a line -> an exchange. A
- *   second `A:` in a row, unnamed or naming the same person, continues the
- *   answer rather than starting another; likewise `Q:`.
  * - `[text]{red times-new-roman}` -> styled text, and `::: red` ... `:::` the
  *   same for every block in between.
  * - `> -- Author` closing a blockquote -> that quote's attribution.
@@ -260,7 +251,6 @@ const REFERENCE_DEF = /^[ \t]{0,3}\[[^\]]+\]:/;
 export function expand(src, { line: first = 0 } = {}) {
   let fence = null;
   const blocks = [];
-  let qa = null;
   const lines = src.split('\n');
   return lines.map((line, n) => {
     const f = FENCE.exec(line);
@@ -270,7 +260,6 @@ export function expand(src, { line: first = 0 } = {}) {
     }
     if (f) {
       fence = f[1];
-      qa = null;
       return line;
     }
     const div = DIV.exec(line);
@@ -284,7 +273,6 @@ export function expand(src, { line: first = 0 } = {}) {
     const at = first + n;
     line = line.replace(TASK, (m, lead, box, radio) => `${lead}${MARK_OPEN}${at}:${box ? `t${box}` : `r${radio}`}${MARK_CLOSE}`);
     line = line.replace(FIELD, (m, label, colons, value) => `${FIELD_OPEN}${at}${FIELD_SEP}${colons.length}${FIELD_SEP}${seal(label)}${FIELD_SEP}${seal(value)}${FIELD_CLOSE}`);
-    [line, qa] = exchange(line, qa);
     const alone = MATH_ALONE.test(line);
     const next = lines[n + 1];
     if (next === undefined || !QUOTED.test(next)) line = line.replace(ATTRIBUTION, `$1${BYLINE}`);
@@ -315,24 +303,6 @@ export function expand(src, { line: first = 0 } = {}) {
       .replace(/(?<![-<\\])->/g, '\u2192')
       .replace(/(?<!\\)<-(?![-<>])/g, '\u2190'));
   }).join('\n');
-}
-
-/**
- * A `Q:` or `A:` line -> a list item, or, when it carries on the item open
- * before it, a paragraph indented into that item. Any other line that starts
- * at the margin closes the exchange.
- */
-function exchange(line, open) {
-  const q = QA.exec(line);
-  if (!q || q[0].startsWith('\\')) {
-    const rest = q ? line.slice(1) : line;
-    return [rest, /^\S/.test(rest) ? null : open];
-  }
-  const [m, who] = q;
-  const name = q[2]?.trim() ?? '';
-  const text = line.slice(m.length);
-  if (open && open.who === who && (!name || name === open.name)) return [`  ${QA_MORE}${text}`, open];
-  return [`+ ${QA_OPEN}${who}${name}${QA_CLOSE}${text}`, { who, name }];
 }
 
 /**
@@ -549,32 +519,6 @@ export function searches(html) {
   return html.replace(SEARCH_LINK, (m) => m.replace('<a ', '<a class="search" '));
 }
 
-const QA_MORE_MARK = new RegExp(`(<p>)${QA_MORE}|\\n?${QA_MORE}`, 'g');
-const QA_ITEM = new RegExp(`<li>(\\s*(?:<p>)?)${QA_OPEN}([QA])([^${QA_CLOSE}]*)${QA_CLOSE}`, 'g');
-
-/**
- * `Q:` and `A:` items become an exchange: each labelled, the asker's name or
- * the answerer's beside the label when given.
- */
-export function exchanges(html) {
-  return html
-    .replace(QA_ITEM, (m, lead, who, name) => {
-      const tag = `<span class="qa-label">${who}</span>${name ? `<span class="qa-name">${name}</span>` : ''}`;
-      return `<li class="qa qa-${who.toLowerCase()}">${lead}${tag}`;
-    })
-    .replace(new RegExp(`${QA_OPEN}([QA])([^${QA_CLOSE}]*)${QA_CLOSE}`, 'g'), (m, who, name) => `${who}${name ? ` (${name})` : ''}: `)
-    .replace(QA_MORE_MARK, (m, open, offset, html) => {
-      if (open) return open;
-      // Typed straight after the line before, it landed in that paragraph;
-      // split it off. In a tight list there is no paragraph to split.
-      const before = html.slice(0, offset);
-      const p = Math.max(before.lastIndexOf('<p>'), before.lastIndexOf('<p '));
-      return p > Math.max(before.lastIndexOf('</p>'), before.lastIndexOf('<li'))
-        ? '</p>\n<p>'
-        : '<span class="qa-para"></span>';
-    });
-}
-
 /**
  * `math:[…]` markers become spans; one alone on its line takes its
  * paragraph with it, centered like a displayed equation.
@@ -611,7 +555,7 @@ export function styles(html) {
       continue;
     }
     if (raw) {
-      out.push(text.replace(BLOCK_MARK, '').replace(SPAN_TYPED, '[$2]{$1}').replace(/[\uE00A-\uE00D]/g, ''));
+      out.push(text.replace(BLOCK_MARK, '').replace(SPAN_TYPED, '[$2]{$1}').replace(/[\uE00A-\uE00C]/g, ''));
       continue;
     }
     out.push(text
@@ -767,46 +711,6 @@ th {
   background: #f5f3ef;
 }
 tbody tr:nth-child(even) td { background: #faf9f7; }
-
-ul:has(> li.qa) { list-style: none; padding-left: 0; margin: 0.8rem 0; }
-li.qa {
-  position: relative;
-  padding-left: 1.9rem;
-  margin: 0.3rem 0;
-  font-family: var(--gm-sans);
-  font-size: 0.92em;
-}
-li.qa-a + li.qa-q { margin-top: 0.9rem; }
-.qa-para { display: block; height: 0.5em; }
-li.qa-q { font-style: italic; color: var(--gm-aside-ink); }
-.qa-label {
-  position: absolute;
-  left: 0;
-  top: 0.15em;
-  width: 1.25rem;
-  line-height: 1.25rem;
-  border-radius: 3px;
-  text-align: center;
-  font-family: var(--gm-sans);
-  font-style: normal;
-  font-size: 0.72rem;
-  font-weight: 700;
-  border: 1px solid var(--gm-accent);
-  color: var(--gm-accent);
-}
-li.qa-a > .qa-label, li.qa-a > p:first-child > .qa-label {
-  background: var(--gm-accent);
-  color: var(--gm-paper);
-}
-.qa-name {
-  font-family: var(--gm-sans);
-  font-style: normal;
-  font-variant: small-caps;
-  letter-spacing: 0.04em;
-  font-size: 0.85em;
-  color: var(--gm-ink-soft);
-  margin-right: 0.45em;
-}
 
 .math { font-family: var(--gm-serif); font-style: normal; }
 p.math-display { text-align: center; font-size: 1.15em; margin: 0.9rem 0; }
