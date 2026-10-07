@@ -15,8 +15,6 @@ import { gutterMd, columns } from 'gutter-md';
 import EMOJI from 'markdown-it-emoji/lib/data/full.mjs';
 import { ldsLink } from './lds.js';
 import { FEATURES } from '../features/index.js';
-import { LEAD as QA_LEAD } from '../features/qa/index.js';
-import { LEAD as TASK_LEAD } from '../features/tasks/index.js';
 
 // Asides are kept out of the speaker's tokens (`inline: false`), for the
 // columns to place beside them. Features that read the file as written go
@@ -45,7 +43,7 @@ export function render(src, { file, puzzleBase = 0, read, line = 0 } = {}) {
   const title = meta.title || (file ? path.basename(file, path.extname(file)) : 'Untitled');
 
   const page = columns(md, tokens, env, { headings, title });
-  const body = emojify(styles(maths(searches(quotes(alerts(figures(sizes(page.body.trim()))))))));
+  const body = emojify(maths(searches(quotes(alerts(figures(sizes(page.body.trim())))))));
   const played = puzzles(body, puzzleBase, fences(text, { file, read, line }));
   return {
     css: [page.css.trim(), CSS, ...FEATURES.map((f) => f.css)].join('\n'),
@@ -178,15 +176,7 @@ const GOOGLE = 'https://www.google.com/search?q=';
 const RFC = /(?<![\w\\])rfc:(\d{1,5})(?:#([\w.-]+))?\[([^\]\n]*)\]/g;
 const RFC_EDITOR = 'https://www.rfc-editor.org/rfc';
 
-// Styles ride through markdown the same way: a `:::` block leaves a marker
-// on each of its lines naming the styles, a `[text]{styles}` span wraps its
-// text in open and close markers, and a quote's `--` becomes a marker at the
-// head of its attribution.
-const BLOCK_OPEN = '\uE002';
-const BLOCK_CLOSE = '\uE003';
-const SPAN_OPEN = '\uE004';
-const SPAN_TEXT = '\uE005';
-const SPAN_CLOSE = '\uE006';
+// A quote's `--` becomes a marker at the head of its attribution.
 const BYLINE = '\uE007';
 
 // An image's size rides through markdown at the head of its title, between
@@ -203,19 +193,8 @@ const MATH_CLOSE = '\uE00C';
 const MATH = /(?<![\w\\])math:\[([^\]\n]*)\]/g;
 const MATH_ALONE = /^[ \t]*math:\[[^\]\n]*\][ \t]*$/;
 
-const DIV = /^[ \t]{0,3}:::(?:[ \t]+([\w-]+(?:[ \t]+[\w-]+)*))?[ \t]*$/;
-const SPAN = /(?<![\\!])\[((?:[^[\]\n]|\[[^[\]\n]*\])*)\]\{([\w-]+(?:[ \t]+[\w-]+)*)\}/g;
 const ATTRIBUTION = /^([ \t]*(?:~[ \t]*)*(?:>[ \t]*)+)(?:--|\u2014)[ \t]+(?=\S)/;
 const QUOTED = /^[ \t]*(?:~[ \t]*)*>/;
-const PREFIX = new RegExp(
-  '^[ \\t]*(?:[>~][ \\t]*)*(?:(?:[-*+]|\\d{1,9}[.)])[ \\t]+)?'
-  + QA_LEAD.source
-  + TASK_LEAD.source
-  + `(?:#{1,6}[ \\t]+)?${BYLINE}?`,
-);
-const RULE = /^[ \t]*([-*_=])(?:[ \t]*\1)*[ \t]*$/;
-const DELIMITER_ROW = /^[ \t]*\|?[ \t]*:?-+:?[ \t]*(?:\|[ \t]*:?-+:?[ \t]*)*\|?[ \t]*$/;
-const REFERENCE_DEF = /^[ \t]{0,3}\[[^\]]+\]:/;
 
 /**
  * The source-level pass, run before markdown sees the text:
@@ -233,8 +212,6 @@ const REFERENCE_DEF = /^[ \t]{0,3}\[[^\]]+\]:/;
  * - `->`, `<-` and `<->` -> arrows.
  * - `math:[recognition >> judgment]` -> an expression, its operators set as
  *   symbols; alone on its line, it is displayed like an equation.
- * - `[text]{red times-new-roman}` -> styled text, and `::: red` ... `:::` the
- *   same for every block in between.
  * - `> -- Author` closing a blockquote -> that quote's attribution.
  * - `![alt](img.png =100x200)`, `=100x` or `=x200` -> an image of that size
  *   in pixels, a missing side scaled to keep its proportions. `sizes` sets it.
@@ -245,7 +222,6 @@ const REFERENCE_DEF = /^[ \t]{0,3}\[[^\]]+\]:/;
  */
 export function expand(src) {
   let fence = null;
-  const blocks = [];
   const lines = src.split('\n');
   return lines.map((line, n) => {
     const f = FENCE.exec(line);
@@ -257,19 +233,9 @@ export function expand(src) {
       fence = f[1];
       return line;
     }
-    const div = DIV.exec(line);
-    if (div) {
-      // The fence lines themselves read as blank, keeping the line count.
-      if (div[1]) blocks.push(div[1].trim().split(/\s+/));
-      else if (blocks.length) blocks.pop();
-      else return line;
-      return '';
-    }
     const alone = MATH_ALONE.test(line);
     const next = lines[n + 1];
     if (next === undefined || !QUOTED.test(next)) line = line.replace(ATTRIBUTION, `$1${BYLINE}`);
-    // Innermost first, so its font leads and its color wins.
-    if (blocks.length) line = markBlock(line, [...blocks].reverse().flat().join(' '));
     return outsideCode(line, (text) => text
       .replace(IMG_SIZE, (m, alt, src, title, w, h) => {
         if (!w && !h) return m;
@@ -290,28 +256,10 @@ export function expand(src) {
         const link = searchLink(q, label);
         return link ? mdLink(link) : m;
       })
-      .replace(SPAN, (m, inner, names) => `${SPAN_OPEN}${names}${SPAN_TEXT}${inner}${SPAN_CLOSE}`)
       .replace(/(?<!\\)<->/g, '\u2194')
       .replace(/(?<![-<\\])->/g, '\u2192')
       .replace(/(?<!\\)<-(?![-<>])/g, '\u2190'));
   }).join('\n');
-}
-
-/**
- * Leave a marker naming `names` inside the block this line belongs to, after
- * whatever opens the block (`>`, `~`, a list bullet, `#`), and after each
- * table pipe so every cell is marked. Lines where a marker would change what
- * the block is -- rules, table delimiters, reference definitions, alerts --
- * are left alone.
- */
-function markBlock(line, names) {
-  if (RULE.test(line) || DELIMITER_ROW.test(line) || REFERENCE_DEF.test(line)) return line;
-  const lead = PREFIX.exec(line)[0];
-  const rest = line.slice(lead.length);
-  if (!rest.trim() || rest.startsWith('[!')) return line;
-  const mark = `${BLOCK_OPEN}${names}${BLOCK_CLOSE}`;
-  const cells = rest.replace(/(?<!\\)\|[ \t]*(?=\S)/g, `$&${mark}`);
-  return lead + (rest.startsWith('|') ? cells : mark + cells);
 }
 
 // Longest first, so `<->` isn't read as `<-` and `>`.
@@ -413,7 +361,7 @@ const ALERTS = {
   warning: { icon: '⚠️', label: 'Warning' },
   caution: { icon: '🛑', label: 'Caution' },
 };
-const ALERT = /<blockquote>\n<p>\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\](?:<\/p>\n|\n)/gi;
+const ALERT = /<blockquote>\n<p((?: [^>]*)?)>\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\](?:<\/p>\n|\n)/gi;
 
 /**
  * GitHub's alerts: a blockquote opening with `[!NOTE]`, `[!TIP]`,
@@ -421,24 +369,33 @@ const ALERT = /<blockquote>\n<p>\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\](?:<\/p
  * that emoji at its head. Elsewhere it reads as an ordinary blockquote.
  */
 export function alerts(html) {
-  return html.replace(ALERT, (m, kind) => {
+  return html.replace(ALERT, (m, attrs, kind) => {
     const { icon, label } = ALERTS[kind.toLowerCase()];
     const head = `<p class="alert-title"><span aria-hidden="true">${icon}</span> ${label}</p>\n`;
     // A `[!NOTE]` alone in its paragraph closed that paragraph; one followed
-    // by text on the next line did not, so open a new one for the text.
-    return `<blockquote class="alert alert-${kind.toLowerCase()}">\n${head}${m.endsWith('</p>\n') ? '' : '<p>'}`;
+    // by text on the next line did not, so open a new one for the text,
+    // keeping the paragraph's attributes (a `:::` block's style).
+    return `<blockquote class="alert alert-${kind.toLowerCase()}">\n${head}${m.endsWith('</p>\n') ? '' : `<p${attrs}>`}`;
   });
 }
 
-const QUOTE_BY = new RegExp(`(<p>|\\n)${BYLINE}`, 'g');
+const QUOTE_BY = new RegExp(`<p((?: [^>]*)?)>${BYLINE}|\\n${BYLINE}`, 'g');
 
 /**
  * A blockquote whose last line opened with `--` gets that line as its
- * attribution, in a paragraph of its own.
+ * attribution, in a paragraph of its own, with the attributes of the
+ * paragraph it was in (a `:::` block's style).
  */
 export function quotes(html) {
   return html
-    .replace(QUOTE_BY, (m, lead) => (lead === '<p>' ? '<p class="quote-by">' : '</p>\n<p class="quote-by">'))
+    .replace(QUOTE_BY, (m, attrs, at, all) => {
+      // Split off from its paragraph, it takes that paragraph's attributes.
+      const own = attrs ?? /<p((?: [^>]*)?)>[^<]*(?:<(?!\/?p[ >])[^<]*)*$/.exec(all.slice(0, at))?.[1] ?? '';
+      const p = / class="/.test(own)
+        ? `<p${own.replace(/ class="([^"]*)"/, ' class="$1 quote-by"')}>`
+        : `<p class="quote-by"${own}>`;
+      return attrs === undefined ? `</p>\n${p}` : p;
+    })
     .replaceAll(BYLINE, '-- ');
 }
 
@@ -454,100 +411,12 @@ export function searches(html) {
  */
 export function maths(html) {
   return html
-    .replaceAll(`<p>${MATH_DISPLAY}`, `<p class="math-display"><span class="math">`)
+    .replace(new RegExp(`<p((?: [^>]*)?)>${MATH_DISPLAY}`, 'g'), (m, attrs) => (/ class="/.test(attrs)
+      ? `<p${attrs.replace(/ class="([^"]*)"/, ' class="$1 math-display"')}><span class="math">`
+      : `<p class="math-display"${attrs}><span class="math">`))
     .replace(new RegExp(`[${MATH_INLINE}${MATH_DISPLAY}]`, 'g'), '<span class="math">')
     .replaceAll(MATH_CLOSE, '</span>');
 }
-
-const STYLE_BLOCK = new Set(['p', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'td', 'th', 'dt', 'dd']);
-const BLOCK_MARK = new RegExp(`${BLOCK_OPEN}([^${BLOCK_CLOSE}]*)${BLOCK_CLOSE}`, 'g');
-const SPAN_MARK = new RegExp(`${SPAN_OPEN}([^${SPAN_TEXT}]*)${SPAN_TEXT}`, 'g');
-const SPAN_TYPED = new RegExp(`${SPAN_OPEN}([^${SPAN_TEXT}]*)${SPAN_TEXT}([^${SPAN_CLOSE}]*)${SPAN_CLOSE}`, 'g');
-
-/**
- * Markers left by `expand` for `[text]{…}` become spans, and those for a
- * `:::` block style the paragraph, heading, list item or cell holding them.
- * In code they go back to what was typed.
- */
-export function styles(html) {
-  let raw = 0;
-  let block = -1;
-  const styled = new Set();
-  const out = [];
-  for (const [, tag, text] of html.matchAll(/(<[^>]*>)|([^<]+)/g)) {
-    if (tag) {
-      const t = /^<(\/?)([a-z0-9]+)/i.exec(tag);
-      const name = t?.[2].toLowerCase();
-      if (RAW.has(name)) raw = Math.max(0, raw + (t[1] ? -1 : 1));
-      else if (!t?.[1] && STYLE_BLOCK.has(name)) block = out.length;
-      out.push(tag);
-      continue;
-    }
-    if (raw) {
-      out.push(text.replace(BLOCK_MARK, '').replace(SPAN_TYPED, '[$2]{$1}').replace(/[\uE00A-\uE00C]/g, ''));
-      continue;
-    }
-    out.push(text
-      .replace(BLOCK_MARK, (m, names) => {
-        if (block >= 0 && !styled.has(block)) {
-          styled.add(block);
-          out[block] = withStyle(out[block], names);
-        }
-        return '';
-      })
-      .replace(SPAN_MARK, (m, names) => withStyle('<span>', names))
-      .replaceAll(SPAN_CLOSE, '</span>'));
-  }
-  return out.join('');
-}
-
-// Generic families are written as CSS spells them; any other name is a font,
-// its hyphens standing in for spaces.
-const GENERIC = new Set([
-  'serif', 'sans-serif', 'monospace', 'cursive', 'fantasy', 'system-ui', 'math', 'emoji',
-  'ui-serif', 'ui-sans-serif', 'ui-monospace', 'ui-rounded',
-]);
-
-/**
- * `names` -> the tag with a color and a font added. A CSS color name sets the
- * color (the first one given wins); every other name is a font, tried in
- * order before falling back to the page's own.
- */
-function withStyle(tag, names) {
-  let color = null;
-  const fonts = [];
-  for (const name of names.trim().split(/\s+/)) {
-    const key = name.toLowerCase();
-    if (COLORS.has(key)) color ??= key;
-    else fonts.push(GENERIC.has(key) ? key : `'${name.replace(/-/g, ' ')}'`);
-  }
-  const css = [color && `color: ${color}`, fonts.length && `--font: ${fonts.join(', ')}`].filter(Boolean).join('; ');
-  let t = tag;
-  if (fonts.length) {
-    t = / class="/.test(t) ? t.replace(' class="', ' class="font ') : t.replace(/^<([a-z0-9]+)/i, '<$1 class="font"');
-  }
-  return / style="/.test(t)
-    ? t.replace(/ style="([^"]*)"/, (m, s) => ` style="${s.replace(/;?\s*$/, '; ')}${css}"`)
-    : t.replace(/>$/, ` style="${css}">`);
-}
-
-const COLORS = new Set(`
-  aliceblue antiquewhite aqua aquamarine azure beige bisque black blanchedalmond blue blueviolet brown
-  burlywood cadetblue chartreuse chocolate coral cornflowerblue cornsilk crimson cyan darkblue darkcyan
-  darkgoldenrod darkgray darkgreen darkgrey darkkhaki darkmagenta darkolivegreen darkorange darkorchid
-  darkred darksalmon darkseagreen darkslateblue darkslategray darkslategrey darkturquoise darkviolet
-  deeppink deepskyblue dimgray dimgrey dodgerblue firebrick floralwhite forestgreen fuchsia gainsboro
-  ghostwhite gold goldenrod gray green greenyellow grey honeydew hotpink indianred indigo ivory khaki
-  lavender lavenderblush lawngreen lemonchiffon lightblue lightcoral lightcyan lightgoldenrodyellow
-  lightgray lightgreen lightgrey lightpink lightsalmon lightseagreen lightskyblue lightslategray
-  lightslategrey lightsteelblue lightyellow lime limegreen linen magenta maroon mediumaquamarine
-  mediumblue mediumorchid mediumpurple mediumseagreen mediumslateblue mediumspringgreen mediumturquoise
-  mediumvioletred midnightblue mintcream mistyrose moccasin navajowhite navy oldlace olive olivedrab
-  orange orangered orchid palegoldenrod palegreen paleturquoise palevioletred papayawhip peachpuff peru
-  pink plum powderblue purple rebeccapurple red rosybrown royalblue saddlebrown salmon sandybrown
-  seagreen seashell sienna silver skyblue slateblue slategray slategrey snow springgreen steelblue tan
-  teal thistle tomato turquoise violet wheat white whitesmoke yellow yellowgreen
-`.trim().split(/\s+/));
 
 const CSS = `
 figure { margin: 0.8rem 0; }
@@ -629,8 +498,6 @@ a.search::after {
   line-height: 1;
 }
 
-.font { font-family: var(--font), var(--gm-serif); }
-.gm-aside-cell .font { font-family: var(--font), var(--gm-sans); }
 
 table { margin: 0.8rem 0; }
 th {

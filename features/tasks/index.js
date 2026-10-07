@@ -19,12 +19,6 @@ const CLOSE = '\uE001';
 const PLACED = new RegExp(`${OPEN}(\\d+)${CLOSE}`, 'g');
 const AT_HEAD = new RegExp(`^${OPEN}(\\d+)${CLOSE}[ \\t]?`);
 
-/**
- * Where a box is left in the text, for other syntax that needs to see past
- * it (a `:::` block's marker goes after it).
- */
-export const LEAD = new RegExp(`(?:${OPEN}\\d+${CLOSE}[ \\t]?)?`);
-
 export function tasks(md) {
   beforeAsides(md, 'task_lines', (state) => {
     const boxes = [];

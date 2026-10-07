@@ -1,0 +1,2 @@
+.font { font-family: var(--font), var(--gm-serif); }
+.gm-aside-cell .font { font-family: var(--font), var(--gm-sans); }

@@ -25,12 +25,6 @@ import { beforeAsides } from '../source.js';
 const QA = /^\\?([QA])(?:[ \t]*\(((?:[^()\n]|\([^()\n]*\))*)\))?:[ \t]+(?=\S)/;
 const FENCE = /^\s{0,3}(`{3,}|~{3,})/;
 
-/**
- * The start of a `Q:` or `A:` line, for other syntax that needs to see past
- * it (a `:::` block's marker goes after it).
- */
-export const LEAD = /(?:\\?[QA](?:[ \t]*\((?:[^()\n]|\([^()\n]*\))*\))?:[ \t]+)?/;
-
 export function qa(md) {
   beforeAsides(md, 'qa_lines', lines);
   // Last, after markdown's own rules: a paragraph split off here has no

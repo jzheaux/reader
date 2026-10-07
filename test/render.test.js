@@ -116,34 +116,6 @@ test('a blockquote closing with -- gets an attribution', () => {
   assert.match(body, /<p>a\n– b\nc<\/p>/);
 });
 
-test('[text]{…} styles a span with a color and fonts', () => {
-  const { body } = render('[red *text*]{red} [x]{Blue times-new-roman monospace} `[y]{red}`\n');
-  assert.match(body, /<span style="color: red">red <em>text<\/em><\/span>/);
-  assert.match(body, /<span class="font" style="color: blue; --font: 'times new roman', monospace">x<\/span>/);
-  assert.match(body, /<code>\[y\]\{red\}<\/code>/);
-});
-
-test('::: styles every block until the closing :::', () => {
-  const src = '::: red georgia\n# H\n\ntext\n- [ ] task\n\n| a | b |\n|---|--:|\n| 1 | 2 |\n\n---\n\n    [c]{red}\n\n~ aside\n:::\n\nafter\n\n:::\n';
-  const { body } = render(src);
-  const style = `class="font" style="color: red; --font: 'georgia'"`;
-  assert.match(body, new RegExp(`<h1 ${style}>H</h1>`));
-  assert.match(body, new RegExp(`<p ${style}>text</p>`));
-  assert.match(body, /<li class="font task" style="[^"]*"><input type="checkbox" class="task-box" data-line="4" [^>]*> task<\/li>/);
-  assert.match(body, /<td class="font" style="text-align:right; color: red; --font: 'georgia'">2<\/td>/);
-  assert.match(body, /<hr>/);
-  assert.match(body, /<code>\[c\]\{red\}\n<\/code>/);
-  assert.match(body, new RegExp(`<p ${style}><span class="gm-mark">~</span>aside</p>`));
-  assert.match(body, /<p>after<\/p>\n<p>:::<\/p>/);
-  assert.doesNotMatch(body, /[\uE000-\uE007]/);
-});
-
-test('nested ::: blocks take the innermost color and font first', () => {
-  const { body } = render('::: red georgia\n::: blue\ninner\n:::\nouter\n:::\n');
-  assert.match(body, /<p class="font" style="color: blue; --font: 'georgia'">inner<\/p>/);
-  assert.match(body, /<p class="font" style="color: red; --font: 'georgia'">outer<\/p>/);
-});
-
 test('tables render', () => {
   const { body } = render('| a | b |\n|---|:-:|\n| 1 | 2 |\n');
   assert.match(body, /<table>\n<thead>\n<tr>\n<th>a<\/th>\n<th style="text-align:center">b<\/th>/);

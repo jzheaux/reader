@@ -15,5 +15,8 @@
 import fields from './fields/index.js';
 import tasks from './tasks/index.js';
 import qa from './qa/index.js';
+import styles from './styles/index.js';
 
-export const FEATURES = [fields, tasks, qa];
+// styles comes after qa: a `:::` block marks a line after qa has made it a
+// list item, as it does any other.
+export const FEATURES = [fields, tasks, qa, styles];

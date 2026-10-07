@@ -11,6 +11,12 @@ export default [
       eqeqeq: ['error', 'always', { null: 'ignore' }],
       'no-var': 'error',
       'prefer-const': 'error',
+      // Private-use characters are markers between passes; written raw they
+      // can't be seen in the source. Spell them as escapes.
+      'no-restricted-syntax': ['error',
+        { selector: 'Literal[raw=/[\uE000-\uF8FF]/]', message: 'Write private-use characters as \\u escapes.' },
+        { selector: 'TemplateElement[value.raw=/[\uE000-\uF8FF]/]', message: 'Write private-use characters as \\u escapes.' },
+      ],
     },
   },
   // The server, the CLI, the renderer's features and the tests.
