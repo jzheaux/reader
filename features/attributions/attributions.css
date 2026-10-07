@@ -1,0 +1,30 @@
+blockquote:has(> .quote-by) {
+  position: relative;
+  color: var(--gm-ink);
+  font-style: italic;
+  border-left: 0;
+  padding-left: 1.7rem;
+  margin: 1rem 0;
+}
+blockquote:has(> .quote-by)::before {
+  content: "\201C";
+  position: absolute;
+  left: 0;
+  top: -0.4rem;
+  font-family: var(--gm-serif);
+  font-style: normal;
+  font-size: 2.6rem;
+  line-height: 1;
+  color: var(--gm-accent);
+}
+blockquote > p.quote-by {
+  text-align: right;
+  font-style: normal;
+  font-family: var(--gm-sans);
+  font-variant: small-caps;
+  letter-spacing: 0.04em;
+  font-size: 0.88em;
+  color: var(--gm-ink-soft);
+  margin-top: 0.35rem;
+}
+p.quote-by::before { content: "\2014\2009"; }

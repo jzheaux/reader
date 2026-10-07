@@ -27,8 +27,9 @@ export function beforeAsides(md, name, rule) {
 }
 
 /**
- * Runs `fn(line, n)` over each line of the source outside fenced code, and
- * puts back what it returns. Skipped for an aside's own parse (its lines
+ * Runs `fn(line, n, lines, i)` over each line of the source outside fenced
+ * code, and puts back what it returns; `lines` are the source's lines as
+ * they were, `i` this one's index among them. Skipped for an aside's own parse (its lines
  * were read with the rest) and for inline rendering. The line numbers count
  * from `env.lineBase`, the line of the file the text starts on.
  */
@@ -36,7 +37,8 @@ export function readLines(state, fn) {
   if (state.inlineMode || state.env.__aside) return;
   const base = state.env.lineBase ?? 0;
   let fence = null;
-  state.src = state.src.split('\n').map((line, n) => {
+  const lines = state.src.split('\n');
+  state.src = lines.map((line, n) => {
     const f = FENCE.exec(line);
     if (fence) {
       if (f && f[1][0] === fence[0] && f[1].length >= fence.length) fence = null;
@@ -46,7 +48,7 @@ export function readLines(state, fn) {
       fence = f[1];
       return line;
     }
-    return fn(line, base + n);
+    return fn(line, base + n, lines, n);
   }).join('\n');
 }
 

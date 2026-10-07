@@ -42,7 +42,7 @@ export function render(src, { file, puzzleBase = 0, read, line = 0 } = {}) {
 
   const page = columns(md, tokens, env, { headings, title });
   // Then each feature's pass over the finished page, if it has one.
-  const body = FEATURES.reduce((html, f) => (f.html ? f.html(html) : html), maths(quotes(figures(page.body.trim()))));
+  const body = FEATURES.reduce((html, f) => (f.html ? f.html(html) : html), maths(figures(page.body.trim())));
   const played = puzzles(body, puzzleBase, fences(text, { file, read, line }));
   return {
     css: [page.css.trim(), CSS, ...FEATURES.map((f) => f.css).filter(Boolean)].join('\n'),
@@ -143,9 +143,6 @@ const CODE_SPAN = /(`+)[^`][\s\S]*?\1|`+/g;
 const RFC = /(?<![\w\\])rfc:(\d{1,5})(?:#([\w.-]+))?\[([^\]\n]*)\]/g;
 const RFC_EDITOR = 'https://www.rfc-editor.org/rfc';
 
-// A quote's `--` becomes a marker at the head of its attribution.
-const BYLINE = '\uE007';
-
 // `math:[…]` is carried as open and close markers, the open one saying
 // whether it stood alone on its line.
 const MATH_INLINE = '\uE00A';
@@ -154,9 +151,6 @@ const MATH_CLOSE = '\uE00C';
 const MATH = /(?<![\w\\])math:\[([^\]\n]*)\]/g;
 const MATH_ALONE = /^[ \t]*math:\[[^\]\n]*\][ \t]*$/;
 
-const ATTRIBUTION = /^([ \t]*(?:~[ \t]*)*(?:>[ \t]*)+)(?:--|\u2014)[ \t]+(?=\S)/;
-const QUOTED = /^[ \t]*(?:~[ \t]*)*>/;
-
 /**
  * The source-level pass, run before markdown sees the text:
  *
@@ -164,7 +158,6 @@ const QUOTED = /^[ \t]*(?:~[ \t]*)*>/;
  *   labelled "RFC 9110" and "RFC 9110 §15.5" unless the brackets say otherwise.
  * - `math:[recognition >> judgment]` -> an expression, its operators set as
  *   symbols; alone on its line, it is displayed like an equation.
- * - `> -- Author` closing a blockquote -> that quote's attribution.
  *
  * Like shortcodes, the source keeps what was typed, and code is left alone.
  * Line numbers are preserved. It runs as a markdown-it core rule, after the
@@ -173,7 +166,7 @@ const QUOTED = /^[ \t]*(?:~[ \t]*)*>/;
 export function expand(src) {
   let fence = null;
   const lines = src.split('\n');
-  return lines.map((line, n) => {
+  return lines.map((line) => {
     const f = FENCE.exec(line);
     if (fence) {
       if (f && f[1][0] === fence[0] && f[1].length >= fence.length) fence = null;
@@ -184,8 +177,6 @@ export function expand(src) {
       return line;
     }
     const alone = MATH_ALONE.test(line);
-    const next = lines[n + 1];
-    if (next === undefined || !QUOTED.test(next)) line = line.replace(ATTRIBUTION, `$1${BYLINE}`);
     return outsideCode(line, (text) => text
       .replace(MATH, (m, expr) => `${alone ? MATH_DISPLAY : MATH_INLINE}${math(expr)}${MATH_CLOSE}`)
       .replace(RFC, (m, num, anchor, label) => mdLink(rfcLink(num, anchor, label))));
@@ -249,27 +240,6 @@ export function figures(html) {
   });
 }
 
-const QUOTE_BY = new RegExp(`<p((?: [^>]*)?)>${BYLINE}|\\n${BYLINE}`, 'g');
-
-/**
- * A blockquote whose last line opened with `--` gets that line as its
- * attribution, in a paragraph of its own, with the attributes of the
- * paragraph it was in (a `:::` block's style).
- */
-export function quotes(html) {
-  return html
-    .replace(QUOTE_BY, (m, attrs, at, all) => {
-      // Split off from its paragraph, it takes that paragraph's attributes.
-      const own = attrs ?? /<p((?: [^>]*)?)>[^<]*(?:<(?!\/?p[ >])[^<]*)*$/.exec(all.slice(0, at))?.[1] ?? '';
-      const p = / class="/.test(own)
-        ? `<p${own.replace(/ class="([^"]*)"/, ' class="$1 quote-by"')}>`
-        : `<p class="quote-by"${own}>`;
-      return attrs === undefined ? `</p>\n${p}` : p;
-    })
-    .replaceAll(BYLINE, '-- ');
-}
-
-
 /**
  * `math:[…]` markers become spans; one alone on its line takes its
  * paragraph with it, centered like a displayed equation.
@@ -294,36 +264,6 @@ figcaption {
 }
 img { max-width: 100%; }
 
-blockquote:has(> .quote-by) {
-  position: relative;
-  color: var(--gm-ink);
-  font-style: italic;
-  border-left: 0;
-  padding-left: 1.7rem;
-  margin: 1rem 0;
-}
-blockquote:has(> .quote-by)::before {
-  content: "\\201C";
-  position: absolute;
-  left: 0;
-  top: -0.4rem;
-  font-family: var(--gm-serif);
-  font-style: normal;
-  font-size: 2.6rem;
-  line-height: 1;
-  color: var(--gm-accent);
-}
-blockquote > p.quote-by {
-  text-align: right;
-  font-style: normal;
-  font-family: var(--gm-sans);
-  font-variant: small-caps;
-  letter-spacing: 0.04em;
-  font-size: 0.88em;
-  color: var(--gm-ink-soft);
-  margin-top: 0.35rem;
-}
-p.quote-by::before { content: "\\2014\\2009"; }
 
 
 table { margin: 0.8rem 0; }

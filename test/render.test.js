@@ -25,15 +25,6 @@ test('an image alone in a paragraph is a captioned figure', () => {
   assert.match(body, /<p>see <img src="x\.png" alt="x"> inline<\/p>/);
 });
 
-test('a blockquote closing with -- gets an attribution', () => {
-  const { body } = render(
-    '> The road of excess\n> -- [William Blake](https://x.test)\n\n> one\n>\n> -- scripture:[Psalm 23]\n\n> a\n> -- b\n> c\n',
-  );
-  assert.match(body, /<p>The road of excess<\/p>\n<p class="quote-by"><a href="https:\/\/x\.test">William Blake<\/a><\/p>/);
-  assert.match(body, /<p class="quote-by"><a href="https:\/\/www\.blueletterbible\.org\/rsv\/psalm\/23">Psalm 23<\/a><\/p>/);
-  assert.match(body, /<p>a\n– b\nc<\/p>/);
-});
-
 test('tables render', () => {
   const { body } = render('| a | b |\n|---|:-:|\n| 1 | 2 |\n');
   assert.match(body, /<table>\n<thead>\n<tr>\n<th>a<\/th>\n<th style="text-align:center">b<\/th>/);
