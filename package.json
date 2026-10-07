@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "gutter-md": "file:../aside-markdown",
+    "markdown-it": "^14.3.2",
     "markdown-it-emoji": "^3.1.0"
   },
   "license": "MIT",

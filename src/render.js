@@ -1,19 +1,28 @@
 /**
  * Markdown (with `~` asides) -> { css, body } for the preview pane.
  *
- * gutter-md renders a standalone page; the preview iframe is loaded once and
- * has its style and body swapped on every keystroke, so this cuts that page
- * back into its two halves.
+ * One markdown-it parses every document: gutter-md's asides and front
+ * matter, then each feature's plugin. gutter-md lays the tokens out in its
+ * two columns, and the preview iframe, loaded once, has its style and body
+ * swapped for these on every keystroke.
  */
 
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { parse, toHtml } from 'gutter-md';
+import MarkdownIt from 'markdown-it';
+import { gutterMd, columns } from 'gutter-md';
 import EMOJI from 'markdown-it-emoji/lib/data/full.mjs';
 import { ldsLink } from './lds.js';
 import { FEATURES } from '../features/index.js';
 import { LEAD as QA_LEAD } from '../features/qa/index.js';
+
+// Asides are kept out of the speaker's tokens (`inline: false`), for the
+// columns to place beside them.
+const md = FEATURES.reduce(
+  (m, f) => m.use(f.plugin),
+  new MarkdownIt({ html: false, linkify: true, typographer: true, breaks: false }).use(gutterMd, { inline: false }),
+);
 
 /**
  * `line` is the line of the file `src` starts on, when it is only part of
@@ -21,7 +30,10 @@ import { LEAD as QA_LEAD } from '../features/qa/index.js';
  */
 export function render(src, { file, puzzleBase = 0, read, line = 0 } = {}) {
   const text = expand(src || '', { line });
-  const { meta, asides } = parse(text);
+  const env = {};
+  const tokens = md.parse(text, env);
+  const meta = env.frontMatter || {};
+  const asides = env.asides || [];
   // The line of the file, as written, that a marker's line number names.
   const lines = (src || '').split('\n');
   const lineAt = (n) => lines[n - line] ?? '';
@@ -31,11 +43,11 @@ export function render(src, { file, puzzleBase = 0, read, line = 0 } = {}) {
   const headings = Boolean(asides.length && (meta.speaker || meta.listener));
   const title = meta.title || (file ? path.basename(file, path.extname(file)) : 'Untitled');
 
-  const html = toHtml(text, { layout: 'columns', headings, title, plugins: FEATURES.map((f) => f.plugin) });
-  const body = emojify(styles(maths(searches(quotes(fields(tasks(alerts(figures(sizes(between(html, '<body>', '</body>').trim()))), lineAt), lineAt))))));
+  const page = columns(md, tokens, env, { headings, title });
+  const body = emojify(styles(maths(searches(quotes(fields(tasks(alerts(figures(sizes(page.body.trim()))), lineAt), lineAt))))));
   const played = puzzles(body, puzzleBase, fences(text, { file, read, line }));
   return {
-    css: [between(html, '<style>', '</style>').trim(), CSS, ...FEATURES.map((f) => f.css)].join('\n'),
+    css: [page.css.trim(), CSS, ...FEATURES.map((f) => f.css)].join('\n'),
     body: played.html,
     asides: asides.length,
     puzzles: played.count,
@@ -784,11 +796,4 @@ function outsideCode(line, fn) {
     pos = m.index + m[0].length;
   }
   return out + fn(line.slice(pos));
-}
-
-function between(s, open, close) {
-  const start = s.indexOf(open);
-  const end = s.lastIndexOf(close);
-  if (start < 0 || end < start) return '';
-  return s.slice(start + open.length, end);
 }
