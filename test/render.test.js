@@ -25,13 +25,6 @@ test('an image alone in a paragraph is a captioned figure', () => {
   assert.match(body, /<p>see <img src="x\.png" alt="x"> inline<\/p>/);
 });
 
-test('GitHub alerts become callouts', () => {
-  const { body } = render('> [!WARNING]\n> careful\n\n> [!tip]\n>\n> one\n>\n> two\n\n> [!NOPE]\n> plain\n');
-  assert.match(body, /<blockquote class="alert alert-warning">\n<p class="alert-title"><span aria-hidden="true">⚠️<\/span> Warning<\/p>\n<p>careful<\/p>/);
-  assert.match(body, /<blockquote class="alert alert-tip">\n<p class="alert-title">.*Tip<\/p>\n<p>one<\/p>\n<p>two<\/p>/);
-  assert.match(body, /<blockquote>\n<p>\[!NOPE\]\nplain<\/p>/);
-});
-
 test('a blockquote closing with -- gets an attribution', () => {
   const { body } = render(
     '> The road of excess\n> -- [William Blake](https://x.test)\n\n> one\n>\n> -- scripture:[Psalm 23]\n\n> a\n> -- b\n> c\n',

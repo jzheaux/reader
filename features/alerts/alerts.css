@@ -1,0 +1,23 @@
+blockquote.alert {
+  color: inherit;
+  border: 0.75px solid var(--gm-rule);
+  border-left-width: 3px;
+  border-radius: 4px;
+  padding: 0.55rem 0.85rem;
+  margin: 0.8rem 0;
+  break-inside: avoid;
+}
+blockquote.alert > p { margin: 0.3rem 0; }
+.alert .alert-title {
+  font-family: var(--gm-sans);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-top: 0;
+}
+.alert-note { border-color: #9db4d6; background: #f4f7fb; }
+.alert-tip { border-color: #9cc9a6; background: #f3f9f4; }
+.alert-important { border-color: #b8a3d9; background: #f7f4fb; }
+.alert-warning { border-color: #dcc07a; background: #fcf8ec; }
+.alert-caution { border-color: #dc9a92; background: #fcf1f0; }

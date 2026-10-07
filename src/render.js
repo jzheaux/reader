@@ -42,7 +42,7 @@ export function render(src, { file, puzzleBase = 0, read, line = 0 } = {}) {
 
   const page = columns(md, tokens, env, { headings, title });
   // Then each feature's pass over the finished page, if it has one.
-  const body = FEATURES.reduce((html, f) => (f.html ? f.html(html) : html), maths(quotes(alerts(figures(page.body.trim())))));
+  const body = FEATURES.reduce((html, f) => (f.html ? f.html(html) : html), maths(quotes(figures(page.body.trim()))));
   const played = puzzles(body, puzzleBase, fences(text, { file, read, line }));
   return {
     css: [page.css.trim(), CSS, ...FEATURES.map((f) => f.css).filter(Boolean)].join('\n'),
@@ -249,31 +249,6 @@ export function figures(html) {
   });
 }
 
-const ALERTS = {
-  note: { icon: '📝', label: 'Note' },
-  tip: { icon: '💡', label: 'Tip' },
-  important: { icon: '❗', label: 'Important' },
-  warning: { icon: '⚠️', label: 'Warning' },
-  caution: { icon: '🛑', label: 'Caution' },
-};
-const ALERT = /<blockquote>\n<p((?: [^>]*)?)>\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\](?:<\/p>\n|\n)/gi;
-
-/**
- * GitHub's alerts: a blockquote opening with `[!NOTE]`, `[!TIP]`,
- * `[!IMPORTANT]`, `[!WARNING]` or `[!CAUTION]` becomes a boxed callout with
- * that emoji at its head. Elsewhere it reads as an ordinary blockquote.
- */
-export function alerts(html) {
-  return html.replace(ALERT, (m, attrs, kind) => {
-    const { icon, label } = ALERTS[kind.toLowerCase()];
-    const head = `<p class="alert-title"><span aria-hidden="true">${icon}</span> ${label}</p>\n`;
-    // A `[!NOTE]` alone in its paragraph closed that paragraph; one followed
-    // by text on the next line did not, so open a new one for the text,
-    // keeping the paragraph's attributes (a `:::` block's style).
-    return `<blockquote class="alert alert-${kind.toLowerCase()}">\n${head}${m.endsWith('</p>\n') ? '' : `<p${attrs}>`}`;
-  });
-}
-
 const QUOTE_BY = new RegExp(`<p((?: [^>]*)?)>${BYLINE}|\\n${BYLINE}`, 'g');
 
 /**
@@ -318,30 +293,6 @@ figcaption {
   margin-top: 0.35rem;
 }
 img { max-width: 100%; }
-
-blockquote.alert {
-  color: inherit;
-  border: 0.75px solid var(--gm-rule);
-  border-left-width: 3px;
-  border-radius: 4px;
-  padding: 0.55rem 0.85rem;
-  margin: 0.8rem 0;
-  break-inside: avoid;
-}
-blockquote.alert > p { margin: 0.3rem 0; }
-.alert .alert-title {
-  font-family: var(--gm-sans);
-  font-size: 0.8rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  margin-top: 0;
-}
-.alert-note { border-color: #9db4d6; background: #f4f7fb; }
-.alert-tip { border-color: #9cc9a6; background: #f3f9f4; }
-.alert-important { border-color: #b8a3d9; background: #f7f4fb; }
-.alert-warning { border-color: #dcc07a; background: #fcf8ec; }
-.alert-caution { border-color: #dc9a92; background: #fcf1f0; }
 
 blockquote:has(> .quote-by) {
   position: relative;
