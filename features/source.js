@@ -96,3 +96,13 @@ export const escapeHtml = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&a
 
 /** `&`, `"` and `<` escaped, for an attribute's value. */
 export const escapeAttr = (s) => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+
+/**
+ * Adds `name` to a token's classes, after any it has; a token that had none
+ * gets its class attribute first, as markdown writes it.
+ */
+export function addClass(token, name) {
+  const had = token.attrGet('class');
+  if (had) token.attrSet('class', `${had} ${name}`);
+  else token.attrs = [['class', name], ...(token.attrs || [])];
+}

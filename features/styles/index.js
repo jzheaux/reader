@@ -38,11 +38,8 @@ export function styles(md) {
   beforeAsides(md, 'style_lines', lines);
   md.inline.ruler.before('link', 'style_span', span);
   // Before other features look at the text: a marker isn't theirs to see.
+  // A class they add to the block then comes after this one's.
   md.core.ruler.after('text_join', 'style_blocks', blocks);
-  // Last, so a class this adds comes ahead of theirs.
-  md.core.ruler.push('style_attrs', (state) => {
-    for (const t of state.tokens) if (t.meta?.style) apply(t, t.meta.style);
-  });
   md.renderer.rules.style_span_open = (tokens, i, opts, env, self) => self.renderToken(tokens, i, opts);
   md.renderer.rules.style_span_close = (tokens, i, opts, env, self) => self.renderToken(tokens, i, opts);
 }
@@ -114,7 +111,10 @@ function blocks(state) {
       });
     }
     const block = names && holder(tokens, i);
-    if (block && !block.meta?.style) block.meta = { ...block.meta, style: names };
+    if (block && !block.meta?.styled) {
+      block.meta = { ...block.meta, styled: true };
+      apply(block, names);
+    }
   }
 }
 

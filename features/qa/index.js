@@ -19,7 +19,7 @@
  */
 
 import fs from 'node:fs';
-import { beforeAsides } from '../source.js';
+import { beforeAsides, addClass } from '../source.js';
 
 // A name may hold a link, whose address is in parentheses of its own.
 const QA = /^\\?([QA])(?:[ \t]*\(((?:[^()\n]|\([^()\n]*\))*)\))?:[ \t]+(?=\S)/;
@@ -92,7 +92,7 @@ function items(state) {
     const t = tokens[i];
     if (t.type === 'list_item_open' && t.markup === '+' && said.get(t.map?.[0])?.who) {
       const { who, name } = said.get(t.map[0]);
-      t.attrJoin('class', `qa qa-${who.toLowerCase()}`);
+      addClass(t, `qa qa-${who.toLowerCase()}`);
       let k = i + 1;
       while (k < tokens.length && tokens[k].type !== 'inline') k++;
       const inline = tokens[k];

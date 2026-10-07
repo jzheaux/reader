@@ -11,7 +11,7 @@
 
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { beforeAsides, readLines, placeholder, splitText, escapeAttr } from '../source.js';
+import { beforeAsides, readLines, placeholder, splitText, escapeAttr, addClass } from '../source.js';
 
 const TASK = /^([ \t]*(?:[>~][ \t]*)*(?:[-*+]|\d{1,9}[.)])[ \t]+)(?:\[([ xX])\]|\(([ xX])\))(?=[ \t]|$)/;
 const OPEN = '\uE000';
@@ -49,7 +49,7 @@ export function tasks(md) {
         const m = first?.type === 'text' && AT_HEAD.exec(first.content);
         const box = m && tasks.boxes[Number(m[1])];
         if (!box) continue;
-        t.attrSet('class', ['task', t.attrGet('class')].filter(Boolean).join(' '));
+        addClass(t, 'task');
         first.content = first.content.slice(m[0].length);
         const input = new state.Token('task_box', 'input', 0);
         input.meta = { ...box, group: lists.at(-1) };
