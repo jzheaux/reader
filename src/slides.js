@@ -140,12 +140,13 @@ function unmast(body) {
 // Scaled to the window, and centered on it, like a projected slide. The
 // `:root` prefix outranks the preview frame's own pane-sized rules.
 const CSS = `
-:root { --gm-base: clamp(14px, 2.1vw, 40px); }
+/* sized by the window's width, or its height when it's wider than 16:9 */
+:root { --gm-base: clamp(14px, min(2.1vw, 3.73vh), 40px); }
 :root body { overflow: hidden; }
 :root .gm-doc {
   max-width: none; min-height: 100vh; margin: 0;
   padding: 6vh 8vw;
-  display: flex; flex-direction: column; justify-content: center;
+  display: flex; flex-direction: column; justify-content: safe center;
 }
 :root .gm-doc h1 { font-size: 2.6rem; line-height: 1.12; margin: 0 0 0.5em; }
 :root .gm-doc h2 { font-size: 1.9rem; line-height: 1.15; margin: 0 0 0.6em; }

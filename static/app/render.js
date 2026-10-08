@@ -6,6 +6,7 @@ import { el, state, RENDER_DELAY } from './state.js';
 import { api, contentUrl } from './api.js';
 import { toast } from './status.js';
 import { updatePresentable } from './deck.js';
+import { scheduleFitCheck } from './fit.js';
 
 // The frame says 'ready' when it loads, but it may have loaded before this
 // module ran and that message is gone. So also ask: a 'ping' is answered with
@@ -41,6 +42,7 @@ export async function renderNow({ resetScroll = false } = {}) {
   }
   if (seq !== state.renderSeq) return;
   updatePresentable(out.deck);
+  scheduleFitCheck(out.deck);
   await state.previewReady;
   el.preview.contentWindow.postMessage({
     type: 'render',

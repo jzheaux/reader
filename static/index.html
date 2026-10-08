@@ -17,7 +17,10 @@
   </div>
   <div class="bar-right">
     <span class="save-state" id="saveState"></span>
-    <button class="ghost small" id="presentBtn" title="Present as slides (⌘⇧.)" hidden>Present</button>
+    <span class="present-wrap" id="presentWrap">
+      <button class="ghost small" id="presentBtn" title="Present as slides (⌘⇧.)" hidden>Present</button>
+      <div class="fit-pop" id="fitPop" hidden></div>
+    </span>
     <button class="ghost small" id="readBtn" title="Read without editing (⌘.)">Read</button>
     <button class="ghost small" id="helpToggle">Formatting</button>
   </div>
@@ -82,6 +85,9 @@
 </div>
 
 <div class="toast" id="toast" hidden></div>
+
+<!-- where each slide is measured, at the speaker view's size; see app/fit.js -->
+<iframe class="measure" id="measure" src="/preview.html" title="" tabindex="-1" aria-hidden="true" sandbox="allow-scripts"></iframe>
 
 <script type="module" src="/app/main.js"></script>
 </body>

@@ -20,6 +20,13 @@
 .step-hidden { visibility: hidden; opacity: 0; }
 .step-dim { opacity: .25; }
 
+/* a slide shrunk to fit (preview.js sets --fit): everything on it together,
+ * inside the slide's margins. Code that still won't fit across wraps, and a
+ * slide that still won't fit at all scrolls. */
+.deck .gm-doc > * { zoom: var(--fit, 1); }
+.deck.fit-wrap .gm-doc pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+.deck.fit-over body { overflow-y: auto; }
+
 /* the image an image link points to, shown while the link is hovered:
  * a small matted print, tipped up off the top right of the link. It's
  * flourish, not content, so it stays small. */

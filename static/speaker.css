@@ -35,6 +35,8 @@ body {
 .clock { display: flex; align-items: baseline; gap: 18px; flex-wrap: wrap; font-variant-numeric: tabular-nums; }
 .clock .count { font-size: 30px; font-weight: 600; }
 .clock .steps { font-size: 14px; letter-spacing: .15em; color: var(--ink-soft); }
+.clock .fit { font-size: 12px; color: var(--ink-soft); }
+.clock .fit.over { color: #ef7d99; font-weight: 600; }
 .clock .timer { font-size: 30px; color: var(--accent); cursor: pointer; }
 .clock .time { color: var(--ink-soft); }
 .clock .hint { font-size: 12px; color: var(--ink-faint); flex-basis: 100%; }

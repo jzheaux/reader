@@ -82,6 +82,15 @@ channel.addEventListener('message', (e) => {
   }
 });
 
+// How the slide on stage was fitted, as the room sees it at this size.
+window.addEventListener('message', (e) => {
+  if (e.source !== $('now').contentWindow || e.data?.type !== 'fit') return;
+  const { zoom, fits } = e.data;
+  $('fit').hidden = fits && zoom >= 1;
+  $('fit').classList.toggle('over', !fits);
+  $('fit').textContent = fits ? `shrunk to ${Math.round(zoom * 100)}%` : "doesn't fit; scrolls";
+});
+
 // The keys that move through the deck work here too; the deck does the moving.
 const MOVES = new Set(['n', 'N', 'p', 'P', 'ArrowRight', 'ArrowDown', 'PageDown', ' ', 'Enter',
   'ArrowLeft', 'ArrowUp', 'PageUp', 'Backspace', 'Home', 'End']);

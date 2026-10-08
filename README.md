@@ -385,6 +385,18 @@ reading order. A slide's opening heading isn't a step: it shows with the
 slide. An aside shows with the passage it sits beside. Steps not yet shown
 keep their space, so the slide doesn't shift as they appear.
 
+A slide **shrinks to fit** the window: everything on it together, puzzles
+included, as large as it fits, measured with every step showing so it keeps
+its size as they appear. It shrinks no further than 60%. Code still too
+wide then wraps, and a slide still too tall scrolls, bringing each step
+into view as it appears. The speaker view says how much the current slide
+shrank.
+
+Hover **Present** to see which slides shrink below 80%, or don't fit at
+all, at the speaker view's size (1280×720); click one to go to it. Not
+every file with a `---` is a deck, so nothing is measured until you hover
+Present or present the file; after that, it's measured again as you edit.
+
 While presenting:
 
 | | |
@@ -478,10 +490,10 @@ $ npm run lint
 | `src/columns.js` | the two-column layout: the speaker's passages beside the asides written against them, under the masthead |
 | `features/` | one directory per piece of syntax: its markdown-it plugin, CSS, tests and, if it can be clicked, the `preview.js` that makes it so (so far: `asides`, `fields`, `tasks`, `qa`, `sizes`, `alerts`, `attributions`, `styles`, `scripture`, `scripture-lds`, `search`, `math`, `arrows`, `emoji`, `highlight`, `puzzles`) |
 | `src/slides.js` | a `slides`-format deck → rendered slides and their notes |
-| `static/app/` | the app, a module each: `main.js` (start, events, keys), `files.js`, `render.js` (the preview), `saving.js`, `editing.js`, `modes.js` (layout, read mode), `deck.js` (presenting), `pdf.js`, `status.js`, `api.js`, `state.js` |
+| `static/app/` | the app, a module each: `main.js` (start, events, keys), `files.js`, `render.js` (the preview), `saving.js`, `editing.js`, `modes.js` (layout, read mode), `deck.js` (presenting), `fit.js` (slides that don't fit), `pdf.js`, `status.js`, `api.js`, `state.js` |
 | `static/preview.html` | the sandboxed preview frame |
 | `static/preview-api.js` | what the frame offers the scripts drawn into it: `Preview.edit`, `Preview.register` |
-| `static/preview.js` | the frame itself: rendering, slide steps, image peeks, shortcuts |
+| `static/preview.js` | the frame itself: rendering, slide steps, fitting a slide, image peeks, shortcuts |
 | `static/edits.js` | edits the preview asks for, checked against the lines they were drawn from |
 | `features/puzzles/` | puzzle fences: found and wrapped (`index.js`), drawn, played and posted back in the preview (`preview.js`) |
 | `features/puzzles/kinds/` | one file per kind of puzzle; a file here is a fence name |

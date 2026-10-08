@@ -9,6 +9,7 @@ import { save } from './saving.js';
 import { setReading } from './modes.js';
 import { toast } from './status.js';
 import * as moves from './moves.js';
+import { treatAsDeck } from './fit.js';
 
 //
 // A file in the format of https://github.com/maaslalani/slides -- slides
@@ -32,6 +33,7 @@ export function updatePresentable(isDeck = false) {
 
 export async function present() {
   if (state.current?.type !== 'md' || deck.open) return;
+  treatAsDeck();
   if (dirty()) save();
   const line = el.editor.value.slice(0, el.editor.selectionStart).split('\n').length - 1;
   if (!(await loadDeck())) return;

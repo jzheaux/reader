@@ -26,7 +26,87 @@
         line.classList.toggle('hl', (line.dataset.focus || '').split(' ').includes(String(at)));
       }
     }
+    // A slide too big even when shrunk scrolls, so what was just revealed
+    // is brought into view.
+    if (fitted.over) {
+      const shown = [...document.querySelectorAll('[data-step]')].filter((n) => Number(n.dataset.step) <= k);
+      shown.at(-1)?.scrollIntoView({ block: 'nearest' });
+    }
   }
+
+  // A slide is shrunk to fit the window, everything on it together (`zoom`,
+  // so a puzzle sized by the window shrinks with the text), as large as it
+  // can be and no smaller than FLOOR. It's measured with every step shown,
+  // so its size doesn't change as they appear. Code still too wide at FLOOR
+  // wraps; a slide still too big at FLOOR scrolls. What it came to goes up
+  // to the window showing it, with the render's `measure` id if it had one.
+  const FLOOR = 0.6;
+  let fitted = { zoom: 1, fits: true, wrapped: false, over: false };
+
+  function zoomTo(z) {
+    document.documentElement.style.setProperty('--fit', String(z));
+  }
+
+  function fits() {
+    const doc = document.querySelector('.gm-doc');
+    if (doc.offsetHeight > innerHeight + 1) return false;
+    // Inside the slide's margins: a column grows as wide as code that won't
+    // wrap, past them.
+    const right = doc.getBoundingClientRect().right - parseFloat(getComputedStyle(doc).paddingRight);
+    if ([...doc.querySelectorAll('.gm-pair > *')].some((c) => c.getBoundingClientRect().right > right + 1)) return false;
+    return [...doc.querySelectorAll('pre')].every((pre) => pre.scrollWidth <= pre.clientWidth + 1);
+  }
+
+  /** The largest zoom from FLOOR to 1 at which the slide fits, or null. */
+  function largest() {
+    zoomTo(1);
+    if (fits()) return 1;
+    zoomTo(FLOOR);
+    if (!fits()) return null;
+    let lo = FLOOR;
+    let hi = 1;
+    while (hi - lo > 0.01) {
+      const mid = (lo + hi) / 2;
+      zoomTo(mid);
+      if (fits()) lo = mid;
+      else hi = mid;
+    }
+    return lo;
+  }
+
+  function fit(measure) {
+    const root = document.documentElement;
+    root.classList.remove('fit-wrap', 'fit-over');
+    if (!Preview.deck || !document.querySelector('.gm-doc')) {
+      zoomTo(1);
+      fitted = { zoom: 1, fits: true, wrapped: false, over: false };
+      return;
+    }
+    let zoom = largest();
+    const wrapped = zoom == null && [...document.querySelectorAll('.gm-doc pre')].some((pre) => pre.scrollWidth > pre.clientWidth + 1);
+    if (wrapped) {
+      root.classList.add('fit-wrap');
+      zoom = largest();
+    }
+    const over = zoom == null;
+    root.classList.toggle('fit-over', over);
+    zoomTo(Math.floor((over ? FLOOR : zoom) * 100) / 100);
+    fitted = { zoom: over ? FLOOR : zoom, fits: !over, wrapped, over };
+    window.parent.postMessage({ type: 'fit', measure, zoom: fitted.zoom, fits: fitted.fits, wrapped }, '*');
+  }
+
+  // Images and fonts change a slide's size as they arrive. A measurement
+  // waits for them, a little while at most.
+  const settled = () => Promise.race([
+    Promise.all([
+      document.fonts.ready,
+      ...[...document.images].filter((img) => !img.complete)
+        .map((img) => new Promise((done) => { img.onload = img.onerror = done; })),
+    ]),
+    new Promise((done) => setTimeout(done, 2000)),
+  ]);
+  document.addEventListener('load', (e) => { if (Preview.deck && e.target.tagName === 'IMG') fit(); }, true);
+  window.addEventListener('resize', () => fit());
 
   window.addEventListener('message', (e) => {
     if (e.source !== window.parent) return;
@@ -45,6 +125,8 @@
       Preview.deck = Boolean(m.deck);
       document.documentElement.classList.toggle('deck', Preview.deck);
       dim = Boolean(m.dim);
+      fit();
+      if (m.measure != null) settled().then(() => fit(m.measure));
       if (m.reveal != null) reveal(m.reveal);
       if (m.resetScroll) window.scrollTo(0, 0);
       else window.scrollTo(0, y);

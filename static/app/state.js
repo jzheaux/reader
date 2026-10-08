@@ -14,8 +14,8 @@ export const el = {
   preview: $('preview'), pdfView: $('pdfView'), empty: $('empty'),
   writePane: $('writePane'), editor: $('editor'),
   conflict: $('conflict'), reloadBtn: $('reloadBtn'), overwriteBtn: $('overwriteBtn'),
-  dirtyDot: $('dirtyDot'), counts: $('counts'), footPath: $('footPath'), toast: $('toast'),
-  readBtn: $('readBtn'), presentBtn: $('presentBtn'),
+  dirtyDot: $('dirtyDot'), counts: $('counts'), measure: $('measure'), footPath: $('footPath'), toast: $('toast'),
+  readBtn: $('readBtn'), presentBtn: $('presentBtn'), presentWrap: $('presentWrap'), fitPop: $('fitPop'),
   deck: $('deck'), stage: $('stage'), deckNotes: $('deckNotes'), deckBy: $('deckBy'), deckCount: $('deckCount'),
 };
 

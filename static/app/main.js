@@ -13,6 +13,7 @@ import { toast } from './status.js';
 import { replaceSelection, wrap, insertLink, applyEdit, onEditorInput } from './editing.js';
 import { toggleSidebar, restoreLayout, setReading } from './modes.js';
 import { present, back, next, deckKey, onSpeakerMessage } from './deck.js';
+import { wireFit } from './fit.js';
 
 state.previewReady = whenReady(el.preview);
 deck.stageReady = whenReady(el.stage);
@@ -51,6 +52,7 @@ function wire() {
   });
 
   el.readBtn.addEventListener('click', () => setReading(!state.reading));
+  wireFit();
   el.presentBtn.addEventListener('click', present);
   el.deck.addEventListener('click', (e) => {
     if (e.target.closest('.deck-notes, .deck-foot')) return;
