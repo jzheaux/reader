@@ -20,6 +20,9 @@ md.core.ruler.before('aside_extract', 'reader_expand', (state) => {
   if (!state.inlineMode && !state.env.__aside) state.src = expand(state.src);
 });
 for (const f of FEATURES.filter((f) => f.plugin && !f.raw)) md.use(f.plugin);
+md.core.ruler.push('reader_lines', (state) => {
+  if (state.env.lines && !state.inlineMode && !state.env.__aside) markLines(state.tokens, state.env);
+});
 
 /**
  * `line` is the line of the file `src` starts on, when it is only part of
@@ -29,11 +32,12 @@ for (const f of FEATURES.filter((f) => f.plugin && !f.raw)) md.use(f.plugin);
  * is kept by features across the renders of one document's parts (a deck's
  * slides), to number things through the whole of it. `asideKey` is the
  * aliases its asides may use when `src` doesn't declare its own (a deck's,
- * for one slide of it).
+ * for one slide of it). `lines` marks each block with the line of the file
+ * it was drawn from, `data-line`, for scrolling in step with the editor.
  */
-export function render(src, { file, read, line = 0, shared = {}, asideKey } = {}) {
+export function render(src, { file, read, line = 0, shared = {}, asideKey, lines = false } = {}) {
   const text = src || '';
-  const env = { lineBase: line, file, read, shared, asideKey };
+  const env = { lineBase: line, file, read, shared, asideKey, lines };
   const tokens = md.parse(text, env);
   const meta = env.frontMatter || {};
   const asides = env.asides || [];
@@ -59,6 +63,20 @@ export function render(src, { file, read, line = 0, shared = {}, asideKey } = {}
  */
 export function renderNotes(src) {
   return src ? md.render(src, { lineBase: 0, shared: {} }).trim() : '';
+}
+
+/**
+ * Each block that opens on a line of its own gets that line of the file as
+ * `data-line`, 0-based. Token maps count lines of what the asides feature
+ * left, so they're traced back through `env.sourceLines`. Asides aren't
+ * marked: they're parsed apart, and set beside the line they follow.
+ */
+function markLines(tokens, env) {
+  const base = env.lineBase ?? 0;
+  for (const t of tokens) {
+    if (!t.block || !t.map || t.nesting < 0 || t.type === 'inline') continue;
+    t.attrSet('data-line', String(base + (env.sourceLines?.[t.map[0]] ?? t.map[0])));
+  }
 }
 
 const FENCE = /^\s{0,3}(`{3,}|~{3,})/;

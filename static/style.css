@@ -204,6 +204,8 @@ button, .ghost { font: inherit; font-size: 13px; border-radius: 7px; cursor: poi
   tab-size: 2;
 }
 #editor:disabled { opacity: .5; }
+/* the editor's text, wrapped as it is, to find where each line is (sync.js) */
+.editor-mirror { position: absolute; left: -20000px; top: 0; visibility: hidden; contain: layout style; }
 #editor::placeholder { color: var(--ink-faint); font-family: var(--sans); font-size: 14.5px; }
 
 .write-foot {

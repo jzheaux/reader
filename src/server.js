@@ -159,7 +159,7 @@ export function createServer({ root }) {
     const body = await readJson(req);
 
     if (route === '/api/render' && req.method === 'POST') {
-      return sendJson(res, { ...render(body.text, { file: body.path, read }), deck: isDeck(body.text) });
+      return sendJson(res, { ...render(body.text, { file: body.path, read, lines: true }), deck: isDeck(body.text) });
     }
     if (route === '/api/slides' && req.method === 'POST') {
       return sendJson(res, slides(body.text, { file: body.path, read }));

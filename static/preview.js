@@ -2,7 +2,7 @@
  * The preview frame: loaded once, sandboxed (an opaque origin), after
  * preview-api.js and the scripts that use it. The parent posts the rendered
  * document in and this swaps it into place, keeping the scroll position; it
- * also steps through a slide, scrolls along with the editor, shows the image
+ * also steps through a slide, scrolls in step with the editor, shows the image
  * an image link points to, and hands the app's shortcuts back up.
  */
 (() => {
@@ -113,6 +113,83 @@
   document.addEventListener('load', (e) => { if (Preview.deck && e.target.tagName === 'IMG') fit(); }, true);
   window.addEventListener('resize', () => fit());
 
+  // Scrolling in step with the editor, by the line of the file each block
+  // was drawn from (`data-line`). Whichever side was last touched leads and
+  // says which line is at its top; the other follows. Following eases toward
+  // where it's sent rather than jumping there, so a scroll that slows to a
+  // stop on one side doesn't stutter on the other.
+  const EASE = 0.4;
+  let marks = null;     // [{ line, top }], rising in both
+  let lines = 0;        // how many lines the file has
+  let leading = false;  // the reader is scrolling this side
+  let goal = 0;
+  let at = 0;           // where following has got to, unrounded
+  let easing = 0;
+
+  /** Where each marked block is, in document order, the bottom of the page standing for the end of the file. */
+  function anchors() {
+    if (marks) return marks;
+    marks = [{ line: 0, top: 0 }];
+    for (const node of document.querySelectorAll('[data-line]')) {
+      if (!node.getClientRects().length) continue;
+      const line = Number(node.dataset.line);
+      const top = node.getBoundingClientRect().top + scrollY;
+      const last = marks.at(-1);
+      if (line > last.line && top >= last.top) marks.push({ line, top });
+    }
+    const end = document.documentElement.scrollHeight;
+    if (lines > marks.at(-1).line && end > marks.at(-1).top) marks.push({ line: lines, top: end });
+    return marks;
+  }
+  new ResizeObserver(() => { marks = null; }).observe(document.body);
+
+  /** `to` for `from`, between the anchors either side of it. */
+  function between(from, to, v) {
+    const m = anchors();
+    let i = 1;
+    while (i < m.length - 1 && m[i][from] <= v) i++;
+    const a = m[i - 1];
+    const b = m[i] ?? a;
+    if (b[from] === a[from]) return a[to];
+    return a[to] + ((v - a[from]) / (b[from] - a[from])) * (b[to] - a[to]);
+  }
+
+  function follow(line) {
+    leading = false;
+    if (Preview.deck) return;
+    const max = document.documentElement.scrollHeight - innerHeight;
+    goal = Math.max(0, Math.min(max, between('line', 'top', line)));
+    if (!easing) {
+      at = scrollY;
+      easing = requestAnimationFrame(ease);
+    }
+  }
+
+  function ease() {
+    const d = goal - at;
+    at = Math.abs(d) < 0.5 ? goal : at + d * EASE;
+    window.scrollTo(0, at);
+    easing = at === goal ? 0 : requestAnimationFrame(ease);
+  }
+
+  function lead() {
+    leading = true;
+    cancelAnimationFrame(easing);
+    easing = 0;
+  }
+  for (const type of ['wheel', 'pointerdown', 'touchstart', 'keydown']) {
+    window.addEventListener(type, lead, { capture: true, passive: true });
+  }
+
+  let telling = 0;
+  function tell() {
+    telling = 0;
+    if (leading && !Preview.deck) window.parent.postMessage({ type: 'scrolled', line: between('top', 'line', scrollY) }, '*');
+  }
+  window.addEventListener('scroll', () => {
+    if (leading && !telling) telling = requestAnimationFrame(tell);
+  }, { passive: true });
+
   window.addEventListener('message', (e) => {
     if (e.source !== window.parent) return;
     const m = e.data || {};
@@ -137,13 +214,21 @@
       fit();
       if (m.measure != null) settled().then(() => fit(m.measure));
       if (m.reveal != null) reveal(m.reveal);
-      if (m.resetScroll) window.scrollTo(0, 0);
-      else window.scrollTo(0, y);
+      marks = null;
+      if (m.lines != null) lines = m.lines;
+      if (m.resetScroll) {
+        cancelAnimationFrame(easing);
+        easing = 0;
+        window.scrollTo(0, 0);
+      } else {
+        window.scrollTo(0, y);
+        // What's above may have grown or shrunk; put the editor back level.
+        tell();
+      }
     } else if (m.type === 'reveal') {
       reveal(m.reveal);
     } else if (m.type === 'scroll') {
-      const max = document.documentElement.scrollHeight - window.innerHeight;
-      window.scrollTo(0, Math.max(0, m.fraction * max));
+      follow(m.line);
     }
   });
 

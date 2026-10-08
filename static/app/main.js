@@ -7,13 +7,14 @@
 import { el, state, deck, dirty } from './state.js';
 import { api } from './api.js';
 import { loadTree, drawTree, visiblePaths, step, open, today, createFile } from './files.js';
-import { whenReady, showEmpty, syncScroll } from './render.js';
+import { whenReady, showEmpty } from './render.js';
 import { save, reloadFromDisk, checkDisk } from './saving.js';
 import { toast } from './status.js';
 import { replaceSelection, wrap, insertLink, applyEdit, onEditorInput } from './editing.js';
 import { toggleSidebar, restoreLayout, setReading } from './modes.js';
 import { present, back, next, deckKey, onSpeakerMessage } from './deck.js';
 import { wireFit } from './fit.js';
+import { wireSync } from './sync.js';
 
 state.previewReady = whenReady(el.preview);
 deck.stageReady = whenReady(el.stage);
@@ -62,7 +63,7 @@ function wire() {
     deck.channel = new BroadcastChannel('reader-deck');
     deck.channel.addEventListener('message', onSpeakerMessage);
   }
-  el.editor.addEventListener('scroll', () => requestAnimationFrame(syncScroll), { passive: true });
+  wireSync();
 
   el.filter.addEventListener('input', drawTree);
   el.filter.addEventListener('keydown', (e) => {

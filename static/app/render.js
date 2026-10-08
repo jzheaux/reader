@@ -7,6 +7,7 @@ import { api, contentUrl } from './api.js';
 import { toast } from './status.js';
 import { updatePresentable } from './deck.js';
 import { scheduleFitCheck } from './fit.js';
+import { sendScroll } from './sync.js';
 
 // The frame says 'ready' when it loads, but it may have loaded before this
 // module ran and that message is gone. So also ask: a 'ping' is answered with
@@ -50,7 +51,10 @@ export async function renderNow({ resetScroll = false } = {}) {
     body: out.body,
     base: baseFor(path),
     resetScroll,
+    lines: el.editor.value.split('\n').length,
   }, '*');
+  // What's above may have grown or shrunk; put the page back level.
+  if (!resetScroll) sendScroll();
 }
 
 /** Where a note's relative links and images resolve. */
@@ -72,11 +76,4 @@ export function showEmpty(msg) {
   el.empty.hidden = false;
   el.empty.textContent = msg;
   el.editor.disabled = true;
-}
-
-export function syncScroll() {
-  if (state.current?.type !== 'md' || el.preview.hidden) return;
-  const t = el.editor;
-  const max = t.scrollHeight - t.clientHeight;
-  el.preview.contentWindow.postMessage({ type: 'scroll', fraction: max > 0 ? t.scrollTop / max : 0 }, '*');
 }
