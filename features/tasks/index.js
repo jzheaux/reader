@@ -13,7 +13,7 @@ import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { beforeAsides, readLines, placeholder, splitText, escapeAttr, addClass } from '../source.js';
 
-const TASK = /^([ \t]*(?:[>~][ \t]*)*(?:[-*+]|\d{1,9}[.)])[ \t]+)(?:\[([ xX])\]|\(([ xX])\))(?=[ \t]|$)/;
+const TASK = /^([ \t]*(?:[>~][ \t]*|~[^\s~]+[ \t]+)*(?:[-*+]|\d{1,9}[.)])[ \t]+)(?:\[([ xX])\]|\(([ xX])\))(?=[ \t]|$)/;
 const OPEN = '\uE000';
 const CLOSE = '\uE001';
 const PLACED = new RegExp(`${OPEN}(\\d+)${CLOSE}`, 'g');

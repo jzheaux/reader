@@ -27,11 +27,13 @@ for (const f of FEATURES.filter((f) => f.plugin && !f.raw)) md.use(f.plugin);
  * `file` is the document's path, and `read(path)` reads another file from
  * the content directory, for features that may (a puzzle's board). `shared`
  * is kept by features across the renders of one document's parts (a deck's
- * slides), to number things through the whole of it.
+ * slides), to number things through the whole of it. `asideKey` is the
+ * aliases its asides may use when `src` doesn't declare its own (a deck's,
+ * for one slide of it).
  */
-export function render(src, { file, read, line = 0, shared = {} } = {}) {
+export function render(src, { file, read, line = 0, shared = {}, asideKey } = {}) {
   const text = src || '';
-  const env = { lineBase: line, file, read, shared };
+  const env = { lineBase: line, file, read, shared, asideKey };
   const tokens = md.parse(text, env);
   const meta = env.frontMatter || {};
   const asides = env.asides || [];

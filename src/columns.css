@@ -168,6 +168,32 @@ body {
   padding-left: 1.1rem;
 }
 
+/* An aside from a reviewer, about a topic (features/asides/key.js): the
+ * rule in the reviewer's colour, their name in a chip, each topic in an
+ * outlined pill. Names, not only colours, so it holds up in print. */
+.gm-attributed { border-left-color: var(--by, var(--gm-aside-rule)); }
+.gm-by { font-style: normal; margin-right: 0.35em; }
+.gm-who, .gm-topic, .gm-unknown {
+  display: inline-block;
+  font-family: var(--gm-sans);
+  font-style: normal;
+  font-size: 0.74em;
+  font-weight: 600;
+  line-height: 1.5;
+  letter-spacing: 0.02em;
+  padding: 0 0.45em;
+  margin: 0 0.3em 0.1em 0;
+  border-radius: 3px;
+  vertical-align: 0.1em;
+}
+.gm-who { color: #fff; background: var(--by, var(--gm-accent)); }
+.gm-topic { color: var(--topic, var(--gm-accent)); border: 1px solid currentColor; border-radius: 999px; padding: 0 0.55em; }
+.gm-unknown { color: var(--gm-ink-soft); border: 1px dashed currentColor; }
+
+/* the masthead's legend: who and what the asides are from and about */
+.gm-legend { margin-top: 0.45rem; font-size: 0.95rem; }
+.gm-legend b { font-weight: 400; opacity: 0.8; margin-left: 0.15em; }
+
 /* Inline layout (single column) */
 .gm-aside {
   font-family: var(--gm-sans);
@@ -178,6 +204,7 @@ body {
   padding-left: 0.8rem;
   margin: 0.5rem 0 0.6rem;
 }
+.gm-aside.gm-attributed { border-left-color: var(--by, var(--gm-aside-rule)); }
 .gm-aside p { margin: 0 0 0.4rem; }
 .gm-aside p:last-child { margin-bottom: 0; }
 

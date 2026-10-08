@@ -28,7 +28,7 @@ const OPEN = '\uE002';
 const CLOSE = '\uE003';
 const MARK = new RegExp(`${OPEN}([^${CLOSE}]*)${CLOSE}`, 'g');
 // What opens a line's block, for the marker to go after.
-const PREFIX = /^[ \t]*(?:[>~][ \t]*)*(?:(?:[-*+]|\d{1,9}[.)])[ \t]+)?(?:#{1,6}[ \t]+)?/;
+const PREFIX = /^[ \t]*(?:~[^\s~]+[ \t]+|[>~][ \t]*)*(?:(?:[-*+]|\d{1,9}[.)])[ \t]+)?(?:#{1,6}[ \t]+)?/;
 // Lines a marker would change the meaning of.
 const RULE = /^[ \t]*([-*_=])(?:[ \t]*\1)*[ \t]*$/;
 const DELIMITER_ROW = /^[ \t]*\|?[ \t]*:?-+:?[ \t]*(?:\|[ \t]*:?-+:?[ \t]*)*\|?[ \t]*$/;

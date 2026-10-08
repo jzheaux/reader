@@ -23,10 +23,11 @@
 import path from 'node:path';
 import { render, renderNotes } from './render.js';
 import { readNotes, plan, planEnd, duration } from './pacing.js';
+import { readEntry, makeKey } from '../features/asides/key.js';
 
 const SEPARATOR = /^---[ \t]*$/;
 const FENCE = /^\s{0,3}(`{3,}|~{3,})/;
-const META = /^[ \t]*[\w-]+[ \t]*:/;
+const META = /^[ \t]*[\w-]+(?:[ \t]+\S)?[ \t]*:/;
 const NOTE = /<!--([\s\S]*?)-->/g;
 
 /** Is there a slide break in `src` after its front matter? */
@@ -35,7 +36,7 @@ export function isDeck(src) {
 }
 
 export function slides(src, { file, read } = {}) {
-  const { meta, slides: chunks } = split(src);
+  const { meta, key, slides: chunks } = split(src);
   const title = meta.title || (file ? path.basename(file, path.extname(file)) : 'Untitled');
   let css = '';
   const out = [];
@@ -45,7 +46,7 @@ export function slides(src, { file, read } = {}) {
     const lifted = lift(text);
     if (!lifted.body.trim() && !lifted.notes) continue;
     const { notes, at, budget } = readNotes(lifted.notes);
-    const r = render(lifted.body, { file, read, line, shared });
+    const r = render(lifted.body, { file, read, line, shared, asideKey: key });
     css ||= `${r.css}\n${CSS}`;
     out.push({ body: unmast(r.body), notes, notesHtml: renderNotes(notes), line, at, budget });
   }
@@ -59,17 +60,25 @@ export function slides(src, { file, read } = {}) {
 /**
  * Cuts `src` into slides, each with the 0-based line it starts on. Front
  * matter is taken only when every line in it reads as `key: value`, so a
- * deck that opens with a bare `---` rule isn't swallowed whole.
+ * deck that opens with a bare `---` rule isn't swallowed whole. Aside
+ * aliases declared there (`reviewer #: Josh`) are the deck's `key`.
  */
 export function split(src) {
   const lines = String(src || '').replace(/\r\n?/g, '\n').split('\n');
   const meta = {};
+  const entries = [];
   let i = 0;
   if (SEPARATOR.test(lines[0] ?? '')) {
     const end = lines.findIndex((l, n) => n > 0 && SEPARATOR.test(l));
     const inner = end > 0 ? lines.slice(1, end) : [];
     if (end > 0 && inner.every((l) => !l.trim() || META.test(l))) {
       for (const l of inner) {
+        // An aside alias (`reviewer #: Josh`) is the deck's key, not its meta.
+        const entry = readEntry(l);
+        if (entry) {
+          entries.push(entry);
+          continue;
+        }
         const at = l.indexOf(':');
         if (at > 0) meta[l.slice(0, at).trim().toLowerCase()] = unquote(l.slice(at + 1).trim());
       }
@@ -89,7 +98,7 @@ export function split(src) {
     }
     fence = fenced(fence, l);
   }
-  return { meta, slides: out.filter((s) => s.text.trim()) };
+  return { meta, key: makeKey(entries), slides: out.filter((s) => s.text.trim()) };
 }
 
 /**

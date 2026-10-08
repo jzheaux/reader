@@ -15,8 +15,8 @@
 import fs from 'node:fs';
 import { beforeAsides, readLines, addClass } from '../source.js';
 
-const ATTRIBUTION = /^([ \t]*(?:~[ \t]*)*(?:>[ \t]*)+)(?:--|\u2014)[ \t]+(?=\S)/;
-const QUOTED = /^[ \t]*(?:~[ \t]*)*>/;
+const ATTRIBUTION = /^([ \t]*(?:~[ \t]*|~[^\s~]+[ \t]+)*(?:>[ \t]*)+)(?:--|\u2014)[ \t]+(?=\S)/;
+const QUOTED = /^[ \t]*(?:~[ \t]*|~[^\s~]+[ \t]+)*>/;
 const BYLINE = '\uE007';
 
 export function attributions(md) {

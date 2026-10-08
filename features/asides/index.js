@@ -39,10 +39,12 @@ export function asides(md, opts = {}) {
     // `__aside` marks the recursive parse of an aside's own body; it has
     // already been stripped of its markers and must not be re-processed.
     if (state.inlineMode || state.env.__aside) return;
-    const { meta, source, asides, lines } = preprocess(state.src);
+    // A deck's slide is rendered on its own, under the deck's key.
+    const { meta, source, asides, lines, key } = preprocess(state.src, { key: state.env.asideKey });
     state.src = source.endsWith('\n') ? source : source + '\n';
     state.env.frontMatter = meta;
     state.env.asides = asides;
+    state.env.asideKey = key;
     // Token maps count lines of what's left; this traces them back.
     state.env.sourceLines = lines;
   });
@@ -63,7 +65,10 @@ export function asides(md, opts = {}) {
     }
   });
 
-  md.renderer.rules.aside_open = () => '<aside class="gm-aside">';
+  md.renderer.rules.aside_open = (tokens, i) => {
+    const by = tokens[i].meta?.by;
+    return by ? `<aside class="gm-aside gm-attributed"${byStyle(by)}>${byChips(by)}` : '<aside class="gm-aside">';
+  };
   md.renderer.rules.aside_close = () => '</aside>\n';
 }
 
@@ -71,6 +76,7 @@ export function asides(md, opts = {}) {
 export function asideTokens(md, aside, env) {
   const open = new Token('aside_open', 'aside', 1);
   open.block = true;
+  if (aside.by) open.meta = { by: aside.by };
   const close = new Token('aside_close', 'aside', -1);
   close.block = true;
 
@@ -79,6 +85,43 @@ export function asideTokens(md, aside, env) {
   // definitions carry over; the aside bookkeeping deliberately does not.
   const inner = md.parse(aside.text, { ...env, asides: null, __aside: true });
   return [open, ...inner, close];
+}
+
+const escapeHtml = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+
+/** An attributed aside's colour, its reviewer's: a style attribute, or ''. */
+export function byStyle(by) {
+  return by.who ? ` style="--by: ${escapeHtml(by.who.color)}"` : '';
+}
+
+/**
+ * Who an aside is from and what it's about, as chips: the reviewer's name,
+ * a pill for each topic, and each alias that isn't declared, with a `?`.
+ */
+export function byChips(by) {
+  const chips = [];
+  if (by.who) chips.push(`<span class="gm-who">${escapeHtml(by.who.name)}</span>`);
+  for (const t of by.topics) chips.push(`<span class="gm-topic" style="--topic: ${escapeHtml(t.color)}">${escapeHtml(t.name)}</span>`);
+  for (const c of by.unknown) chips.push(`<span class="gm-unknown" title="Not declared in the front matter">${escapeHtml(c)}?</span>`);
+  return `<span class="gm-by">${chips.join('')}</span>`;
+}
+
+/**
+ * Who and what a document's asides are from and about, with how many of
+ * each, in the order they're declared: a legend for the masthead, or ''.
+ */
+export function legend(asides, key) {
+  const counts = new Map();
+  for (const a of asides) {
+    if (!a.by) continue;
+    for (const e of [a.by.who, ...a.by.topics].filter(Boolean)) counts.set(e, (counts.get(e) || 0) + 1);
+  }
+  if (!counts.size) return '';
+  const used = [...(key?.values() || [])].filter((e) => counts.has(e));
+  const chip = (e) => e.kind === 'reviewer'
+    ? `<span class="gm-who" style="--by: ${escapeHtml(e.color)}">${escapeHtml(e.name)} <b>${counts.get(e)}</b></span>`
+    : `<span class="gm-topic" style="--topic: ${escapeHtml(e.color)}">${escapeHtml(e.name)} <b>${counts.get(e)}</b></span>`;
+  return `<div class="gm-legend">${used.map(chip).join('')}</div>`;
 }
 
 export default {

@@ -27,6 +27,33 @@ I continue to mourn things that I loved being in the stream of.
 ~ Maybe a post about the music; go towards the music
 ```
 
+An aside can also say **who** it's from and **what** it's about, for
+reviewing a document in its margin. Declare one-character aliases in the
+front matter, then put them straight after the `~`, in any order:
+
+```markdown
+-----
+reviewer #: Josh
+reviewer m: Maria, teal
+topic c: Coherence
+topic s: Style
+-----
+
+Some paragraph.
+
+~#c This contradicts §2.
+~ms Too long; split it.
+```
+
+The aside then opens with the reviewer's name, in their colour, and a pill
+for each topic, and its rule takes the reviewer's colour. A legend under
+the byline lists who and what with how many asides each. A colour after a
+name is that alias's own; the rest come from a palette that holds up in
+print. A run of aliases with one that isn't declared still makes an aside,
+with that one marked `?` for a slip of the finger. With more than one, or
+in a document with no aliases, a `~word` line reads as text, as it always
+has. In a deck, the aliases go in the deck's front matter.
+
 Emoji shortcodes like `:tada:` show as 🎉 in the rendered pane but stay as
 `:tada:` in the file. Code spans and unknown names are left as written.
 

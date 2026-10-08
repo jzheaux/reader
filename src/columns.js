@@ -11,7 +11,7 @@
  */
 
 import fs from 'node:fs';
-import { asideTokens } from '../features/asides/index.js';
+import { asideTokens, byStyle, byChips, legend } from '../features/asides/index.js';
 import { splitPairs } from '../features/asides/split.js';
 
 const CSS = fs.readFileSync(new URL('./columns.css', import.meta.url), 'utf8');
@@ -27,6 +27,13 @@ function escapeHtml(s) {
 
 function renderAsideCell(md, aside, env, showMark) {
   const html = md.renderer.render(asideTokens(md, aside, env).slice(1, -1), md.options, env);
+  // An attributed aside opens with who it's from and what it's about, at the
+  // start of its first paragraph, or above it when it doesn't open with one.
+  if (aside.by) {
+    const chips = byChips(aside.by);
+    const opened = /^<p\b/.test(html) ? html.replace(/^<p\b([^>]*)>/, `<p$1>${chips}`) : `${chips}\n${html}`;
+    return `<div class="gm-aside-cell gm-attributed"${byStyle(aside.by)}>\n${opened}</div>`;
+  }
   // Slip the `~` in front of the first line of prose so the mark survives into
   // the printed page.
   const marked = showMark
@@ -99,11 +106,11 @@ export function columns(md, tokens, env, opts = {}) {
   return {
     title: docTitle,
     css: `${themeCss()}\n:root{${vars}}\n${css}`,
-    body: `<div class="gm-doc">\n${masthead(meta, docTitle)}\n${colheads}\n${body}\n</div>`,
+    body: `<div class="gm-doc">\n${masthead(meta, docTitle, legend(env.asides || [], env.asideKey))}\n${colheads}\n${body}\n</div>`,
   };
 }
 
-function masthead(meta, docTitle) {
+function masthead(meta, docTitle, legendHtml = '') {
   const bits = [];
   if (meta.author) bits.push(`<span>${escapeHtml(meta.author)}</span>`);
   if (meta.date) bits.push(`<span>${escapeHtml(meta.date)}</span>`);
@@ -122,6 +129,6 @@ function masthead(meta, docTitle) {
 
   return `<header class="gm-masthead">
   <h1 class="gm-title">${escapeHtml(docTitle)}</h1>
-  ${bits.length ? `<div class="gm-byline">${bits.join('')}</div>` : ''}
+  ${bits.length ? `<div class="gm-byline">${bits.join('')}</div>` : ''}${legendHtml ? `\n  ${legendHtml}` : ''}
 </header>`;
 }
