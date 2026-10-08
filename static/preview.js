@@ -11,6 +11,17 @@
   let dim = false;      // steps not yet shown are faint rather than hidden
 
   function reveal(k) {
+    hideLater(k);
+    // A slide too big even when shrunk scrolls, so what was just revealed
+    // is brought into view.
+    if (fitted.over) {
+      const shown = [...document.querySelectorAll('[data-step]')].filter((n) => Number(n.dataset.step) <= k);
+      shown.at(-1)?.scrollIntoView({ block: 'nearest' });
+    }
+  }
+
+  /** Hides (or dims) the steps after the `k`th, and moves a fence's highlight. */
+  function hideLater(k) {
     for (const node of document.querySelectorAll('[data-step]')) {
       const later = Number(node.dataset.step) > k;
       node.classList.toggle('step-hidden', later && !dim);
@@ -25,12 +36,6 @@
       for (const line of pre.querySelectorAll('.line')) {
         line.classList.toggle('hl', (line.dataset.focus || '').split(' ').includes(String(at)));
       }
-    }
-    // A slide too big even when shrunk scrolls, so what was just revealed
-    // is brought into view.
-    if (fitted.over) {
-      const shown = [...document.querySelectorAll('[data-step]')].filter((n) => Number(n.dataset.step) <= k);
-      shown.at(-1)?.scrollIntoView({ block: 'nearest' });
     }
   }
 
@@ -117,14 +122,18 @@
       const y = window.scrollY;
       if (m.base) base.href = m.base;
       if (theme.textContent !== m.css) theme.textContent = m.css;
+      dim = Boolean(m.dim);
       // What features and puzzles were in the middle of carries over.
       Preview.replace(document.body, () => {
         document.body.innerHTML = m.body;
+        // Steps to come are hidden before anything measures the page (a
+        // puzzle drawing itself, the fit below): a step first seen showing
+        // would fade out, flashing on screen as it went.
+        if (m.reveal != null) hideLater(m.reveal);
       });
       hidePeek();
       Preview.deck = Boolean(m.deck);
       document.documentElement.classList.toggle('deck', Preview.deck);
-      dim = Boolean(m.dim);
       fit();
       if (m.measure != null) settled().then(() => fit(m.measure));
       if (m.reveal != null) reveal(m.reveal);
