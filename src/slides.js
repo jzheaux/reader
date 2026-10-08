@@ -21,7 +21,8 @@
  */
 
 import path from 'node:path';
-import { render } from './render.js';
+import { render, renderNotes } from './render.js';
+import { readNotes, plan, planEnd, duration } from './pacing.js';
 
 const SEPARATOR = /^---[ \t]*$/;
 const FENCE = /^\s{0,3}(`{3,}|~{3,})/;
@@ -41,13 +42,18 @@ export function slides(src, { file, read } = {}) {
   // Kept by features across the slides, to number things through the deck.
   const shared = {};
   for (const { text, line } of chunks) {
-    const { body, notes } = lift(text);
-    if (!body.trim() && !notes) continue;
-    const r = render(body, { file, read, line, shared });
+    const lifted = lift(text);
+    if (!lifted.body.trim() && !lifted.notes) continue;
+    const { notes, at, budget } = readNotes(lifted.notes);
+    const r = render(lifted.body, { file, read, line, shared });
     css ||= `${r.css}\n${CSS}`;
-    out.push({ body: unmast(r.body), notes, line });
+    out.push({ body: unmast(r.body), notes, notesHtml: renderNotes(notes), line, at, budget });
   }
-  return { css: css || CSS, title, meta, slides: out };
+  // When each slide should start, by the notes' checkpoints and budgets.
+  const total = duration(meta.time);
+  const starts = plan(out, total);
+  out.forEach((s, i) => { s.plan = starts[i]; });
+  return { css: css || CSS, title, meta, slides: out, end: planEnd(out, starts, total) };
 }
 
 /**

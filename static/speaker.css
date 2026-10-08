@@ -39,11 +39,26 @@ body {
 .clock .fit.over { color: #ef7d99; font-weight: 600; }
 .clock .timer { font-size: 30px; color: var(--accent); cursor: pointer; }
 .clock .time { color: var(--ink-soft); }
+/* where the plan says to be: gently ahead, on it, behind, well behind */
+.clock .pace { font-size: 14px; color: var(--ink-soft); flex-basis: 100%; }
+.clock .pace b { font-weight: 600; }
+.clock .pace.ahead b { color: #8fb8de; }
+.clock .pace.on b { color: #8cc9a0; }
+.clock .pace.behind b { color: #e3b866; }
+.clock .pace.late b { color: #ef7d99; }
 .clock .hint { font-size: 12px; color: var(--ink-faint); flex-basis: 100%; }
 .notes {
   grid-area: notes; overflow: auto; background: var(--panel);
   border-radius: 6px; padding: 16px 20px;
-  font-size: 22px; line-height: 1.5; white-space: pre-wrap;
+  font-size: 22px; line-height: 1.5;
 }
+.notes > :first-child { margin-top: 0; }
+.notes > :last-child { margin-bottom: 0; }
+.notes p, .notes ul, .notes ol, .notes pre { margin: 0 0 0.5em; }
+.notes ul, .notes ol { padding-left: 1.4em; }
+.notes li + li { margin-top: 0.15em; }
+.notes code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 0.85em; color: var(--accent); }
+.notes pre { white-space: pre-wrap; }
+.notes strong { color: #fff; }
 .notes:empty::before { content: "No notes on this slide."; color: var(--ink-faint); }
 .waiting { position: fixed; inset: 0; display: grid; place-items: center; background: var(--bg); color: var(--ink-soft); text-align: center; padding: 24px; }

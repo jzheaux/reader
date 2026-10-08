@@ -64,6 +64,7 @@ test('slides renders each slide without a masthead and keeps its notes', () => {
   assert.doesNotMatch(out.slides[0].body, /gm-masthead|gm-title/);
   assert.match(out.slides[0].body, /<h1[^>]*>One<\/h1>/);
   assert.equal(out.slides[0].notes, 'say hello');
+  assert.equal(out.slides[0].notesHtml, '<p>say hello</p>');
   // Still in the fence, as highlighted code.
   assert.match(out.slides[1].body.replace(/<\/?span[^>]*>/g, ''), /&lt;!-- not a note --&gt;/);
   assert.equal(out.slides[1].notes, '');
@@ -96,4 +97,9 @@ test('notes leave their lines behind, so a slide knows its lines in the file', (
 test('blank lines in a slide\'s code are kept', () => {
   const { body } = lift('```\na\n\n\n\nb\n```\n');
   assert.match(body, /a\n\n\n\nb/);
+});
+
+test('notes are rendered as markdown', () => {
+  const out = slides('# One\n\n<!--\n1. Open `server.js:37`, *slowly*.\n2. Then the rest.\n-->\n');
+  assert.equal(out.slides[0].notesHtml, '<ol>\n<li>Open <code>server.js:37</code>, <em>slowly</em>.</li>\n<li>Then the rest.</li>\n</ol>');
 });

@@ -374,8 +374,9 @@ paging: Slide %d / %d
 
 - A line that is exactly `---` starts a new slide, except inside a code
   fence. Front matter is read only when every line in it is `key: value`.
-- HTML comments are a slide's **speaker notes**. Don't put a `---` line in
-  one: `slides` would split the slide there.
+- HTML comments are a slide's **speaker notes**, written in markdown and
+  shown that way. Don't put a `---` line in one: `slides` would split the
+  slide there.
 - Present opens on the slide under the cursor. If the file changes on disk
   while you present (say you fix a typo in vim), the deck reloads in place.
 
@@ -421,8 +422,42 @@ the image while you hover it, on a slide and in the rendered page:
 - Hi, I'm [Josh Cummings](images/bio-me.jpg)
 ```
 
-The speaker view is its own window, so you can drag it to the laptop screen
-and put the deck on the projector. Either window can change slides.
+The speaker view is its own window, and either window can change slides.
+With a second screen plugged in, Present puts the slides full screen on it
+and opens the speaker view on the screen reader is on. Chrome and Edge
+ask once for leave to see your screens. Elsewhere, or with leave refused,
+drag the speaker view to your screen and the slides to the projector, and
+press `F` there.
+
+**Pacing.** The speaker view's timer starts when you present from the first
+slide (click it to restart). Tell reader the plan and it says, under the
+timer, whether you're ahead of it, on it or behind:
+
+```markdown
+---
+time: 50m
+---
+
+<!--
+ACT 2 (16 min). Clock should read about 0:12.
+-->
+
+<!--
+time: 1.5m
+The Spolsky gloss is yours, not Kirsch's.
+-->
+```
+
+- `time:` in the front matter is the talk's length.
+- A checkpoint, where a slide should start, is an `at: 0:12` line in its
+  notes (hours:minutes), or "Clock: 0:12" or "Clock should read about
+  0:12" anywhere in them.
+- `time: 1.5m` in a slide's notes is that slide's own budget (`90s`, `2m`,
+  `1h`, or a number of minutes).
+- Between checkpoints, the time no budget accounts for is shared evenly
+  among the slides without one. Other times in the notes' prose aren't
+  read: "1.5 min." is the speaker's to keep to.
+- `at:` and `time:` lines aren't shown with the notes; a clock line is.
 
 
 - Writes to disk about a second after you stop typing, and immediately on `⌘S`.
@@ -490,7 +525,8 @@ $ npm run lint
 | `src/columns.js` | the two-column layout: the speaker's passages beside the asides written against them, under the masthead |
 | `features/` | one directory per piece of syntax: its markdown-it plugin, CSS, tests and, if it can be clicked, the `preview.js` that makes it so (so far: `asides`, `fields`, `tasks`, `qa`, `sizes`, `alerts`, `attributions`, `styles`, `scripture`, `scripture-lds`, `search`, `math`, `arrows`, `emoji`, `highlight`, `puzzles`) |
 | `src/slides.js` | a `slides`-format deck → rendered slides and their notes |
-| `static/app/` | the app, a module each: `main.js` (start, events, keys), `files.js`, `render.js` (the preview), `saving.js`, `editing.js`, `modes.js` (layout, read mode), `deck.js` (presenting), `fit.js` (slides that don't fit), `pdf.js`, `status.js`, `api.js`, `state.js` |
+| `src/pacing.js` | a deck's pacing plan: checkpoints and budgets from the notes, and when each slide should start |
+| `static/app/` | the app, a module each: `main.js` (start, events, keys), `files.js`, `render.js` (the preview), `saving.js`, `editing.js`, `modes.js` (layout, read mode), `deck.js` (presenting), `screens.js` (two-screen presenting), `fit.js` (slides that don't fit), `pdf.js`, `status.js`, `api.js`, `state.js` |
 | `static/preview.html` | the sandboxed preview frame |
 | `static/preview-api.js` | what the frame offers the scripts drawn into it: `Preview.edit`, `Preview.register` |
 | `static/preview.js` | the frame itself: rendering, slide steps, fitting a slide, image peeks, shortcuts |

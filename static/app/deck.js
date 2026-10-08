@@ -10,6 +10,7 @@ import { setReading } from './modes.js';
 import { toast } from './status.js';
 import * as moves from './moves.js';
 import { treatAsDeck } from './fit.js';
+import { findScreens, roomScreen, speakerFeatures, placeSpeaker } from './screens.js';
 
 //
 // A file in the format of https://github.com/maaslalani/slides -- slides
@@ -36,6 +37,7 @@ export async function present() {
   treatAsDeck();
   if (dirty()) save();
   const line = el.editor.value.slice(0, el.editor.selectionStart).split('\n').length - 1;
+  const screens = findScreens();
   if (!(await loadDeck())) return;
   // Start on the slide being edited, so ⌘⇧. shows the one under the cursor.
   deck.index = Math.max(0, deck.slides.findLastIndex((s) => s.line <= line));
@@ -45,6 +47,12 @@ export async function present() {
   if (document.activeElement === el.editor) el.editor.blur();
   el.deck.hidden = false;
   el.deck.focus();
+  // On two screens: the slides full screen on the room's, the speaker view
+  // on the laptop's, both from the one press of Present.
+  if (await screens) {
+    toggleFullscreen();
+    openSpeaker();
+  }
   announce();
   await showSlide();
 }
@@ -64,6 +72,7 @@ export async function loadDeck() {
   deck.slides = out.slides.map((s) => ({ ...s, ...steps(s.body) }));
   deck.css = out.css;
   deck.meta = out.meta || {};
+  deck.end = out.end ?? null;
   deck.index = Math.min(deck.index, deck.slides.length - 1);
   deck.reveal = Math.min(deck.reveal, deck.slides[deck.index].steps);
   el.deckBy.textContent = [deck.meta.author, deck.meta.date].filter(Boolean).join(' · ');
@@ -120,7 +129,7 @@ export async function showSlide({ render = true } = {}) {
     ? { type: 'render', css: deck.css, body: slide.body, base: baseFor(state.current.path), resetScroll: true, deck: true, reveal: deck.reveal }
     : { type: 'reveal', reveal: deck.reveal }, '*');
   el.deckCount.textContent = paging(i);
-  el.deckNotes.textContent = slide.notes;
+  el.deckNotes.innerHTML = slide.notesHtml;
   el.deckNotes.hidden = !deck.notes || !slide.notes;
   deck.channel?.postMessage({ type: 'go', index: i, reveal: deck.reveal });
 }
@@ -177,20 +186,29 @@ export function toggleNotes() {
   try { localStorage.setItem('reader:notes', deck.notes ? 'shown' : 'hidden'); } catch { /* ignore */ }
 }
 
+/** Full screen, on the room's screen when there are two. */
 export function toggleFullscreen() {
-  if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
-  else el.deck.requestFullscreen().catch((err) => toast(err.message, true));
+  if (document.fullscreenElement) return document.exitFullscreen().catch(() => {});
+  const room = roomScreen();
+  el.deck.requestFullscreen(room ? { screen: room } : undefined).catch(() => {
+    toast(room ? `Press F to show the slides full screen on ${room.label || 'the other screen'}` : 'Full screen was refused', true);
+  });
 }
 
 export function openSpeaker() {
-  const w = window.open('/speaker.html', 'reader-speaker', 'width=960,height=640');
-  if (!w) toast('The speaker view was blocked as a popup', true);
+  const w = window.open('/speaker.html', 'reader-speaker', speakerFeatures());
+  if (!w) return toast('The speaker view was blocked as a popup. Press S to open it.', true);
+  placeSpeaker(w);
+  // Where the screens aren't known, say what goes where.
+  if (!roomScreen() && window.screen.isExtended !== false) {
+    toast('Drag the speaker view to your screen, and this window to the projector (F for full screen)');
+  }
 }
 
 /** Tell the speaker view everything; it may have just opened. */
 export function announce() {
   deck.channel?.postMessage({
-    type: 'deck', open: deck.open, css: deck.css, meta: deck.meta, index: deck.index, reveal: deck.reveal,
+    type: 'deck', open: deck.open, css: deck.css, meta: deck.meta, end: deck.end, index: deck.index, reveal: deck.reveal,
     slides: deck.slides, base: baseFor(state.current.path), path: state.current.path,
   });
 }

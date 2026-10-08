@@ -43,6 +43,7 @@ export const deck = {
   slides: [],           // [{ body, notes, line }]
   css: '',
   meta: {},
+  end: null,            // when the talk should end, by its plan
   index: 0,
   reveal: 0,            // how many of this slide's steps are showing
   notes: false,         // the notes strip under the slide

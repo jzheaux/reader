@@ -51,6 +51,14 @@ export function render(src, { file, read, line = 0, shared = {} } = {}) {
   };
 }
 
+/**
+ * A slide's speaker notes, rendered by the same markdown as the page, but
+ * as plain HTML, without its columns: they're read at a glance, mid-talk.
+ */
+export function renderNotes(src) {
+  return src ? md.render(src, { lineBase: 0, shared: {} }).trim() : '';
+}
+
 const FENCE = /^\s{0,3}(`{3,}|~{3,})/;
 const CODE_SPAN = /(`+)[^`][\s\S]*?\1|`+/g;
 

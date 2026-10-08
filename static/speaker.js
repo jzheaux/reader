@@ -6,7 +6,7 @@
  */
 const $ = (id) => document.getElementById(id);
 const channel = new BroadcastChannel('reader-deck');
-const deck = { slides: [], css: '', meta: {}, index: 0, reveal: 0, base: '' };
+const deck = { slides: [], css: '', meta: {}, index: 0, reveal: 0, base: '', end: null, open: false };
 let started = Date.now();
 
 function whenReady(frame) {
@@ -44,7 +44,7 @@ function draw({ fresh = false } = {}) {
   show('now', i, deck.reveal);
   show('next', i + 1, Infinity);
   $('end').hidden = i + 1 < n;
-  $('notes').textContent = deck.slides[i]?.notes || '';
+  $('notes').innerHTML = deck.slides[i]?.notesHtml || '';
   const steps = deck.slides[i]?.steps || 0;
   $('count').textContent = `${i + 1} / ${n}`;
   $('steps').textContent = steps ? '●'.repeat(deck.reveal) + '○'.repeat(steps - deck.reveal) : '';
@@ -57,26 +57,71 @@ function fit() {
   }
 }
 
-function tick() {
-  const s = Math.floor((Date.now() - started) / 1000);
+const pad = (x) => String(x).padStart(2, '0');
+function clock(seconds) {
+  const s = Math.round(seconds);
   const h = Math.floor(s / 3600);
   const m = Math.floor((s % 3600) / 60);
-  const pad = (x) => String(x).padStart(2, '0');
-  $('timer').textContent = h ? `${h}:${pad(m)}:${pad(s % 60)}` : `${m}:${pad(s % 60)}`;
+  return h ? `${h}:${pad(m)}:${pad(s % 60)}` : `${m}:${pad(s % 60)}`;
+}
+
+function tick() {
+  const elapsed = Math.floor((Date.now() - started) / 1000);
+  $('timer').textContent = clock(elapsed);
   $('time').textContent = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  pace(elapsed);
+}
+
+// Within this much of the plan is on it.
+const GRACE = 30;
+
+/**
+ * Where the plan (from the notes' checkpoints and budgets; see
+ * src/pacing.js) says to be on this slide, against the timer: ahead of its
+ * start, between its start and the next slide's, or past that.
+ */
+function pace(elapsed) {
+  const el = $('pace');
+  const slide = deck.slides[deck.index];
+  const from = slide?.plan;
+  if (from == null) {
+    el.hidden = true;
+    return;
+  }
+  const to = deck.index + 1 < deck.slides.length ? deck.slides[deck.index + 1].plan : deck.end;
+  const span = to != null && to > from ? `${clock(from)}–${clock(to)}` : clock(from);
+  let state = 'on';
+  let say = 'on plan';
+  if (elapsed < from - GRACE) {
+    state = 'ahead';
+    say = `${clock(from - elapsed)} ahead`;
+  } else if (to != null && elapsed > to + GRACE) {
+    state = elapsed - to > 120 ? 'late' : 'behind';
+    say = `${clock(elapsed - to)} behind`;
+  }
+  el.hidden = false;
+  el.className = `pace ${state}`;
+  el.replaceChildren();
+  const b = document.createElement('b');
+  b.textContent = say;
+  el.append(b, ` · ${slide.at != null ? 'checkpoint' : 'plan'} ${span}`);
 }
 
 channel.addEventListener('message', (e) => {
   const m = e.data || {};
   if (m.type === 'deck') {
-    Object.assign(deck, { slides: m.slides, css: m.css, meta: m.meta, index: m.index, reveal: m.reveal, base: m.base });
+    // A deck opened on its first slide is the talk starting: so is the timer.
+    if (m.open && !deck.open && m.index === 0) started = Date.now();
+    Object.assign(deck, { slides: m.slides, css: m.css, meta: m.meta, index: m.index, reveal: m.reveal, base: m.base, end: m.end, open: Boolean(m.open) });
     $('waiting').hidden = Boolean(m.open);
     draw({ fresh: true });
   } else if (m.type === 'go') {
     deck.index = m.index;
     deck.reveal = m.reveal;
     draw();
+    tick();
   } else if (m.type === 'end') {
+    deck.open = false;
     $('waiting').hidden = false;
     $('waiting').textContent = 'The deck was closed. Press Present in reader to pick it up again.';
   }

@@ -7,7 +7,7 @@
  *   PUT  /api/file             { path, text, baseMtime, force?, explicit? }
  *   POST /api/new              { name? }
  *   POST /api/render           { text, path? } -> { css, body, deck }
- *   POST /api/slides           { text, path? } -> { css, title, slides: [{ body, notes, line }] }
+ *   POST /api/slides           { text, path? } -> { css, title, slides: [{ body, notes, notesHtml, line, at, budget, plan }], end }
  *   GET  /content/<path>       raw bytes (PDFs, images a note links to)
  *
  * Local only: the server refuses requests whose Host isn't loopback (DNS
