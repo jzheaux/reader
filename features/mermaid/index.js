@@ -27,8 +27,10 @@
 
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import Token from 'markdown-it/lib/token.mjs';
+import MarkdownIt from 'markdown-it';
 import { addClass } from '../source.js';
+
+const { Token } = MarkdownIt;
 
 export function mermaids(md) {
   const fence = md.renderer.rules.fence;

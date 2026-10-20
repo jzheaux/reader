@@ -20,8 +20,10 @@
  */
 
 import fs from 'node:fs';
-import Token from 'markdown-it/lib/token.mjs';
+import MarkdownIt from 'markdown-it';
 import { addClass, escapeAttr, escapeHtml } from '../source.js';
+
+const { Token } = MarkdownIt;
 
 const FIELD = /^[ \t]*(agency|date|by|url)[ \t]*:[ \t]*(.*?)[ \t]*$/i;
 

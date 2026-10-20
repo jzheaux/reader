@@ -13,8 +13,10 @@
  */
 
 import fs from 'node:fs';
-import Token from 'markdown-it/lib/token.mjs';
+import MarkdownIt from 'markdown-it';
 import { addClass } from '../source.js';
+
+const { Token } = MarkdownIt;
 
 /** A fence's text -> `{ figure, caption }`, each a string, `''` when not given. */
 export function readNumber(text) {

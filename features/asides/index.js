@@ -28,9 +28,11 @@
  * Came from gutter-md, which reader grew out of.
  */
 
-import Token from 'markdown-it/lib/token.mjs';
+import MarkdownIt from 'markdown-it';
 import { preprocess } from './preprocess.js';
 import { resolveInlineInsertions } from './split.js';
+
+const { Token } = MarkdownIt;
 
 export function asides(md, opts = {}) {
   const inline = opts.inline !== false;

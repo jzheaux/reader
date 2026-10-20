@@ -21,7 +21,9 @@
  * marked so the theme can suppress a second bullet.
  */
 
-import Token from 'markdown-it/lib/token.mjs';
+import MarkdownIt from 'markdown-it';
+
+const { Token } = MarkdownIt;
 
 const CONT_CLASS = 'gm-cont';
 
