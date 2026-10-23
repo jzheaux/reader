@@ -27,5 +27,7 @@ test("the head is read for its commit and tags, and anything else for nothing", 
 
 test("the version is package.json's", () => {
   const { version: v } = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
-  assert.match(version().label, new RegExp(`^v${v.replace(/\./g, '\\.')}(\\+[0-9a-f]{7})?$`));
+  const { label } = version();
+  assert.match(label, /^v[^+]+(\+[0-9a-f]{7})?$/);
+  assert.equal(label.split('+')[0], `v${v}`);
 });
