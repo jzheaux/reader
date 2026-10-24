@@ -27,6 +27,17 @@ function speaker() {
   return { now, $, clock: window.clock, say: (data) => heard({ data }) };
 }
 
+test('the waiting message makes the speaker sections inert until a deck opens', () => {
+  const { $, say } = speaker();
+  const timerIsInert = () => $('timer').closest('[inert]') !== null;
+
+  assert.equal(timerIsInert(), true);
+  say({ type: 'deck', open: true, index: 0, reveal: 0, slides: [{}], meta: {} });
+  assert.equal(timerIsInert(), false);
+  say({ type: 'end' });
+  assert.equal(timerIsInert(), true);
+});
+
 test('the timer reads minutes and seconds, and hours once there are some', () => {
   const { clock } = speaker();
   assert.equal(clock(0), '0:00');

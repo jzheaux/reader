@@ -9,6 +9,13 @@ const channel = new BroadcastChannel('reader-deck');
 const deck = { slides: [], css: '', meta: {}, index: 0, reveal: 0, base: '', end: null, open: false };
 let started = Date.now();
 
+function waiting(show) {
+  $('waiting').hidden = !show;
+  $('speaker').inert = show;
+}
+
+waiting(true);
+
 function whenReady(frame) {
   return new Promise((resolve) => {
     window.addEventListener('message', (e) => {
@@ -119,7 +126,7 @@ channel.addEventListener('message', (e) => {
     // A deck opened on its first slide is the talk starting: so is the timer.
     if (m.open && !deck.open && m.index === 0) started = Date.now();
     Object.assign(deck, { slides: m.slides, css: m.css, meta: m.meta, index: m.index, reveal: m.reveal, base: m.base, end: m.end, open: Boolean(m.open) });
-    $('waiting').hidden = Boolean(m.open);
+    waiting(!m.open);
     draw({ fresh: true });
   } else if (m.type === 'go') {
     deck.index = m.index;
@@ -128,7 +135,7 @@ channel.addEventListener('message', (e) => {
     tick();
   } else if (m.type === 'end') {
     deck.open = false;
-    $('waiting').hidden = false;
+    waiting(true);
     $('waiting').textContent = 'The deck was closed. Press Present in reader to pick it up again.';
   }
 });
