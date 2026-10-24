@@ -77,6 +77,12 @@ test('the stylesheet comes with the feature', () => {
   assert.match(render('- [ ] x\n').css, /li\.task \{ list-style: none; \}/);
 });
 
+test('done tasks keep their text at full contrast', () => {
+  const rule = render('- [x] done\n').css.match(/li\.task-done \{[^}]+\}/)?.[0];
+  assert.match(rule, /color: var\(--gm-ink-soft\)/);
+  assert.doesNotMatch(rule, /opacity/);
+});
+
 test('a checkbox at the head of a heading marks it, and knows its line', () => {
   const { body } = render('# [ ] Gratitude\n\n## [x] Ways\n');
   assert.match(body, /<h1 class="task-heading"[^>]*><input type="checkbox" class="task-box" data-line="0" data-on="# \[x\] Gratitude" data-off="# \[ \] Gratitude" aria-label="Gratitude"> Gratitude<\/h1>/);
