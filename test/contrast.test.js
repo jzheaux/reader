@@ -152,7 +152,7 @@ test("the deck's foot reads on its paper, light or dark", () => {
 test("the document's inks read on its paper and every ground on it, light and dark", () => {
   for (const [theme, t] of Object.entries(doc)) {
     for (const ground of ['paper', 'wash', 'well', 'th', 'stripe', 'lit']) {
-      for (const ink of ['ink', 'ink-soft', 'aside-ink', 'accent']) readable(t[`gm-${ink}`], t[`gm-${ground}`], `${theme} --gm-${ink} on --gm-${ground}`);
+      for (const ink of ['ink', 'ink-soft', 'ink-done', 'aside-ink', 'accent']) readable(t[`gm-${ink}`], t[`gm-${ground}`], `${theme} --gm-${ink} on --gm-${ground}`);
     }
   }
 });
@@ -287,7 +287,7 @@ test("with more contrast asked for, the app's text reads at 7:1 on every panel a
 test("with more contrast asked for, the document's inks, its family, cards and code read at 7:1", () => {
   for (const [theme, t] of Object.entries(docMore)) {
     for (const ground of ['paper', 'wash', 'well', 'th', 'stripe', 'lit']) {
-      for (const ink of ['ink', 'ink-soft', 'aside-ink', 'accent']) clear(t[`gm-${ink}`], t[`gm-${ground}`], `${theme} --gm-${ink} on --gm-${ground}`);
+      for (const ink of ['ink', 'ink-soft', 'ink-done', 'aside-ink', 'accent']) clear(t[`gm-${ink}`], t[`gm-${ground}`], `${theme} --gm-${ink} on --gm-${ground}`);
     }
     for (const hue of [...FAMILY, 'good', 'bad', 'try']) {
       for (const ground of ['paper', 'well']) clear(t[`gm-${hue}`], t[`gm-${ground}`], `${theme} --gm-${hue} on --gm-${ground}`);

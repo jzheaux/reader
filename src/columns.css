@@ -43,6 +43,7 @@
   color-scheme: light;
   --gm-ink: #1a1a1a;
   --gm-ink-soft: #555;
+  --gm-ink-done: #6a6a6a;    /* a done task's, softer still */
   --gm-ink-faint: #9e9a93;   /* marks, not text */
   --gm-aside-ink: #4a5a72;
   --gm-rule: #d9d6d0;
@@ -97,6 +98,7 @@
   color-scheme: dark;
   --gm-ink: #f5f3ee;
   --gm-ink-soft: #cfcbc3;
+  --gm-ink-done: #aaa69f;
   --gm-ink-faint: #80848c;
   --gm-aside-ink: #cdd6e4;
   --gm-rule: rgba(255, 255, 255, .32);
@@ -144,6 +146,7 @@
   :root {
     --gm-ink: #000;
     --gm-ink-soft: #4c4c4c;
+    --gm-ink-done: var(--gm-ink-soft);
     --gm-ink-faint: #726f6a;
     --gm-aside-ink: #404d62;
     --gm-rule: #8b8985;
@@ -165,6 +168,7 @@
   :root.gm-dark {
     --gm-ink: #fff;
     --gm-ink-soft: #d0cdc5;
+    --gm-ink-done: var(--gm-ink-soft);
     --gm-ink-faint: #94989e;
     --gm-rule: rgba(255, 255, 255, .5);
     --gm-rule-strong: rgba(255, 255, 255, .7);
@@ -228,7 +232,7 @@
  * `@media (forced-colors: active)`. */
 @media (forced-colors: active) {
   :root, :root.gm-dark {
-    --gm-ink: CanvasText; --gm-ink-soft: CanvasText; --gm-ink-faint: GrayText; --gm-aside-ink: CanvasText;
+    --gm-ink: CanvasText; --gm-ink-soft: CanvasText; --gm-ink-done: CanvasText; --gm-ink-faint: GrayText; --gm-aside-ink: CanvasText;
     --gm-rule: CanvasText; --gm-rule-strong: CanvasText; --gm-aside-rule: CanvasText;
     --gm-paper: Canvas; --gm-wash: Canvas; --gm-well: Canvas; --gm-th: Canvas; --gm-stripe: Canvas; --gm-lit: Canvas;
     --gm-output: Canvas; --gm-output-rule: CanvasText; --gm-output-split: CanvasText; --gm-output-lit: Canvas;

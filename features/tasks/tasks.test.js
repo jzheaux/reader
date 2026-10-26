@@ -77,9 +77,9 @@ test('the stylesheet comes with the feature', () => {
   assert.match(render('- [ ] x\n').css, /li\.task \{ list-style: none; \}/);
 });
 
-test('done tasks keep their text at full contrast', () => {
+test('done tasks are in the done ink, at full opacity', () => {
   const rule = render('- [x] done\n').css.match(/li\.task-done \{[^}]+\}/)?.[0];
-  assert.match(rule, /color: var\(--gm-ink-soft\)/);
+  assert.match(rule, /color: var\(--gm-ink-done\)/);
   assert.doesNotMatch(rule, /opacity/);
 });
 

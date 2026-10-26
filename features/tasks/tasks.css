@@ -51,9 +51,7 @@ li.staged > .stage-box, li.staged > p > .stage-box {
   color: var(--gm-accent);
   margin-right: 0.15em;
 }
-li.task-done { color: var(--gm-ink-soft); }
-/* with more contrast asked for, the soft ink alone, read at 7:1 */
-@media (prefers-contrast: more) { li.task-done { opacity: 1; } }
+li.task-done { color: var(--gm-ink-done); }
 li.task-done .stage-box > i.on { background: var(--gm-ink-soft); border-color: var(--gm-ink-soft); }
 .task-reset, .task-log {
   font: 600 0.78em/1 var(--gm-sans);
