@@ -1,6 +1,6 @@
 {
   "name": "reader",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "A local two-pane reader/editor for a directory of markdown: rendered on the left, editable on the right, with asides set in a column of their own.",
   "type": "module",
   "bin": {
