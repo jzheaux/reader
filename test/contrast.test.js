@@ -295,11 +295,11 @@ test('a colour an author names reads as text, in light and dark, and at 7:1 with
     ['light, more contrast', merge(base, more), docMore.light, 7],
     ['dark, more contrast', merge(base, more, darker, moreDark), docMore.dark, 7],
   ];
-  const CAP = 'oklch(from var(--$) clamp(var(--gm-key-l-min), l, var(--gm-key-l-max)) min(c, var(--gm-key-c-max)) h)';
+  const cap = (v) => `oklch(from var(--${v}) clamp(var(--gm-key-l-min), l, var(--gm-key-l-max)) min(c, var(--gm-key-c-max)) h)`;
   const marksCss = read('features/marks/marks.css');
-  assert.ok(columns.includes(`.gm-who.gm-own { background: ${CAP.replace('$', 'by')}`), 'a chip');
-  assert.ok(columns.includes(`.gm-topic.gm-own { color: ${CAP.replace('$', 'topic')}`), 'a pill');
-  assert.ok(marksCss.includes(`.mk-about.gm-own { color: color-mix(in srgb, ${CAP.replace('$', 'mk')} 55%, var(--gm-ink)); }`), 'the words an aside chose');
+  assert.ok(columns.includes(`.gm-who.gm-own { background: ${cap('by')}`), 'a chip');
+  assert.ok(columns.includes(`.gm-topic.gm-own { color: ${cap('topic')}`), 'a pill');
+  assert.ok(marksCss.includes(`.mk-about.gm-own { color: color-mix(in srgb, ${cap('mk')} 55%, var(--gm-ink)); }`), 'the words an aside chose');
   // only there: the family, and the colours dealt from it, are drawn exactly as they're defined
   for (const css of [columns, marksCss]) {
     for (const [rule] of css.matchAll(/^.*oklch\(from var\(--(?:by|topic|mk)\b.*$/gm)) assert.match(rule, /^ *\.(?:gm-who|gm-topic|mk-about)\.gm-own \{/, rule);
