@@ -4,7 +4,7 @@
 #
 # Options given after the image name are added to the ones here, so
 # `... jzheaux/reader --allow-host nas.local` lets the NAS be reached by name.
-FROM node:25-alpine
+FROM node:26-alpine
 
 WORKDIR /app
 ENV NODE_ENV=production
