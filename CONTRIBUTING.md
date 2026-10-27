@@ -75,30 +75,7 @@ $ npm run dist                        # the installer for this platform, in desk
 
 ## Releasing
 
-Each version has a milestone, titled with the version (`0.0.1`), that closes
-with a review ([how it's done](REVIEWING.md); each one's report is in
-[`reviews/`](reviews/)). Once its issues are closed, run the
-[Release](.github/workflows/release.yml) workflow on `main` with that version:
-
-```console
-$ gh workflow run release.yml -f version=0.0.1
-```
-
-It tags `main` as `v0.0.1` and publishes a release listing the issues it
-addresses: the milestone's, and those a commit since the last tag closes.
-It refuses a version `package.json` doesn't have, so bump that first; it's
-the version the app and `reader --version` show.
-
-Then it pushes the image, built from the tag, to Docker Hub as
-`jzheaux/reader:0.0.1` ([Docker](.github/workflows/docker.yml); run that by
-hand with a released version to push it again). Only the newest `vX.Y.Z` tag
-also moves `:latest` and writes [`docs/docker.md`](docs/docker.md) as the
-overview, however the workflow was started, so pushing an older release again
-leaves them where they are.
-
-And it builds the desktop app's installers on macOS, Windows and Linux and
-adds them to the release ([Desktop](.github/workflows/desktop.yml); run that
-by hand with a released version to build them again). The Docker workflow
-signs in with the repository's
-`DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` secrets, the token a Docker Hub
-access token with Read, Write and Delete.
+Each version has a milestone, titled with the version, that closes with a
+review ([how it's done](REVIEWING.md)). Bumping `package.json` and running the
+[Release](.github/workflows/release.yml) workflow are in
+[RELEASE.md](RELEASE.md).

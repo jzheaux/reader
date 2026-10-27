@@ -44,7 +44,8 @@ jobs:
           fi
           package=$(node -p "require('./package.json').version")
           if [ "$package" != "$VERSION" ]; then
-            echo "::error::package.json says $package, not $VERSION"; exit 1
+            echo "::error::package.json says $package, not $VERSION. Bump it first (see RELEASE.md): npm version $VERSION --no-git-tag-version, then commit and push"
+            exit 1
           fi
           if git rev-parse -q --verify "refs/tags/v$VERSION" >/dev/null; then
             echo "::error::v$VERSION is already tagged"; exit 1
