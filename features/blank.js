@@ -14,7 +14,8 @@
  *
  * And whether a page can be worked at all, where it's drawn, is asked here,
  * so that every feature drawing something to fill in or pick gets the same
- * answer.
+ * answer. In the preview frame the same answer is `Preview.workable`
+ * (static/preview-api.js), which every feature's clicks and keys go by.
  */
 
 import { escapeAttr } from './source.js';

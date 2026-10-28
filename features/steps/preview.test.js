@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { render } from '../../src/render.js';
+import { slides } from '../../src/slides.js';
 import { preview, settle } from '../../test/dom.js';
 
 const STEPS = '## Soup\n\n1) [ ] Chop.\n2) [ ] Fry.\n3) [ ] Simmer.\n\n@ Notes: x\n';
@@ -100,4 +101,22 @@ test('the lit step is the current one, and j, k and x say where they left the st
   assert.equal(said(), 'Step 2 done. Step 3 of 3: Simmer.');
   press('k');
   assert.equal(said(), 'Step 2 of 3, done: Fry.');
+});
+
+test('on a slide, a step\'s badge is a box as any task\'s is: a click or Space ticks it, and neither moves the deck', async () => {
+  const p = preview();
+  p.show(slides(`${STEPS}\n---\n\n# Next\n`).slides[0].body, { deck: true });
+  p.posted.length = 0;
+  const box = p.document.querySelector('li.step .task-box');
+  box.click();
+  await settle();
+  assert.deepEqual(p.posted.filter((m) => m.type === 'edit').map((m) => m.edits.map((e) => e.after[0])), [['1) [x] Chop.']]);
+  assert.deepEqual(p.posted.filter((m) => m.type === 'click'), []);
+  const e = new p.window.KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true });
+  box.dispatchEvent(e);
+  assert.deepEqual(p.posted.filter((m) => m.type === 'key'), [], 'Space is the box\'s');
+  // The step itself isn't the steps' to light there: a click on it moves the deck.
+  p.document.querySelectorAll('li.step')[2].click();
+  assert.equal(p.document.querySelectorAll('li.step')[2].classList.contains('step-current'), false);
+  assert.equal(p.posted.filter((m) => m.type === 'click').length, 1);
 });

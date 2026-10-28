@@ -342,6 +342,9 @@
     if (m.base) base.href = m.base;
     if (theme.textContent !== m.css) theme.textContent = m.css;
     dim = Boolean(m.dim);
+    // Whether the page can be worked, settled before the features put back
+    // what they kept: a slide can't be (features/blank.js).
+    Preview.workable = !m.deck;
     // What features and puzzles were in the middle of carries over.
     Preview.replace(document.body, () => {
       // Put together out of the page first, so no image is asked for

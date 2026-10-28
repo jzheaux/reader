@@ -148,6 +148,38 @@ test('on a slide, a choice keeps Space and the arrows from the deck, a link Ente
   assert.deepEqual(sent(), ['ArrowRight']);
 });
 
+test('whether the page can be worked is one answer, set by each render and marked on the page, that the features go by when it changes', () => {
+  const { window, document, show } = preview();
+  const html = document.documentElement;
+  const md = '## Soup\n\n1) [ ] Chop.\n2) [ ] Fry.\n\n@ Notes: x\n\nOn date:2026-11-10[].\n';
+  show(render(md).body);
+  assert.equal(window.Preview.workable, true);
+  assert.equal(html.classList.contains('unworkable'), false);
+  show(slides(`${md}\n---\n\n# Next\n`).slides[0].body, { deck: true });
+  assert.equal(window.Preview.workable, false);
+  assert.equal(html.classList.contains('unworkable'), true);
+  // A page shut while it's showing, as one past its time will be.
+  show(render(md).body);
+  window.Preview.workable = false;
+  assert.equal(html.classList.contains('unworkable'), true);
+  const press = (key, on = document.body) => on.dispatchEvent(new window.KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }));
+  document.querySelector('.field').click();
+  assert.equal(document.querySelector('.field textarea'), null, 'the blank isn\'t opened');
+  press('Enter', document.querySelector('.date[data-line]'));
+  assert.equal(document.querySelector('.date-open'), null, 'nor the calendar');
+  press('j');
+  document.querySelectorAll('li.step')[1].click();
+  assert.equal(document.querySelector('li.step-current'), null, 'nor a step lit');
+  window.Preview.workable = true;
+  assert.equal(html.classList.contains('unworkable'), false);
+  document.querySelectorAll('li.step')[1].click();
+  assert.equal(document.querySelector('li.step-current'), document.querySelectorAll('li.step')[1]);
+  press('Enter', document.querySelector('.date[data-line]'));
+  assert.ok(document.querySelector('.date-open'));
+  document.querySelector('.field').click();
+  assert.ok(document.querySelector('.field textarea'));
+});
+
 test('a slide with nothing to Tab to gives the keyboard straight back to the deck', () => {
   const { show, send, posted } = preview();
   show(render('Just words.\n').body, { deck: true });

@@ -118,20 +118,20 @@
   document.addEventListener('focusin', (e) => {
     const slot = e.target.matches?.('.field-value') && e.target;
     if (!slot || slot === resting) return;
-    const f = !Preview.deck && slot.closest('.field:not([data-choices])');
+    const f = Preview.workable && slot.closest('.field:not([data-choices])');
     if (f) openField(f);
   });
   document.addEventListener('focusout', (e) => { if (e.target === resting) resting = null; });
   // Enter opens again the blank the keyboard was left on.
   document.addEventListener('keydown', (e) => {
-    if (e.key !== 'Enter' || e.target !== resting || Preview.deck) return;
+    if (e.key !== 'Enter' || e.target !== resting || !Preview.workable) return;
     e.preventDefault();
     resting = null;
     openField(e.target.closest('.field'));
   });
 
   document.addEventListener('click', (e) => {
-    const f = !Preview.deck && e.target.closest && e.target.closest('.field:not([data-choices])');
+    const f = Preview.workable && e.target.closest && e.target.closest('.field:not([data-choices])');
     if (f && !(e.target instanceof HTMLTextAreaElement)) openField(f);
   });
 

@@ -41,6 +41,11 @@
     0 0 / 100% var(--field-line) repeat-y content-box;
 }
 .field:hover .field-value { --gm-field-rule: var(--gm-ink); }
+/* Where the page can't be worked (static/preview-api.js), as on a slide, a
+   blank is only read: it doesn't answer the pointer as if it could be typed
+   in. A field's choices still can be picked. */
+.unworkable .field:not([data-choices]) { cursor: inherit; }
+.unworkable .field:not([data-choices]):hover .field-value { --gm-field-rule: color-mix(in srgb, var(--gm-ink) 55%, transparent); }
 .field-value:has(> textarea) { --gm-field-rule: var(--gm-accent); }
 /* Said, not seen: that a field which can't be filled in is empty. */
 .field-blank {

@@ -12,7 +12,7 @@
 }
 .date[data-line]:focus-visible { outline: 2px solid var(--gm-accent); outline-offset: 1px; }
 .date-blank { color: var(--gm-ink-soft); font-style: italic; }
-.deck .date[data-line] { text-decoration: none; background: none; cursor: inherit; }
+.unworkable .date[data-line] { text-decoration: none; background: none; cursor: inherit; }
 
 /* The calendar, hung under the date it's for. */
 .date-cal {
