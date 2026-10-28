@@ -120,7 +120,7 @@
       return;
     }
     const li = e.target.closest?.('li.step');
-    if (!li || Preview.deck || e.target.closest('a[href], input, button, .field, .def-use')) return;
+    if (!li || !Preview.workable || e.target.closest('a[href], input, button, .field, .def-use')) return;
     // Text being selected isn't a click on the step.
     if (String(window.getSelection?.() ?? '')) return;
     const { g, k } = place(li);
@@ -140,7 +140,7 @@
     || (t.matches?.('.task-box') && boxOf(t.closest('li.step') ?? t) === t);
 
   document.addEventListener('keydown', (e) => {
-    if (Preview.deck || e.metaKey || e.ctrlKey || e.altKey || e.defaultPrevented) return;
+    if (!Preview.workable || e.metaKey || e.ctrlKey || e.altKey || e.defaultPrevented) return;
     if (!['j', 'k', 'x'].includes(e.key) || !free(e.target)) return;
     const at = keyed();
     if (!at) return;

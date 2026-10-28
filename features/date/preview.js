@@ -42,7 +42,7 @@
   };
 
   const dateOf = (el) => el.getAttribute('datetime') || '';
-  const editable = (t) => (!Preview.deck && t.closest && t.closest('.date[data-line]')) || null;
+  const editable = (t) => (Preview.workable && t.closest && t.closest('.date[data-line]')) || null;
   const dateAt = (line, col) => [...document.querySelectorAll('.date[data-line]')]
     .find((d) => d.dataset.line === String(line) && d.dataset.col === String(col));
 
@@ -177,7 +177,7 @@
     const el = editable(e.target);
     if (!el) return;
     if (open?.el === el) clearTimeout(timer);
-    else if (!open?.pinned) later(() => { if (el.isConnected && !Preview.deck) show(el); }, SHOW);
+    else if (!open?.pinned) later(() => { if (el.isConnected && Preview.workable) show(el); }, SHOW);
   });
   document.addEventListener('mouseout', (e) => {
     const from = cal.contains(e.target) ? cal : editable(e.target);
@@ -224,7 +224,7 @@
   // since drawn over): caught on the way down, ahead of the page's scrolling
   // and the app's shortcuts.
   document.addEventListener('keydown', (e) => {
-    if (e.metaKey || e.ctrlKey || e.altKey || e.isComposing || Preview.deck) return;
+    if (e.metaKey || e.ctrlKey || e.altKey || e.isComposing || !Preview.workable) return;
     const inCal = cal.contains(e.target);
     const el = !inCal && e.target.matches?.('.date[data-line]') && e.target;
     const typing = e.target.matches?.('input, textarea, select, [contenteditable]');
@@ -254,7 +254,7 @@
     },
     restore: (root, kept) => {
       const el = kept && dateAt(kept.line, kept.col);
-      if (el && !Preview.deck) show(el, { pinned: true, at: kept.at, focus: kept.focus });
+      if (el && Preview.workable) show(el, { pinned: true, at: kept.at, focus: kept.focus });
     },
   });
 })();

@@ -31,6 +31,16 @@
  *
  *   Preview.deck
  *     Whether a slide is showing, when clicks and keys drive the deck.
+ *
+ *   Preview.workable
+ *     Whether the page can be worked here: a blank filled in, a date
+ *     picked, a step lit. It's the frame's word for what workable() in
+ *     features/blank.js drew the page by, and the one every feature reads
+ *     before it takes a click or a key. Each render sets it, false on a
+ *     slide, which the deck keeps shut; it may be set again while the page
+ *     is showing, and what's done after goes by it. While it's false, <html>
+ *     is marked `unworkable`, so what can't be worked doesn't look as if it
+ *     could. A task's box still ticks on a slide: it isn't asked.
  */
 (() => {
   const hooks = [];
@@ -42,8 +52,16 @@
     held = null;
     for (const { edits, opts } of sending?.values() ?? []) window.parent.postMessage({ type: 'edit', edits, ...opts }, '*');
   };
+  let workable = true;
   window.Preview = {
     deck: false,
+    get workable() {
+      return workable;
+    },
+    set workable(on) {
+      workable = Boolean(on);
+      document.documentElement.classList.toggle('unworkable', !workable);
+    },
     edit(edits, opts = {}) {
       if (!held) {
         held = new Map();
