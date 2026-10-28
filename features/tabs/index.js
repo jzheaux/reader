@@ -36,8 +36,7 @@ import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import hljs from 'highlight.js';
 import { opens, panes } from '../layout.js';
-import { parseInfo } from '../highlight/index.js';
-import { escapeHtml, escapeAttr } from '../source.js';
+import { escapeHtml, escapeAttr, fenceLanguage } from '../source.js';
 
 // How many versions the stylesheet can show the pick of.
 const MAX = 12;
@@ -110,7 +109,7 @@ function rule(name) {
 /** The name of a version's fence's language, as highlight.js spells it. */
 function named(tokens) {
   const fence = tokens.find((t) => t.type === 'fence');
-  const lang = fence && parseInfo(fence.info).lang;
+  const lang = fence && fenceLanguage(fence.info);
   if (!lang) return null;
   return hljs.getLanguage(lang)?.name ?? lang;
 }

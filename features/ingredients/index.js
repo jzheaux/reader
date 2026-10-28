@@ -23,20 +23,9 @@
 
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { sections, multipliers, escapeHtml, escapeAttr, addClass, split, eachText, escapeRegExp } from '../source.js';
+import { sections, multipliers, escapeHtml, escapeAttr, addClass, split, eachText, escapeRegExp, wordForms } from '../source.js';
 
 const KEY = /(?<![\p{L}\p{N}_])!(\p{L}[\p{L}\p{N}'’-]*)/gu;
-
-/** The ways `key` is written: as is, plural, singular. */
-export function forms(key) {
-  const k = key.toLowerCase();
-  const all = new Set([k, `${k}s`, `${k}es`]);
-  if (k.endsWith('y')) all.add(`${k.slice(0, -1)}ies`);
-  if (k.endsWith('ies')) all.add(`${k.slice(0, -3)}y`);
-  if (k.endsWith('es')) all.add(k.slice(0, -2));
-  if (k.endsWith('s')) all.add(k.slice(0, -1));
-  return [...all];
-}
 
 export function ingredients(md) {
   // Before an escaped `\!` joins the text after it, and after a defined
@@ -96,7 +85,7 @@ export function ingredients(md) {
     };
     for (const [recipe, keyed] of recipes) {
       const byForm = new Map();
-      for (const item of keyed) for (const key of item.keys) for (const f of forms(key)) byForm.set(f, key.toLowerCase());
+      for (const item of keyed) for (const key of item.keys) for (const f of wordForms(key)) byForm.set(f, key.toLowerCase());
       const find = new RegExp(`(?<![\\p{L}\\p{N}_!])(?:${[...byForm.keys()].sort((a, b) => b.length - a.length).map(escapeRegExp).join('|')})(?![\\p{L}\\p{N}_])`, 'giu');
       const used = new Set();
       tokens.forEach((t, i) => {

@@ -197,3 +197,25 @@ export function multipliers(state, of) {
   };
   return { bySection, nearest };
 }
+
+/**
+ * The ways a word is written, lower-cased: as is, plural and singular
+ * (`berry`: `berries`; `beans`: `bean`).
+ */
+export function wordForms(word) {
+  const k = word.toLowerCase();
+  const all = new Set([k, `${k}s`, `${k}es`]);
+  if (k.endsWith('y')) all.add(`${k.slice(0, -1)}ies`);
+  if (k.endsWith('ies')) all.add(`${k.slice(0, -3)}y`);
+  if (k.endsWith('es')) all.add(k.slice(0, -2));
+  if (k.endsWith('s')) all.add(k.slice(0, -1));
+  return [...all];
+}
+
+/**
+ * A fence's language: the first word of its info string, before any braces
+ * (`java` in ` ```java{3} ` and ` ```java {numbers} `), or '' for none.
+ */
+export function fenceLanguage(info) {
+  return info.trim().split(/[\s{]/)[0];
+}
