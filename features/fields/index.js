@@ -31,6 +31,7 @@
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { beforeAsides, readLines, placeholder, MARKS, splitText, escapeHtml, escapeAttr } from '../source.js';
+import { typable, unfilled } from '../blank.js';
 
 const FIELD = /^@[ \t]+([^:\n]*?[^:\s])[ \t]*(:+)[ \t]*(.*?)[ \t]*$/;
 const HEAD = /^@[ \t]+[^:\n]*?[^:\s][ \t]*:+/;
@@ -72,30 +73,6 @@ function choices(line, head, value) {
     let at = 0;
     return { ...c, on: head + rest.replace(MARK, () => (at++ === k ? '(x)' : '( )')) };
   });
-}
-
-/**
- * Can a field be filled in where it's drawn? Not on a slide, which the deck
- * keeps shut, nor on an exported page, which has no script to open it with.
- */
-const fillable = (env) => !env.exported && !env.deck;
-
-/**
- * A blank's attributes, so it can be reached by the keyboard and is read as
- * a box named `label`: the preview opens it for typing when it's focused.
- * Where it can't be filled in, it's only read, as its label and its value.
- */
-export function typable(label, env) {
-  return fillable(env) ? ` tabindex="0" role="textbox" aria-label="${escapeAttr(label)}"` : '';
-}
-
-/**
- * Where a field can't be filled in, an empty one says so to a screen reader
- * ("Thoughts: blank"), unseen. Kept out of the blank itself, which is
- * drawn by whether it's empty.
- */
-export function unfilled(value, env) {
-  return value || fillable(env) ? '' : '<span class="field-blank">blank</span>';
 }
 
 export function fields(md) {

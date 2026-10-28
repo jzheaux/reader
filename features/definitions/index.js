@@ -8,7 +8,7 @@
  * Definitions on lines in a row make one glossary, and the same term again
  * straight after is another sense of it, numbered. A term with nothing after
  * its colon is one heard but not yet looked up: a blank, filled in as a
- * field is (the fields feature's preview does the filling).
+ * field is (features/blank.js).
  *
  * A term in capitals whose meaning spells it out has those letters bolded
  * (**S**imilar **L**ayers of **AB**straction). And `!` before the term
@@ -26,7 +26,7 @@
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { beforeAsides, readLines, MARKS, escapeHtml, escapeAttr, textToken, split, eachText, escapeRegExp, wordForms } from '../source.js';
-import { typable } from '../fields/index.js';
+import { typable } from '../blank.js';
 
 // A term can't open with `[` (an image) and holds no colon or parentheses.
 // A name may hold a link, whose address is in parentheses of its own.

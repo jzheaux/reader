@@ -17,6 +17,7 @@
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { beforeAsides, keepWritten, readLines, placeholder, MARKS, splitText, escapeHtml, escapeAttr } from '../source.js';
+import { workable } from '../blank.js';
 
 const DATE = /(?<![\w\\])date:(\d{4}-\d{2}-\d{2})?\[([^\]\n]*)\]/g;
 const [OPEN, CLOSE] = MARKS.date;
@@ -96,7 +97,7 @@ export function dates(md) {
     // What the preview needs to change it, and to be reached by keyboard.
     // Not on a slide, where the deck shows no calendar, nor on an exported
     // page, which has no script to show one with: there it's only read.
-    const reached = env.deck || env.exported ? '' : ' tabindex="0" role="button" aria-haspopup="dialog"';
+    const reached = workable(env) ? ' tabindex="0" role="button" aria-haspopup="dialog"' : '';
     const editable = col == null ? ''
       : ` data-line="${line}" data-col="${col}" data-text="${escapeAttr(text)}"${reached}`;
     return date
