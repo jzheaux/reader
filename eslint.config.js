@@ -39,6 +39,16 @@ export default [
       ] }],
     },
   },
+  // The core does without any one feature, so it imports only what
+  // features share, at the top of features/, never a feature's own files.
+  {
+    files: ['src/**/*.js'],
+    rules: {
+      'no-restricted-imports': ['error', { patterns: [
+        { regex: String.raw`^\.\./features/[^/]+/`, message: 'The core imports only what features share, at the top of features/, not a feature\'s own files.' },
+      ] }],
+    },
+  },
   // The app and what it imports are modules; the preview frame's scripts
   // (its own, the puzzles' and the features') are classic scripts sharing
   // `window.Preview` and `window.Puzzles`, Mermaid's `window.mermaid`, and

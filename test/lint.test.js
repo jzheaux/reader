@@ -21,3 +21,14 @@ test('a feature may import what features share, and its tests the core', async (
   const code = "import { escapeAttr } from '../source.js';\nimport { render } from '../../src/render.js';\nexport { escapeAttr, render };\n";
   assert.deepEqual(await lint(code, 'features/steps/x.test.js'), []);
 });
+
+test('the core importing a feature\'s own files fails lint', async () => {
+  const messages = await lint("import { asideTokens } from '../features/asides/index.js';\nexport { asideTokens };\n", 'src/x.js');
+  assert.equal(messages.length, 1);
+  assert.match(messages[0], /The core imports only what features share/);
+});
+
+test('the core may import what features share', async () => {
+  const code = "import { FEATURES } from '../features/index.js';\nimport { COLORS } from '../features/names.js';\nexport { FEATURES, COLORS };\n";
+  assert.deepEqual(await lint(code, 'src/x.js'), []);
+});
