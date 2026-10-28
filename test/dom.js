@@ -10,6 +10,7 @@
  *   run(window, ...files) runs reader's scripts in the page, as its <script>s would
  *   frame(html)           a page in a frame: `posted` is what it sends the page
  *                         around it, `send` sends it something from there
+ *   settle()              the end of the turn, when the edits a page holds go up
  *   preview()             the preview frame as the server serves it, every feature's
  *                         script in it: `show(body)` draws a render, as the app sends one
  *   globals(window)       makes the page this test's own, for the app's modules
@@ -46,6 +47,11 @@ export function run(window, ...files) {
   for (const path of files) vm.runInContext(read(path), window, { filename: path });
   return window;
 }
+
+// Once Node's next turn comes, every microtask queued before it has run,
+// the page's among them. Taken here, before a test can mock the timers.
+const immediately = setImmediate;
+export const settle = () => new Promise((resolve) => immediately(resolve));
 
 export function frame(html, opts) {
   const window = page(html, opts);

@@ -5,24 +5,24 @@
  * `data-off`), and a box with stages its line at each (`data-lines`): a
  * click fills the next stage, or empties a full box, and a shift-click
  * goes back one. A reset button clears every box on its lines, and a log
- * button beside it adds a heading for today, with the multiple picked. Runs in
- * the preview frame, and lends other features `Preview.boxLine`,
- * `Preview.stageLine` and `Preview.setStage`, to move a box with an edit of
- * their own.
+ * button beside it adds a heading for today, with the multiple picked. Another
+ * feature can have a box done by sending it, or its list item, a
+ * `preview:complete`: a plain box is ticked, a staged one filled all the way.
+ * Runs in the preview frame.
  */
 (() => {
-  const boxLine = Preview.boxLine = (b, on) => {
+  const boxLine = (b, on) => {
     const line = Number(b.dataset.line);
     // `defaultChecked` is what the file said when the page was drawn.
     return { from: line, to: line + 1, before: [b.defaultChecked ? b.dataset.on : b.dataset.off], after: [on ? b.dataset.on : b.dataset.off] };
   };
-  const stageLine = Preview.stageLine = (b, to) => {
+  const stageLine = (b, to) => {
     const line = Number(b.dataset.line);
     const lines = JSON.parse(b.dataset.lines);
     return { from: line, to: line + 1, before: [lines[Number(b.dataset.stage)]], after: [lines[to]] };
   };
   /** Until the next render, the page is what the file says. */
-  const setStage = Preview.setStage = (b, to) => {
+  const setStage = (b, to) => {
     b.dataset.stage = String(to);
     [...b.children].forEach((pip, k) => pip.classList.toggle('on', k < to));
     const n = b.children.length;
@@ -39,9 +39,25 @@
     const edits = group.map((b) => boxLine(b, b === box ? box.checked : false))
       .filter((x) => x.before[0] !== x.after[0]);
     for (const b of group) b.defaultChecked = b.checked;
-    // What else a box being ticked changes, in the same edit (ingredients/preview.js).
-    document.dispatchEvent(new CustomEvent('tasks:edits', { detail: { box, edits } }));
     if (edits.length) Preview.edit(edits, { undo: true });
+  });
+
+  // Asked of a box, or of the list item it begins: done, if it isn't. Its
+  // edit goes up with the rest of the turn's, as one undo (preview-api.js).
+  document.addEventListener('preview:complete', (e) => {
+    const at = e.target;
+    const own = (sel) => (at.matches?.(sel) ? at : at.querySelector?.(`:scope > ${sel}, :scope > p > ${sel}`));
+    const staged = own('.stage-box');
+    const plain = own('input.task-box');
+    if (staged) {
+      const n = staged.children.length;
+      if (Number(staged.dataset.stage) === n) return;
+      Preview.edit([stageLine(staged, n)], { undo: true });
+      setStage(staged, n);
+    } else if (plain && !plain.defaultChecked && !plain.closest('.field')) {
+      Preview.edit([boxLine(plain, true)], { undo: true });
+      plain.checked = plain.defaultChecked = true;
+    }
   });
 
   document.addEventListener('click', (e) => {

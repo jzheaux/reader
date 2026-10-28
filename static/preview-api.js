@@ -8,7 +8,14 @@
  *     Edits to the file go up as lines to replace: lines `from` up to `to`,
  *     which read `before`, become `after` (see edits.js). `undo` asks for
  *     the edit to go on the editor's undo stack; `drawn` says the page
- *     already shows it, so it needn't be rendered again.
+ *     already shows it, so it needn't be rendered again. Edits asked for
+ *     while one click or key is handled are held to the end of the turn (a
+ *     microtask) and go up together, those with the same options as one
+ *     edit and one undo. So features that answer the same click (a step
+ *     done, the ingredient it uses up) needn't know of each other.
+ *
+ *   Preview.flush()
+ *     Sends the edits held so far now, not at the end of the turn.
  *
  *   Preview.register({ keep, restore, drawn })
  *     Each render replaces the page. `keep()` is called just before, to say
@@ -28,11 +35,25 @@
 (() => {
   const hooks = [];
   const pending = new Set();
+  // The edits asked for in this turn, under their options, in the order asked.
+  let held = null;
+  const flush = () => {
+    const sending = held;
+    held = null;
+    for (const { edits, opts } of sending?.values() ?? []) window.parent.postMessage({ type: 'edit', edits, ...opts }, '*');
+  };
   window.Preview = {
     deck: false,
     edit(edits, opts = {}) {
-      window.parent.postMessage({ type: 'edit', edits, ...opts }, '*');
+      if (!held) {
+        held = new Map();
+        queueMicrotask(flush);
+      }
+      const key = JSON.stringify(opts);
+      if (held.has(key)) held.get(key).edits.push(...edits);
+      else held.set(key, { edits: [...edits], opts });
     },
+    flush,
     register(hook) {
       hooks.push(hook);
     },

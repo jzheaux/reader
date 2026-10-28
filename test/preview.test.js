@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { render } from '../src/render.js';
 import { slides } from '../src/slides.js';
-import { preview, app, globals } from './dom.js';
+import { preview, app, globals, frame, run, settle } from './dom.js';
 
 const BASE = 'http://localhost:8734/content/notes/';
 
@@ -391,4 +391,35 @@ test('a slide grows to fill the window, up to twice its size, sized at 100% for 
   // ⌘− always makes it smaller.
   near(zoom(1 / 1.5, 0.8) * 0.8, 1.2);
   near(zoom(1.25, 0.8) * 0.8, 0.64);
+});
+
+test('the edits asked for in one turn go up at its end, as one for the same options, and a turn\'s apart from the next', async () => {
+  const { window, posted } = frame('');
+  run(window, 'static/preview-api.js');
+  const edit = (n) => ({ from: n, to: n + 1, before: [`${n}`], after: [`${n}!`] });
+  const sent = () => posted.splice(0).filter((m) => m.type === 'edit').map(({ edits, ...m }) => [edits.map((e) => e.from), m]);
+  window.Preview.edit([edit(0)], { undo: true });
+  window.Preview.edit([edit(1)]);
+  window.Preview.edit([edit(2), edit(3)], { undo: true });
+  assert.deepEqual(posted, [], 'held to the end of the turn');
+  await settle();
+  assert.deepEqual(sent(), [
+    [[0, 2, 3], { type: 'edit', undo: true }],
+    [[1], { type: 'edit' }],
+  ]);
+  window.Preview.edit([edit(4)], { undo: true });
+  await settle();
+  window.Preview.edit([edit(5)], { undo: true });
+  await settle();
+  assert.deepEqual(sent(), [[[4], { type: 'edit', undo: true }], [[5], { type: 'edit', undo: true }]]);
+});
+
+test('Preview.flush sends the edits held so far, and the end of the turn sends nothing again', async () => {
+  const { window, posted } = frame('');
+  run(window, 'static/preview-api.js');
+  window.Preview.edit([{ from: 0, to: 1, before: ['a'], after: ['b'] }], { undo: true });
+  window.Preview.flush();
+  assert.equal(posted.length, 1);
+  await settle();
+  assert.equal(posted.length, 1);
 });

@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { render } from '../../src/render.js';
-import { preview } from '../../test/dom.js';
+import { preview, settle } from '../../test/dom.js';
 
 const RECIPE = [
   '---', 'multibox:', '  stages: have, prepped, used', '---', '',
@@ -16,25 +16,26 @@ const RECIPE = [
   '2) [ ] Add the cilantro and the onion.',
 ].join('\n');
 
-/** Ticks step `n` of RECIPE, as shown: what it asked to be written, as lines [from, after]. */
-function ticking(p, n) {
+/** Ticks step `n` of RECIPE, as shown: what it asked to be written by the end of the turn, as lines [from, after]. */
+async function ticking(p, n) {
   p.posted.length = 0;
   p.document.querySelectorAll('li.step > .task-box')[n - 1].click();
+  await settle();
   return p.posted.filter((m) => m.type === 'edit').map((m) => m.edits.map((e) => [e.from, e.after[0]]));
 }
 
-test('an ingredient isn\'t used until the last step that names it is done', () => {
+test('an ingredient isn\'t used until the last step that names it is done', async () => {
   const p = preview();
   p.show(render(RECIPE).body);
-  assert.deepEqual(ticking(p, 1), [[[13, '1) [x] Fry the onion.']]]);
+  assert.deepEqual(await ticking(p, 1), [[[13, '1) [x] Fry the onion.']]]);
   assert.equal(p.document.querySelector('.stage-box').dataset.stage, '1');
 });
 
-test('the last step to name an ingredient marks it used in the same edit: a staged box filled, a plain one ticked', () => {
+test('the last step to name an ingredient marks it used in the same edit: a staged box filled, a plain one ticked', async () => {
   const p = preview();
   p.show(render(RECIPE).body);
-  ticking(p, 1);
-  assert.deepEqual(ticking(p, 2), [[
+  await ticking(p, 1);
+  assert.deepEqual(await ticking(p, 2), [[
     [14, '2) [x] Add the cilantro and the onion.'],
     [9, '* [x] a handful of fresh !cilantro, chopped'],
     [8, '* [x][x][x] count:1 small yellow !onion, diced'],
@@ -45,12 +46,26 @@ test('the last step to name an ingredient marks it used in the same edit: a stag
   assert.deepEqual([cilantro.checked, peas.checked], [true, false]);
 });
 
-test('a step done out of order leaves what a step still to do names', () => {
+test('a step done out of order leaves what a step still to do names', async () => {
   const p = preview();
   p.show(render(RECIPE).body);
-  assert.deepEqual(ticking(p, 2), [[
+  assert.deepEqual(await ticking(p, 2), [[
     [14, '2) [x] Add the cilantro and the onion.'],
     [9, '* [x] a handful of fresh !cilantro, chopped'],
+  ]]);
+});
+
+test('any list item ticked uses up what it last names, not only a step', async () => {
+  const p = preview();
+  p.show(render(RECIPE.replace('2) [ ] Add the cilantro and the onion.', '* [ ] Add the cilantro and the onion.')).body);
+  await ticking(p, 1);
+  p.posted.length = 0;
+  p.document.querySelector('li.task:not(.step):not(.ingredient) > .task-box').click();
+  await settle();
+  assert.deepEqual(p.posted.filter((m) => m.type === 'edit').map((m) => m.edits.map((e) => [e.from, e.after[0]])), [[
+    [14, '* [x] Add the cilantro and the onion.'],
+    [9, '* [x] a handful of fresh !cilantro, chopped'],
+    [8, '* [x][x][x] count:1 small yellow !onion, diced'],
   ]]);
 });
 
