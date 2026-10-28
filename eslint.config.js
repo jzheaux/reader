@@ -28,6 +28,17 @@ export default [
     ignores: FRAME,
     languageOptions: { sourceType: 'module', globals: globals.node },
   },
+  // A feature is left out or bundled on its own, so it imports nothing from
+  // another feature's directory: what two share sits at the top of
+  // features/. Its tests may still reach ../../src/ and ../../test/.
+  {
+    files: ['features/*/**/*.js'],
+    rules: {
+      'no-restricted-imports': ['error', { patterns: [
+        { regex: String.raw`^\.\./[^./][^/]*/`, message: 'Import what features share from the top of features/, not from another feature.' },
+      ] }],
+    },
+  },
   // The app and what it imports are modules; the preview frame's scripts
   // (its own, the puzzles' and the features') are classic scripts sharing
   // `window.Preview` and `window.Puzzles`, Mermaid's `window.mermaid`, and
