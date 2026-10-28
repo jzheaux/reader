@@ -203,7 +203,7 @@
   --gm-important: var(--gm-violet);
   --gm-warning: var(--gm-amber);
   --gm-caution: var(--gm-red);
-  /* a key's reviewers and topics (features/asides/key.js) */
+  /* a key's reviewers and topics, as an aside's are */
   --gm-key-1: var(--gm-red);
   --gm-key-2: var(--gm-green);
   --gm-key-3: var(--gm-violet);
@@ -221,22 +221,6 @@
   --gm-code-meta: color-mix(in srgb, var(--gm-slate) 80%, var(--gm-ink));
   --gm-code-deletion: color-mix(in srgb, var(--gm-red) 80%, var(--gm-ink));
   --gm-code-addition: color-mix(in srgb, var(--gm-green) 80%, var(--gm-ink));
-}
-
-/* How light a colour an author names can be (features/asides/key.js),
- * where it's drawn as text or lettered in the paper: a topic's pill, a
- * reviewer's chip, the legend. A name key.js knows is the family's hue
- * already, and drawn exactly as it's defined; a `#hex`, or a name it
- * doesn't know (`.gm-own`), is taken in OKLCH to the family's lightness at
- * most in the light, and at least in the dark, so it reads as the family
- * does. One deeper than that in the light, or brighter
- * in the dark, is left as it is. With more contrast asked for, deeper, and
- * brighter and less vivid, to 7:1. */
-:root { --gm-key-l-min: 0; --gm-key-l-max: 0.5; --gm-key-c-max: 0.4; }
-:root.gm-dark { --gm-key-l-min: 0.78; --gm-key-l-max: 1; }
-@media (prefers-contrast: more) {
-  :root { --gm-key-l-max: 0.4; }
-  :root.gm-dark { --gm-key-l-min: 0.86; --gm-key-c-max: 0.15; }
 }
 
 /* The system's own colours (forced-colors: active, as Windows' contrast
@@ -381,81 +365,12 @@ body {
 .gm-speaker li.gm-cont { list-style: none; margin-top: 0; }
 .gm-speaker li.gm-cont > *:first-child { margin-top: 0; }
 
-/* ---------- the listener's voice ---------------------------------------- */
-
-.gm-aside-cell {
-  font-family: var(--gm-sans);
-  font-style: italic;
-  font-size: 0.86rem;
-  line-height: 1.45;
-  color: var(--gm-aside-ink);
-  border-left: 2px solid var(--gm-aside-rule);
-  padding-left: 0.85rem;
-  break-inside: avoid;
-}
-
-.gm-aside-cell p { margin: 0 0 0.5rem; }
-.gm-aside-cell p:last-child { margin-bottom: 0; }
-.gm-aside-cell + .gm-aside-cell { margin-top: 0.6rem; }
+/* ---------- the margin ------------------------------------------------- */
 
 /* When your thinking runs denser than the speaker's outline, consecutive rows
- * put one aside directly under another. A little air keeps them legible as
+ * put one note directly under another. A little air keeps them legible as
  * separate thoughts. */
 .gm-asides { padding-bottom: 0.7rem; }
-
-/* The tilde is kept as a visible mark of authorship -- it is the notation the
- * document is written in, not just syntax to be compiled away. */
-.gm-aside-cell .gm-mark {
-  font-style: normal;
-  font-family: var(--gm-mono);
-  color: var(--gm-accent);
-  margin-right: 0.3em;
-  font-size: 0.95em;
-}
-
-.gm-aside-cell ul, .gm-aside-cell ol {
-  margin: 0.3rem 0;
-  padding-left: 1.1rem;
-}
-
-/* An aside from a reviewer, about a topic (features/asides/key.js): the
- * rule in the reviewer's colour, their name in a chip, each topic in an
- * outlined pill. Names, not only colours, so it holds up in print. The
- * paper on a chip: a key's colours read on the paper, and so it on them. */
-.gm-attributed { border-left-color: var(--by, var(--gm-aside-rule)); }
-.gm-by { font-style: normal; margin-right: 0.35em; }
-.gm-who, .gm-topic, .gm-unknown {
-  display: inline-block;
-  font-family: var(--gm-sans);
-  font-style: normal;
-  font-size: 0.74em;
-  font-weight: 600;
-  line-height: 1.5;
-  letter-spacing: 0.02em;
-  padding: 0 0.45em;
-  margin: 0 0.3em 0.1em 0;
-  border-radius: 3px;
-  vertical-align: 0.1em;
-}
-.gm-who { color: var(--gm-paper); background: var(--by, var(--gm-accent)); }
-.gm-topic { color: var(--topic, var(--gm-accent)); border: 1px solid currentColor; border-radius: 999px; padding: 0 0.55em; }
-.gm-unknown { color: var(--gm-ink-soft); border: 1px dashed currentColor; }
-/* A colour an author wrote that isn't the family's, kept as light or as
- * dark as the family (see the top). A browser without relative colours
- * draws it as it's written. */
-@supports (color: oklch(from red clamp(0, l, 1) min(c, 1) h)) {
-  .gm-who.gm-own { background: oklch(from var(--by) clamp(var(--gm-key-l-min), l, var(--gm-key-l-max)) min(c, var(--gm-key-c-max)) h); }
-  .gm-topic.gm-own { color: oklch(from var(--topic) clamp(var(--gm-key-l-min), l, var(--gm-key-l-max)) min(c, var(--gm-key-c-max)) h); }
-}
-/* In the system's colours, a chip keeps its own (see the top), so its
- * ground is the system's text, whatever colour the author named. */
-@media (forced-colors: active) {
-  .gm-who, .gm-who.gm-own { background: CanvasText; }
-}
-
-/* the masthead's legend: who and what the asides are from and about */
-.gm-legend { margin-top: 0.45rem; font-size: 0.95rem; }
-.gm-legend b { font-weight: 400; margin-left: 0.15em; }
 
 /* ---------- shared prose ------------------------------------------------- */
 

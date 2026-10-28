@@ -26,7 +26,7 @@
  */
 
 import fs from 'node:fs';
-import { beforeAsides, fenced, MARKS } from '../source.js';
+import { beforeExtract, fenced, MARKS } from '../source.js';
 import { LAYOUTS, OPEN as LAYOUT_OPEN, DIVIDER, CLOSE as LAYOUT_CLOSE } from '../layout.js';
 import { marking, markSpan } from '../mark.js';
 
@@ -45,7 +45,7 @@ const REFERENCE_DEF = /^[ \t]{0,3}\[[^\]]+\]:/;
 const PLUS = /^[ \t]{0,3}\+{3,}(?:[ \t]+(.*?))?[ \t]*$/;
 
 export function styles(md) {
-  beforeAsides(md, 'style_lines', lines);
+  beforeExtract(md, 'style_lines', lines);
   md.inline.ruler.before('link', 'style_span', span);
   md.core.ruler.before('inline', 'style_unmark', unmark);
   // Before other features look at the text: a marker isn't theirs to see.
@@ -57,7 +57,7 @@ export function styles(md) {
 
 /** Marks each line inside a `:::` block with the styles it's in. */
 function lines(state) {
-  if (state.inlineMode || state.env.__aside) return;
+  if (state.inlineMode || state.env.nested) return;
   const open = [];
   const code = fenced();
   state.src = state.src.split('\n').map((line) => {
@@ -178,7 +178,7 @@ function span(state, silent) {
   if (!names) return false;
   const open = state.push('style_span_open', 'span', 1);
   // A mark's colour is the mark's, not the text's (features/mark.js).
-  const marked = marking(names[1], state.env.asideKey);
+  const marked = marking(names[1], state.env.topics);
   if (marked) {
     const color = marked.rest.find((n) => COLORS.has(n.toLowerCase()))?.toLowerCase();
     const rest = marked.rest.filter((n) => !COLORS.has(n.toLowerCase()));

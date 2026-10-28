@@ -86,7 +86,7 @@ export function puzzles(md) {
  * lines are counted apart from the file's.
  */
 function where(token, lines, env) {
-  if (env.__aside || !token.map) return {};
+  if (env.nested || !token.map) return {};
   const [open, end] = token.map;
   const body = token.content ? token.content.replace(/\n$/, '').split('\n') : [];
   // Each line inside the fence is its prefix and then its text; with none

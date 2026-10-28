@@ -18,11 +18,11 @@ export { frontMatter, fenced };
 
 /**
  * Adds `rule` to read the source as written, before the page's front matter
- * and comments come off (`page_extract`, src/page.js), and so before the
- * asides do; or after normalizing it when there's no such rule (a test of
- * the feature alone).
+ * and comments come off (`page_extract`, src/page.js), and so before any
+ * feature takes lines out of it (an aside's); or after normalizing it when
+ * there's no such rule (a test of the feature alone).
  */
-export function beforeAsides(md, name, rule) {
+export function beforeExtract(md, name, rule) {
   try {
     md.core.ruler.before('page_extract', name, rule);
   } catch {
@@ -38,19 +38,19 @@ export function beforeAsides(md, name, rule) {
 export function keepWritten(md) {
   if (md.core.ruler.__find__('written') >= 0) return;
   md.core.ruler.after('normalize', 'written', (state) => {
-    if (!state.inlineMode && !state.env.__aside) state.env.written = state.src.split('\n');
+    if (!state.inlineMode && !state.env.nested) state.env.written = state.src.split('\n');
   });
 }
 
 /**
  * Runs `fn(line, n, lines, i)` over each line of the source outside fenced
  * code, and puts back what it returns; `lines` are the source's lines as
- * they were, `i` this one's index among them. Skipped for an aside's own parse (its lines
- * were read with the rest) and for inline rendering. The line numbers count
+ * they were, `i` this one's index among them. Skipped for a nested parse
+ * (`env.nested`: its lines were read with the rest) and for inline rendering. The line numbers count
  * from `env.lineBase`, the line of the file the text starts on.
  */
 export function readLines(state, fn) {
-  if (state.inlineMode || state.env.__aside) return;
+  if (state.inlineMode || state.env.nested) return;
   const base = state.env.lineBase ?? 0;
   const code = fenced();
   const lines = state.src.split('\n');
@@ -72,6 +72,19 @@ export const MARKS = {
   layout: ['\uE021', '\uE022', '\uE023'],
   definitions: ['\uE030', '\uE031'],
 };
+
+/**
+ * What a feature may find on `env`, named for what it means rather than for
+ * the feature that set it:
+ *
+ * - `nested`: this is a parse of a note's own body, apart from the page's
+ *   (an aside's), whose lines were read with the rest; a rule over the
+ *   whole document skips it.
+ * - `topics`: the topics a mark in braces can be in, by their one-character
+ *   alias (`[words]{c}`), each `{ name, color, style }`, in a Map; the
+ *   asides feature's key declares them. Without it, `{c}` is a font
+ *   (features/mark.js).
+ */
 
 /**
  * The tags a feature may leave on a token's `meta` for the others to read,

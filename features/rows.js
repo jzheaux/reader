@@ -122,8 +122,8 @@ function firstTokenAtOrAfter(tokens, line) {
  * at. Returns the notes annotated with `cut` and `endCut` (the token indexes
  * where the block they are commenting on starts and ends), in document order.
  */
-export function resolveAnchors(tokens, asides) {
-  return asides.map((a) => {
+export function resolveAnchors(tokens, notes) {
+  return notes.map((a) => {
     const block = lastBlockBefore(tokens, a.anchor);
     if (!block) return { ...a, cut: 0, endCut: 0 };
     return {
@@ -131,7 +131,7 @@ export function resolveAnchors(tokens, asides) {
       // Open the row at the start of the block being commented on...
       cut: firstTokenAtOrAfter(tokens, block.map[0]),
       // ...and close it at the end of that block, so whatever the speaker said
-      // next begins below the aside instead of running alongside it.
+      // next begins below the note instead of running alongside it.
       endCut: firstTokenAtOrAfter(tokens, endOf(tokens, block)),
     };
   });
@@ -139,22 +139,22 @@ export function resolveAnchors(tokens, asides) {
 
 /**
  * Cut the token stream into aligned pairs, each passage of the speaker's
- * with the notes beside it, its `asides`.
+ * with the notes beside it, its `notes`.
  *
- * @returns {Array<{speaker: Token[], asides: Array<{anchor: number}>}>}
+ * @returns {Array<{speaker: Token[], notes: Array<{anchor: number}>}>}
  */
-export function splitPairs(tokens, asides) {
-  const resolved = resolveAnchors(tokens, asides);
+export function splitPairs(tokens, notes) {
+  const resolved = resolveAnchors(tokens, notes);
 
-  // Several asides can resolve to the same cut (two thoughts about one line).
+  // Several notes can resolve to the same cut (two thoughts about one line).
   // They share a cell rather than each opening an empty row. A cut with no
-  // asides is a plain row break, which is how an aside's row is closed off at
+  // notes is a plain row break, which is how a note's row is closed off at
   // the end of its subject.
   const byCut = new Map();
-  const addCut = (idx, aside) => {
+  const addCut = (idx, note) => {
     if (idx == null || idx <= 0 || idx > tokens.length) return;
     if (!byCut.has(idx)) byCut.set(idx, []);
-    if (aside) byCut.get(idx).push(aside);
+    if (note) byCut.get(idx).push(note);
   };
   for (const a of resolved) {
     if (!byCut.has(a.cut)) byCut.set(a.cut, []);
@@ -166,14 +166,14 @@ export function splitPairs(tokens, asides) {
   const pairs = [];
   const stack = []; // { token, count } for each open container
   let chunk = [];
-  let pendingAsides = null;
+  let pendingNotes = null;
   let nextCut = 0;
 
   const flush = () => {
     // Close everything still open so the chunk is well-formed HTML on its own.
     const closing = [];
     for (let i = stack.length - 1; i >= 0; i--) closing.push(closeToken(stack[i].token));
-    pairs.push({ speaker: chunk.concat(closing), asides: pendingAsides || [] });
+    pairs.push({ speaker: chunk.concat(closing), notes: pendingNotes || [] });
 
     // Reopen the same containers to continue the flow in the next chunk.
     chunk = [];
@@ -201,7 +201,7 @@ export function splitPairs(tokens, asides) {
     while (nextCut < cuts.length && cuts[nextCut] === i) {
       const group = byCut.get(cuts[nextCut]);
       flush();
-      pendingAsides = group;
+      pendingNotes = group;
       nextCut++;
     }
 
@@ -218,18 +218,18 @@ export function splitPairs(tokens, asides) {
     chunk.push(t);
   }
 
-  // Any asides that resolved past the end of the stream.
+  // Any notes that resolved past the end of the stream.
   while (nextCut < cuts.length) {
     flush();
-    pendingAsides = byCut.get(cuts[nextCut]);
+    pendingNotes = byCut.get(cuts[nextCut]);
     nextCut++;
   }
 
-  pairs.push({ speaker: chunk, asides: pendingAsides || [] });
+  pairs.push({ speaker: chunk, notes: pendingNotes || [] });
 
   // A cut landing at the very end of a container leaves a chunk of nothing but
   // reopened-then-closed tags, which would print as an empty bullet. Keep only
-  // rows that actually carry something: a leaf token with content, or an aside.
-  const carries = (p) => p.asides.length || p.speaker.some((t) => t.nesting === 0);
+  // rows that actually carry something: a leaf token with content, or a note.
+  const carries = (p) => p.notes.length || p.speaker.some((t) => t.nesting === 0);
   return pairs.filter(carries);
 }

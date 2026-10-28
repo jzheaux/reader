@@ -13,7 +13,7 @@
  * width and height attributes, which `height: auto` would beat.
  */
 
-import { beforeAsides, readLines, MARKS } from '../source.js';
+import { beforeExtract, readLines, MARKS } from '../source.js';
 
 const [OPEN, CLOSE] = MARKS.sizes;
 const IMG_SIZE = /!\[([^\]\n]*)\]\([ \t]*(<[^>\n]*>|[^\s()]+)(?:[ \t]+("[^"\n]*"|'[^'\n]*'|\([^()\n]*\)))?[ \t]+=(\d*)x(\d*)[ \t]*\)/g;
@@ -21,7 +21,7 @@ const SIZED = new RegExp(`^${OPEN}(\\d*)x(\\d*)${CLOSE}`);
 const CODE_SPAN = /(`+)[^`][\s\S]*?\1|`+/g;
 
 export function sizes(md) {
-  beforeAsides(md, 'size_lines', (state) => readLines(state, (line) => outsideCode(line, (text) => text
+  beforeExtract(md, 'size_lines', (state) => readLines(state, (line) => outsideCode(line, (text) => text
     .replace(IMG_SIZE, (m, alt, src, title, w, h) => {
       if (!w && !h) return m;
       const inner = title ? title.slice(1, -1).replace(/\\?"/g, '\\"') : '';

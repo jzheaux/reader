@@ -17,14 +17,14 @@
  */
 
 import fs from 'node:fs';
-import { beforeAsides, readLines, addClass, MARKS } from '../source.js';
+import { beforeExtract, readLines, addClass, MARKS } from '../source.js';
 
 const ATTRIBUTION = /^([ \t]*(?:~[ \t]*|~[^\s~]+[ \t]+)*(?:>[ \t]*)+)(?:--|\u2014)[ \t]+(?=\S)/;
 const QUOTED = /^[ \t]*(?:~[ \t]*|~[^\s~]+[ \t]+)*>/;
 const [BYLINE] = MARKS.attributions;
 
 export function attributions(md) {
-  beforeAsides(md, 'attribution_lines', (state) => readLines(state, (line, n, lines, i) => {
+  beforeExtract(md, 'attribution_lines', (state) => readLines(state, (line, n, lines, i) => {
     const next = lines[i + 1];
     return next === undefined || !QUOTED.test(next) ? line.replace(ATTRIBUTION, `$1${BYLINE}`) : line;
   }));
@@ -38,7 +38,7 @@ export function attributions(md) {
       if (t.type !== 'inline' || !t.children) continue;
       const open = tokens[i - 1];
       // In an aside it stays as typed: the line is the reader's own.
-      const shown = open?.type === 'paragraph_open' && !open.hidden && !state.env.__aside;
+      const shown = open?.type === 'paragraph_open' && !open.hidden && !state.env.nested;
       const at = t.children.findIndex((c, k) => c.type === 'text' && c.content.startsWith(BYLINE)
         && (k === 0 || ['softbreak', 'hardbreak'].includes(t.children[k - 1].type)));
       if (shown && at === 0) {

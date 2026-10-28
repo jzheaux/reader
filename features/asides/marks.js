@@ -34,7 +34,7 @@ import { escapeHtml, textToken } from '../source.js';
 
 export function marks(md) {
   md.core.ruler.push('marks', (state) => {
-    if (state.inlineMode || state.env.__aside) return;
+    if (state.inlineMode || state.env.nested) return;
     const shared = state.env.shared ?? state.env;
     const chosen = choose(state, state.env.asides || []);
     for (const block of state.tokens) {

@@ -16,7 +16,7 @@
 
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { beforeAsides, keepWritten, readLines, placeholder, MARKS, splitText, escapeHtml, escapeAttr } from '../source.js';
+import { beforeExtract, keepWritten, readLines, placeholder, MARKS, splitText, escapeHtml, escapeAttr } from '../source.js';
 import { workable } from '../blank.js';
 
 const DATE = /(?<![\w\\])date:(\d{4}-\d{2}-\d{2})?\[([^\]\n]*)\]/g;
@@ -44,7 +44,7 @@ export function readable(iso) {
 export function dates(md) {
   keepWritten(md);
 
-  beforeAsides(md, 'date_lines', (state) => {
+  beforeExtract(md, 'date_lines', (state) => {
     const found = [];
     readLines(state, (line, n, lines, i) => {
       const text = state.env.written?.[i] ?? line;
@@ -88,7 +88,7 @@ export function dates(md) {
       for (const key of Object.keys(o)) o[key] = typeof o[key] === 'object' ? all(o[key]) : typed(o[key]);
       return o;
     };
-    if (meta && !state.env.__aside) all(meta);
+    if (meta && !state.env.nested) all(meta);
   });
 
   md.renderer.rules.date = (tokens, i, opts, env) => {

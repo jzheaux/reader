@@ -28,7 +28,7 @@
 
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { beforeAsides, keepWritten, readLines, placeholder, MARKS, unplaced, splitText, sections, multipliers, escapeHtml, escapeAttr, addClass } from '../source.js';
+import { beforeExtract, keepWritten, readLines, placeholder, MARKS, unplaced, splitText, sections, multipliers, escapeHtml, escapeAttr, addClass } from '../source.js';
 import { schemeRule } from '../scheme.js';
 
 const TASK = /^([ \t]*(?:>[ \t]*|~(?![^\s~])[ \t]*|~[^\s~]+[ \t]+)*(?:[-*+]|\d{1,9}[.)])[ \t]+)(?:((?:\[[ xX]\]){1,9})|\(([ xX])\))(?=[ \t]|$)/;
@@ -39,7 +39,7 @@ const PLACED = new RegExp(`${OPEN}(\\d+)${CLOSE}`, 'g');
 const AT_HEAD = new RegExp(`^${OPEN}(\\d+)${CLOSE}[ \\t]?`);
 
 export function tasks(md) {
-  beforeAsides(md, 'task_lines', (state) => {
+  beforeExtract(md, 'task_lines', (state) => {
     const boxes = [];
     readLines(state, (line, n) => {
       const written = HEADING.test(line) ? HEADING : TASK;

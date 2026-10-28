@@ -74,12 +74,12 @@ export function extract(src) {
  * slide) keeps the `env.entries` it was given, its deck's. Token maps count
  * lines of what's left; `env.sourceLines[n]` is the line of the source that
  * line `n` of it came from. Features that read the file as written go before
- * this rule (`beforeAsides`, features/source.js).
+ * this rule (`beforeExtract`, features/source.js).
  */
 export function page(md) {
   md.core.ruler.after('normalize', 'page_extract', (state) => {
-    // `__aside` marks the parse of an aside's own body, read with the rest.
-    if (state.inlineMode || state.env.__aside) return;
+    // A note's own body, parsed nested (`env.nested`), was read with the rest.
+    if (state.inlineMode || state.env.nested) return;
     const { meta, entries, source, lines } = extract(state.src);
     state.src = source.endsWith('\n') ? source : `${source}\n`;
     state.env.frontMatter = meta;

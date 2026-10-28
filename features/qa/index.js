@@ -36,7 +36,7 @@
 
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { beforeAsides, keepWritten, addClass, escapeAttr, fenced } from '../source.js';
+import { beforeExtract, keepWritten, addClass, escapeAttr, fenced } from '../source.js';
 
 // A name may hold a link, whose address is in parentheses of its own.
 const QA = /^\\?(Q|A|Good|Bad|Try)(?:[ \t]+\[([ xX])\])?(?:[ \t]*\(((?:[^()\n]|\([^()\n]*\))*)\))?:[ \t]+(?=\S)/;
@@ -46,7 +46,7 @@ const CARDS = new Set(['Good', 'Bad', 'Try']);
 
 export function qa(md) {
   keepWritten(md);
-  beforeAsides(md, 'qa_lines', lines);
+  beforeExtract(md, 'qa_lines', lines);
   // Last, after markdown's own rules: a paragraph split off here has no
   // source text of its own for them to check before they'd run.
   md.core.ruler.push('qa_items', items);
@@ -77,7 +77,7 @@ export function qa(md) {
  */
 function lines(state) {
   // An aside is a thought of the reader's own, not part of an exchange.
-  if (state.inlineMode || state.env.__aside) return;
+  if (state.inlineMode || state.env.nested) return;
   const said = new Map();
   const base = state.env.lineBase ?? 0;
   let open = null;
@@ -139,7 +139,7 @@ function lines(state) {
  * paragraph where an item carries on from the line before.
  */
 function items(state) {
-  if (!state.env.qa || state.env.__aside) return;
+  if (!state.env.qa || state.env.nested) return;
   // Lines the parser saw -> lines as written, before asides were taken out.
   const source = state.env.sourceLines;
   const said = { get: (n) => state.env.qa.get(source?.[n] ?? n) };

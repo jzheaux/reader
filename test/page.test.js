@@ -56,7 +56,7 @@ test('an HTML comment is dropped, asides and all', () => {
   const { source } = extract(src);
   assert.doesNotMatch(source, /review|<!--|-->/);
   assert.match(source, /body/);
-  assert.equal(render(src).asides, 0);
+  assert.equal(render(src).notes, 0);
   assert.equal(extract('<!-- one line -->\nbody\n').source, 'body\n');
 });
 
