@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { frontMatter, fenced } from '../static/markdown.js';
 import { readEntry } from '../features/asides/key.js';
-import { preprocess } from '../features/asides/preprocess.js';
+import { extract } from '../src/page.js';
 import { split } from '../src/slides.js';
 import { outline } from '../static/app/sections.js';
 
@@ -40,7 +40,7 @@ test('a leading rule is front matter only when what follows it reads as keys and
 test('a document, a deck and the outline read the same front matter', () => {
   const src = '---\nTitle: "A Talk"\ntitle font: Lora\nreviewer #: Josh\n---\n\n# One\n';
   const expected = { title: 'A Talk', 'title font': 'Lora' };
-  assert.deepEqual(preprocess(src).meta, expected);
+  assert.deepEqual(extract(src).meta, expected);
   assert.deepEqual(split(src).meta, expected);
   assert.equal(outline(src).matter.meta.title, 'A Talk');
 });

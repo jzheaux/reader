@@ -1,8 +1,9 @@
 /**
  * Markdown (with `~` asides) -> { css, body, title } for the preview pane.
  *
- * One markdown-it parses every document, with each feature's plugin
- * (features/), asides and front matter among them. columns.js lays the
+ * One markdown-it parses every document, its front matter and comments
+ * taken off first (page.js), then with each feature's plugin (features/),
+ * asides among them. columns.js lays the
  * tokens out in two columns, and the preview iframe, loaded once, has its
  * style and body swapped for these on every keystroke.
  */
@@ -13,9 +14,12 @@ import { columns } from './columns.js';
 import { readBackground, backdrop, CSS as BACKGROUND_CSS } from './background.js';
 import { fontCss } from './fonts.js';
 import { FEATURES } from '../features/index.js';
+import { page as pageRule } from './page.js';
 
-// Features that read the file as written (and asides) go before the rest.
+// Features that read the file as written go before the rest, their rules
+// before the page's front matter and comments come off.
 const md = new MarkdownIt({ html: false, linkify: true, typographer: true, breaks: false });
+md.use(pageRule);
 for (const f of FEATURES.filter((f) => f.plugin && f.raw)) md.use(f.plugin);
 for (const f of FEATURES.filter((f) => f.plugin && !f.raw)) md.use(f.plugin);
 // A `late` plugin, which reads what all of them leave as text (the words an
@@ -39,9 +43,9 @@ export function titleOf(meta, file) {
  * `file` is the document's path, and `read(path)` reads another file from
  * the content directory, for features that may (a puzzle's board). `shared`
  * is kept by features across the renders of one document's parts (a deck's
- * slides), to number things through the whole of it. `asideKey` is the
- * aliases its asides may use when `src` doesn't declare its own (a deck's,
- * for one slide of it). `lines` marks each block with the line of the file
+ * slides), to number things through the whole of it. `entries` are the
+ * front matter lines features claimed (page.js), for when `src` has none
+ * of its own (a deck's, for one slide of it). `lines` marks each block with the line of the file
  * it was drawn from, `data-line`, for scrolling in step with the editor.
  * `background` is what's behind the page (see background.js) when it isn't
  * the front matter's to say: a slide's own, or its deck's, or null for none.
@@ -54,9 +58,9 @@ export function titleOf(meta, file) {
  * run no script of the app's, so draws nothing that would wait on one. `deck` is for a slide
  * being presented, where the deck keeps the page's fields shut.
  */
-export function render(src, { file, read, line = 0, shared = {}, asideKey, lines = false, background, fonts, matter, drawn, exported = false, deck = false } = {}) {
+export function render(src, { file, read, line = 0, shared = {}, entries, lines = false, background, fonts, matter, drawn, exported = false, deck = false } = {}) {
   const text = src || '';
-  const env = { lineBase: line, file, read, shared, asideKey, lines, matter, drawn, exported, deck };
+  const env = { lineBase: line, file, read, shared, entries, lines, matter, drawn, exported, deck };
   const tokens = md.parse(text, env);
   const meta = env.frontMatter || {};
   const asides = env.asides || [];
@@ -89,8 +93,8 @@ export function renderNotes(src) {
 
 /**
  * Each block that opens on a line of its own gets that line of the file as
- * `data-line`, 0-based. Token maps count lines of what the asides feature
- * left, so they're traced back through `env.sourceLines`. Asides aren't
+ * `data-line`, 0-based. Token maps count lines of what's left once the
+ * front matter, comments and asides are off, so they're traced back through `env.sourceLines`. Asides aren't
  * marked: they're parsed apart, and set beside the line they follow.
  */
 function markLines(tokens, env) {

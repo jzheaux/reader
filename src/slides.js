@@ -40,8 +40,8 @@ import { render, renderNotes, titleOf } from './render.js';
 import { readNotes, plan, planEnd, duration } from './pacing.js';
 import { readBackground, liftBackground } from './background.js';
 import { readTransition, liftTransition } from './transition.js';
-import { readEntry, makeKey } from '../features/asides/key.js';
 import { frontMatter, fenced } from '../static/markdown.js';
+import { matterEntry } from './page.js';
 
 const SEPARATOR = /^---[ \t]*$/;
 const NOTE = /<!--([\s\S]*?)-->/g;
@@ -52,7 +52,7 @@ export function isDeck(src) {
 }
 
 export function slides(src, { file, read } = {}) {
-  const { meta, key, slides: chunks } = split(src);
+  const { meta, entries, slides: chunks } = split(src);
   const title = titleOf(meta, file);
   let css = '';
   const out = [];
@@ -66,7 +66,7 @@ export function slides(src, { file, read } = {}) {
     const own = liftBackground(lifted.notes);
     const moved = liftTransition(own.notes);
     const { notes, at, budget } = readNotes(moved.notes);
-    const r = render(lifted.body, { file, read, line, shared, asideKey: key, background: own.background ?? behind, fonts: meta, matter: meta, deck: true });
+    const r = render(lifted.body, { file, read, line, shared, entries, background: own.background ?? behind, fonts: meta, matter: meta, deck: true });
     css ||= `${r.css}\n${CSS}`;
     out.push({ body: titled(unmast(r.body), lifted.body), notes, notesHtml: renderNotes(notes), line, at, budget, transition: moved.transition ?? leaving });
   }
@@ -84,7 +84,7 @@ export function slides(src, { file, read } = {}) {
  * (`data-line`). `drawn` and `exported` are as render() takes them.
  */
 export function pages(src, { file, read, lines = true, drawn, exported } = {}) {
-  const { meta, key, slides: chunks } = split(src);
+  const { meta, entries, slides: chunks } = split(src);
   let css = '';
   const out = [];
   const shared = {};
@@ -94,7 +94,7 @@ export function pages(src, { file, read, lines = true, drawn, exported } = {}) {
     const lifted = lift(text);
     if (!lifted.body.trim()) continue;
     const own = liftBackground(lifted.notes);
-    const r = render(lifted.body, { file, read, line, shared, asideKey: key, background: own.background ?? behind, fonts: meta, matter: meta, lines, drawn, exported });
+    const r = render(lifted.body, { file, read, line, shared, entries, background: own.background ?? behind, fonts: meta, matter: meta, lines, drawn, exported });
     css ||= r.css;
     out.push({ body: unmast(r.body), line });
   }
@@ -103,12 +103,12 @@ export function pages(src, { file, read, lines = true, drawn, exported } = {}) {
 
 /**
  * Cuts `src` into slides, each with the 0-based line it starts on, after
- * its front matter (static/markdown.js). Aside aliases declared there
- * (`reviewer #: Josh`) are the deck's `key`, not its meta.
+ * its front matter (static/markdown.js). Lines a feature claims there
+ * (`reviewer #: Josh`, page.js) are the deck's `entries`, not its meta.
  */
 export function split(src) {
   const lines = String(src || '').replace(/\r\n?/g, '\n').split('\n');
-  const matter = frontMatter(lines, { entry: readEntry });
+  const matter = frontMatter(lines, { entry: matterEntry });
   const out = [];
   const code = fenced();
   let start = matter?.end ?? 0;
@@ -118,7 +118,7 @@ export function split(src) {
       start = i + 1;
     }
   }
-  return { meta: matter?.meta ?? {}, key: makeKey(matter?.entries ?? []), slides: out.filter((s) => s.text.trim()) };
+  return { meta: matter?.meta ?? {}, entries: matter?.entries ?? [], slides: out.filter((s) => s.text.trim()) };
 }
 
 /**

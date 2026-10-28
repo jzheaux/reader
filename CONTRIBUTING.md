@@ -34,6 +34,7 @@ in a `::: tabs` block, its `+++ Source` and `+++ Rendered` tabs.
 | `src/server.js` | HTTP API and static files |
 | `src/content.js` | the content directory: listing, safe paths, saves, backups, the trash, branching, renaming and promoting versions |
 | `src/render.js` | markdown → `{css, body}` for the preview: one markdown-it, with every feature, laid out in columns |
+| `src/page.js` | what every page has taken off before the features read it: its front matter (less the lines a feature claims, its `matter`) and its HTML comments, with each line left traced back to the file |
 | `src/columns.js` | the two-column layout: the speaker's passages beside the asides written against them, under the masthead |
 | `features/` | one directory per piece of syntax: its markdown-it plugin, CSS, tests and, if it can be clicked, the `preview.js` that makes it so; one built on others names them in its `requires` (`features/index.js`) (so far: `asides`, `fields`, `tasks`, `qa`, `definitions`, `sizes`, `alerts`, `attributions`, `styles`, `columns`, `tabs`, `date`, `scripture`, `scripture-lds`, `search`, `rfc`, `social`, `math`, `arrows`, `emoji`, `highlight`, `mermaid`, `headline`, `number`, `badges`, `count`, `steps`, `ingredients`, `puzzles`) |
 | `src/slides.js` | a `slides`-format deck → rendered slides and their notes |

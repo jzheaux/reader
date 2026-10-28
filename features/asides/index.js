@@ -6,16 +6,16 @@
  *
  *   ~ Maybe a post about the music; go towards the music
  *
- * Adds two things to the parser:
- *   - `-----` front matter, exposed on `env.frontMatter`
- *   - `~ ...` asides, lifted out of the source before block parsing so they
- *     cannot disturb the document's structure, and kept on `env.asides` for
- *     reader's two-column layout (src/columns.js), which wants the speaker's
- *     stream unbroken so it can choose its own cut points.
+ * Once the page's front matter and comments are off (src/page.js), the
+ * asides are lifted out of the source before block parsing, so they cannot
+ * disturb the document's structure, and kept on `env.asides` for reader's
+ * two-column layout (src/columns.js), which wants the speaker's stream
+ * unbroken so it can choose its own cut points. The aliases they may use,
+ * `reviewer #: Josh` and `topic c: Coherence`, are the front matter lines
+ * the feature claims (`matter`), and make the key on `env.asideKey`.
  *
- * Taking both out shifts the lines the block parser sees, so token maps
- * count lines of what's left; `env.sourceLines[n]` is the line of the source
- * that line `n` of it came from.
+ * Taking them out shifts the lines the block parser sees again, so the
+ * feature traces `env.sourceLines` on through what it took.
  *
  * Once everything else has parsed the page, it marks the words an aside
  * names in brackets (`~a[quick]`) in the line it's written under, and ties
@@ -27,24 +27,35 @@
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { preprocess } from './preprocess.js';
+import { readEntry, makeKey } from './key.js';
 import { marks } from './marks.js';
 import { escapeHtml } from '../source.js';
 import { ownColor } from '../color.js';
 
 export function asides(md) {
-  md.core.ruler.after('normalize', 'aside_extract', (state) => {
+  const rule = (state) => {
     // `__aside` marks the recursive parse of an aside's own body; it has
     // already been stripped of its markers and must not be re-processed.
     if (state.inlineMode || state.env.__aside) return;
-    // A deck's slide is rendered on its own, under the deck's key.
-    const { meta, source, asides, lines, key } = preprocess(state.src, { key: state.env.asideKey });
+    // The aliases the front matter declares, or a deck's, for one slide of it.
+    const key = makeKey((state.env.entries ?? []).filter((e) => e.feature === 'asides'));
+    const { source, asides, lines } = preprocess(state.src, key);
     state.src = source.endsWith('\n') ? source : source + '\n';
-    state.env.frontMatter = meta;
+    // Each aside's line, and each line left, traced back to the file
+    // through the page's own trace.
+    const page = state.env.sourceLines ?? [];
+    for (const a of asides) a.line = page[a.line] ?? a.line;
+    state.env.sourceLines = lines.map((k) => page[k] ?? k);
     state.env.asides = asides;
     state.env.asideKey = key;
-    // Token maps count lines of what's left; this traces them back.
-    state.env.sourceLines = lines;
-  });
+  };
+  // After the page's front matter and comments are off, or after
+  // normalizing when there's no such rule (a test of the feature alone).
+  try {
+    md.core.ruler.after('page_extract', 'aside_extract', rule);
+  } catch {
+    md.core.ruler.after('normalize', 'aside_extract', rule);
+  }
 }
 
 /** The tokens of one aside's content. */
@@ -93,9 +104,8 @@ export default {
   name: 'asides',
   // reader lays the asides out in columns of their own.
   plugin: asides,
-  // First of all: other features place what they read before the asides
-  // come out (`aside_extract`), so it must be there to place them by.
-  raw: true,
+  // Claims the front matter's `reviewer #: Josh` and `topic c: Coherence`.
+  matter: readEntry,
   // Last of all: the words an aside chooses are found in what the others
   // leave as text, tabs' among them (marks.js).
   late: marks,
