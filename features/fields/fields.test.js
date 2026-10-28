@@ -98,8 +98,14 @@ test('on a slide or an exported page, no field is a box: it reads as its label a
     assert.match(body, /<span class="field-value" data-value=""><\/span><span class="field-label">age<\/span><span class="field-blank">blank<\/span>/, `on ${where}`);
     assert.match(body, /<span class="field-value" data-value="home">home<\/span><span class="field-label">a place<\/span>/, `on ${where}`);
     assert.equal(body.match(/field-blank/g).length, 2, `on ${where}, only the empty ones say so`);
-    // A field of choices keeps its buttons, which still work on a slide.
+    // A field of choices keeps its buttons, showing the one picked.
     assert.equal(body.match(/<input type="radio" class="choice-box"/g).length, 2, `on ${where}`);
+    assert.match(body, /<input type="radio" class="choice-box" name="field-\d+" data-on="[^"]*" checked(?: disabled)?> Sat PM/, `on ${where}`);
   }
+  // On a slide they can't be changed; on an exported page they can be
+  // clicked, though nothing is saved.
+  assert.equal(slides(deck).slides[0].body.match(/class="choice-box"[^>]* disabled>/g).length, 2);
+  assert.doesNotMatch(render(md, { exported: true }).body, /disabled/);
+  assert.doesNotMatch(render(md).body, /disabled/);
   assert.doesNotMatch(render(md).body, /field-blank/, 'in the editor, a blank is a box to fill in');
 });

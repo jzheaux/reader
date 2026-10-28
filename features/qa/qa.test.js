@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { render } from '../../src/render.js';
+import { slides } from '../../src/slides.js';
 
 test('Q: and A: lines become an exchange', () => {
   const { body } = render('- a bullet\nQ: Why?\nA (Thomas): Because.\n\n   More.\nQ (audience): And?\nA: So.\n\n\\A: plain\n');
@@ -118,6 +119,14 @@ test('a card\'s label is a toggle named for its card, pressed once discussed; in
   const exported = render(src, { exported: true }).body;
   assert.doesNotMatch(exported, /qa-toggle|role="button"|data-on=/);
   assert.match(exported, /<li class="qa qa-card qa-good qa-done">\n<p><span class="qa-label">G<\/span>/);
+});
+
+test('on a slide, a card\'s label says whether it\'s done, but can\'t be reached or pressed', () => {
+  const src = '# One\n\nGood [x] (Josh): one\n\nTry: two\n\n---\n\n# Next\n';
+  const { body } = slides(src).slides[0];
+  assert.match(body, /<span class="qa-label qa-toggle" role="button" aria-disabled="true" aria-label="Good, discussed" aria-pressed="true" data-line[^>]*>G<\/span>/);
+  assert.match(body, /<span class="qa-label qa-toggle qa-tried" role="checkbox" aria-disabled="true" aria-label="Try, tried" aria-checked="false" data-line[^>]*>T<\/span>/);
+  assert.doesNotMatch(body, /tabindex|title=/);
 });
 
 test('a card\'s label writes its line done, or not, as written', () => {

@@ -50,6 +50,9 @@ paging: Slide %d / %d
   slide there.
 - Present opens on the slide under the cursor. If the file changes on disk
   while you present (say you fix a typo in vim), the deck reloads in place.
+- A slide being presented is only shown: its boxes, choices, fields, dates
+  and cards show as they stand and can't be changed. Work is where a deck
+  is filled in. To show a box being ticked, repeat the slide with it ticked.
 
 ## Steps
 
@@ -118,7 +121,7 @@ Present or present the file; after that, it's measured again as you edit.
 | `R` | in the speaker view, restart the timer (or click the timer) |
 | `F` | full screen |
 | `⌘+` / `⌘−` / `⌘0` | the slides' text a step bigger, a step smaller, or back to 100% (Ctrl on Windows and Linux); it starts at 100% each time you present, and the speaker view's slides follow |
-| `Tab` / `⇧Tab` | the slide's boxes, choices and cards, one by one, then back to the slides; the keys that work the one Tabbed to are its own (`Space` ticks a box), and the rest still move the slides |
+| `Tab` / `⇧Tab` | what can be played or opened on the slide, such as a puzzle or a block's tabs, one by one, then back to the slides; the keys that work the one Tabbed to are its own, and the rest still move the slides |
 | `?` | these keys, at the foot of the slides; they show for a moment as you start, and when you hover there |
 | `Esc` | stop presenting |
 

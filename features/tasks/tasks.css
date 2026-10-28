@@ -30,6 +30,11 @@ li.task > .choice-box, li.task > p > .choice-box {
 .stage-box::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: max(100%, 24px); transform: translateY(-50%); }
 .task-heading > .stage-box { margin: 0 0.3em 0 0; }
 span.stage-box { cursor: default; }
+/* Where the page can't be worked (static/preview-api.js), as on a slide, a
+   box doesn't answer the pointer as if it could be ticked. */
+.unworkable li.task > .task-box, .unworkable li.task > p > .task-box,
+.unworkable li.task > .choice-box, .unworkable li.task > p > .choice-box,
+.unworkable .task-heading > .task-box, .unworkable .stage-box { cursor: default; }
 /* in the margin, ending where a checkbox does, so the words line up */
 li.staged { position: relative; }
 li.staged > .stage-box, li.staged > p > .stage-box {

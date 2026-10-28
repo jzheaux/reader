@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { render } from '../../src/render.js';
+import { slides } from '../../src/slides.js';
 import { frame, run, preview, settle } from '../../test/dom.js';
 
 /**
@@ -136,4 +137,26 @@ test('a blank written keeps the keyboard through the render that follows', () =>
   assert.equal(slot.textContent, 'Ann');
   assert.equal(p.document.activeElement, slot);
   assert.equal(slot.querySelector('textarea'), null);
+});
+
+test('a field\'s choice picks, writing its line; on a slide, none does, by a click or a key', async () => {
+  const md = '# One\n\n@ Session: ( ) Sat AM (x) Sat PM\n';
+  const p = preview();
+  p.show(render(md).body);
+  const picks = () => [...p.document.querySelectorAll('.field-choice > input')];
+  picks()[0].click();
+  await settle();
+  assert.deepEqual(p.posted.filter((m) => m.type === 'edit').flatMap((m) => m.edits.map((e) => e.after[0])), ['@ Session: (x) Sat AM ( ) Sat PM']);
+  p.show(slides(`${md}\n---\n\n# Next\n`).slides[0].body, { deck: true });
+  p.posted.length = 0;
+  for (const pick of picks()) {
+    pick.focus();
+    assert.notEqual(p.document.activeElement, pick, 'the keyboard doesn\'t reach it');
+    pick.dispatchEvent(new p.window.KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true }));
+    pick.click();
+    pick.closest('label').click();
+  }
+  await settle();
+  assert.deepEqual(p.posted.filter((m) => m.type === 'edit'), []);
+  assert.deepEqual(picks().map((x) => x.checked), [false, true]);
 });

@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { render } from '../../src/render.js';
+import { slides } from '../../src/slides.js';
 import { preview, settle } from '../../test/dom.js';
 
 /**
@@ -117,4 +118,56 @@ test('Log today adds a heading for today after the log\'s last entry, with the m
   await edits();
   click($('.task-log'));
   assert.deepEqual(await edits(), [[[8, '', '\n#### date:2026-03-04[]']]]);
+});
+
+const BOXES = [
+  '---', 'multibox:', '  stages: have, prepped, used', '---', '',
+  '## [ ] Prep', 'reset:[]', '', '- [ ] oil', '', '- ( ) tea', '- ( ) coffee', '', '* [x][ ][ ] onion',
+].join('\n');
+
+/** Clicks each box, choice and staged box on the page, and presses Space and ↓ on each, as far as it can be reached. */
+function tryAll({ window, document, $, $$, click }) {
+  for (const box of [$('.task-heading > .task-box'), ...$$('li.task .task-box'), ...$$('.choice-box')]) {
+    box.focus();
+    const reached = document.activeElement === box;
+    for (const key of [' ', 'ArrowDown']) {
+      const e = new window.KeyboardEvent('keydown', { key, bubbles: true, cancelable: true });
+      box.dispatchEvent(e);
+      // Space is a click, in a browser.
+      if (key === ' ' && !e.defaultPrevented && reached) click(box);
+    }
+    click(box);
+  }
+  const staged = $('.stage-box');
+  click(staged);
+  const reset = $('.task-reset');
+  if (reset) click(reset);
+}
+
+test('on a slide, no box, choice, heading box or staged box is changed by a click or a key, nor reached by one', async () => {
+  const p = await page(BOXES);
+  p.show(slides(`${BOXES}\n---\n\n# Next\n`).slides[0].body, { deck: true });
+  await p.edits();
+  const before = p.$$('input').map((b) => b.checked);
+  tryAll(p);
+  assert.deepEqual(await p.edits(), []);
+  assert.deepEqual(p.$$('input').map((b) => b.checked), before);
+  assert.equal(p.$('.stage-box').tagName, 'SPAN', 'a staged box is only a picture of how far it\'s got');
+  assert.ok(p.$$('input').every((b) => b.disabled), 'each is read with its state, but out of the keyboard\'s way');
+});
+
+test('a page shut while it\'s showing takes no click or key on a box, and opened again takes them', async () => {
+  const p = await page(BOXES);
+  p.window.Preview.workable = false;
+  tryAll(p);
+  assert.deepEqual(await p.edits(), []);
+  assert.deepEqual(p.$$('input').map((b) => b.checked), [false, false, false, false]);
+  assert.equal(p.$('.stage-box').dataset.stage, '1');
+  p.window.Preview.workable = true;
+  p.click(p.$('li.task .task-box'));
+  p.click(p.$$('.choice-box')[1]);
+  p.click(p.$('.task-heading > .task-box'));
+  p.click(p.$('.stage-box'));
+  const lines = (await p.edits()).flat().map(([at, , after]) => [at, after]);
+  assert.deepEqual(lines, [[8, '- [x] oil'], [11, '- (x) coffee'], [5, '## [x] Prep'], [13, '* [x][x][ ] onion']]);
 });

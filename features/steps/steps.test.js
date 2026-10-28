@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { render } from '../../src/render.js';
+import { slides } from '../../src/slides.js';
 
 test('a `1)` item with a box is a step, its badge the box', () => {
   const { body } = render('### Steps\n1) [x] Heat the oil.\n2) [ ] Add the onion.\n');
@@ -17,6 +18,12 @@ test('the steps of a section go together, across a callout, and apart from the n
 test('a `1.` list, a bullet list, or a radio button or staged box is no step', () => {
   const { body } = render('1. [ ] plain\n\n- [ ] bullet\n\n1) ( ) choice\n2) [ ][ ] staged\n3) no box\n');
   assert.doesNotMatch(body, /class="[^"]*\bstep\b/);
+});
+
+test('on a slide, a step\'s box under its badge can\'t be ticked or reached', () => {
+  const { body } = slides('# One\n\n1) [x] chop\n2) [ ] fry\n\n---\n\n# Next\n').slides[0];
+  assert.equal(body.match(/<input type="checkbox" class="task-box"[^>]* disabled>/g).length, 2);
+  assert.match(body, /class="task step step-done"/);
 });
 
 test('an exported page\'s steps have no box hidden over the badge, which says whether each is done', () => {

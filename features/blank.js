@@ -28,6 +28,15 @@ import { escapeAttr } from './source.js';
 export const workable = (env) => !env.exported && !env.deck;
 
 /**
+ * A box's or a choice's attribute where the page can't be worked, as on a
+ * slide: `disabled`, so it's drawn as it stands and read with its state,
+ * but can't be reached or changed. An exported page keeps its boxes as
+ * they are: one ticks there without a script, for whoever has the page,
+ * though nothing is saved.
+ */
+export const shut = (env) => (workable(env) || env.exported ? '' : ' disabled');
+
+/**
  * A blank's attributes, so it can be reached by the keyboard and is read as
  * a box named `label`: the preview opens it for typing when it's focused.
  * Where it can't be filled in, it's only read, as its label and its value.

@@ -562,8 +562,9 @@
     });
   }
   /**
-   * Tab on a slide goes round its boxes, choices, fields and cards; past the
-   * last, or before the first, it gives the keyboard back to the deck.
+   * Tab on a slide goes round what can be reached on it, such as a puzzle
+   * or a block's tabs; past the last, or before the first, it gives the
+   * keyboard back to the deck.
    */
   function tab(back, from) {
     const all = reachable();
@@ -576,8 +577,8 @@
   // Clicking into the page gives this frame the keyboard, so pass the app's
   // shortcuts (and Esc, which leaves work mode) up to it. On a slide, pass
   // every key: they're all the deck's, but for one a feature has already
-  // taken, such as Enter on a card's label, Tab, and those that work the
-  // control that has the keyboard.
+  // taken, such as a puzzle's, Tab, and those that work the control that
+  // has the keyboard.
   document.addEventListener('keydown', (e) => {
     const meta = e.metaKey || e.ctrlKey;
     if (Preview.deck && !meta && !e.altKey) {

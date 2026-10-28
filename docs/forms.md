@@ -6,7 +6,8 @@ title: Forms and checklists
 
 What's filled in on the page is written into the file, saved like typing,
 and can be undone as typing can. All of it works in [Work](presenting.md)
-too, where the file can't be typed into.
+too, where the file can't be typed into. On a slide being presented, none
+of it does: boxes, choices, fields and dates show as they stand.
 
 ## Tasks
 
@@ -64,8 +65,8 @@ with no markdown.
 
 On a slide being presented, or on an exported page, a field can't be filled
 in: it reads as its label and what's written there, or as blank. A field of
-choices, below, is the exception on a slide: its buttons still pick. On an
-exported page they can be clicked, but nothing is saved.
+choices, below, shows the one picked, and on a slide it can't be changed. On
+an exported page its buttons can be clicked, but nothing is saved.
 
 A field whose value is nothing but `( )` choices is one to pick from, its
 radio buttons in a row after the label. Clicking one writes `(x)` in front
