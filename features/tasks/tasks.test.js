@@ -1,7 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import MarkdownIt from 'markdown-it';
 import { render } from '../../src/render.js';
 import { slides } from '../../src/slides.js';
+import tasks from './index.js';
 
 test('task items become checkboxes that know their line', () => {
   const { body } = render('# todo\n\n- [ ] take out the trash\n- [x] dishes\n\n1. [X] done\n');
@@ -159,4 +161,15 @@ test('an exported page\'s staged box is a picture of how far it\'s got, not a co
   assert.match(body, /<span class="stage-box" role="img" aria-label="onion: have \(1 of 3\)" title="have"><i class="on"><\/i><i><\/i><i><\/i><\/span> <span class="stage-name">have<\/span>/);
   assert.doesNotMatch(body, /<button/);
   assert.match(body, /<input type="checkbox" class="task-box"/, 'a plain box can still be ticked, on paper or on screen');
+});
+
+test('an exported page draws no box another feature has tagged notExported, whichever feature that is', () => {
+  const md = new MarkdownIt().use(tasks.plugin);
+  md.core.ruler.push('elsewhere', (state) => {
+    for (const t of state.tokens) for (const c of t.children ?? []) if (c.type === 'task_box' && c.meta.checked) c.meta.notExported = true;
+  });
+  const exported = md.render('- [x] shown elsewhere\n- [ ] still a box\n', { exported: true });
+  assert.equal(exported.match(/<input/g).length, 1);
+  assert.match(exported, /<input type="checkbox" class="task-box"[^>]*> still a box/);
+  assert.equal(md.render('- [x] shown elsewhere\n', {}).match(/<input/g).length, 1, 'only an export leaves it out');
 });

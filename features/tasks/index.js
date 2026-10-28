@@ -153,10 +153,9 @@ export function tasks(md) {
 
   md.renderer.rules.task_box = (tokens, i, options, env) => {
     if (tokens[i].meta.staged) return stageBox({ ...tokens[i].meta, stages: stagesOf(env), exported: env.exported });
-    const { line, radio, checked, on, off, group, name, step } = tokens[i].meta;
-    // A step's box sits unseen over its badge (features/steps), which says
-    // whether it's done; an exported page couldn't change what the badge says.
-    if (step && env.exported) return '';
+    const { line, radio, checked, on, off, group, name, notExported } = tokens[i].meta;
+    // A box another feature shows in its own way (see source.js's tags).
+    if (notExported && env.exported) return '';
     const lines = ` data-on="${escapeAttr(on)}" data-off="${escapeAttr(off)}"${name ? ` aria-label="${escapeAttr(name)}"` : ''}${checked ? ' checked' : ''}`;
     return radio
       ? `<input type="radio" class="choice-box" name="choice-${group}" data-line="${line}"${lines}> `

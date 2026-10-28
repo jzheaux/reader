@@ -71,6 +71,15 @@ export const MARKS = {
   definitions: ['\uE030', '\uE031'],
 };
 
+/**
+ * The tags a feature may leave on a token's `meta` for the others to read,
+ * named for what they mean rather than for the feature that set them:
+ *
+ * - `notExported`: draw nothing for the token on an exported page, because
+ *   another feature already shows there what it says, and nothing on that
+ *   page could change it (a step's box, whose badge says whether it's done).
+ */
+
 /** `s` with any placeholders taken out, for the words alone. */
 export const unplaced = (s) => s.replace(/[\uE000-\uF8FF]\d*[\uE000-\uF8FF]?/g, '');
 

@@ -33,7 +33,8 @@ export function steps(md) {
         if (box?.type !== 'task_box' || box.meta.radio || box.meta.staged) return;
         of ??= sections(state).of;
         addClass(t, box.meta.checked ? 'step step-done' : 'step');
-        box.meta.step = true;
+        // Its badge says whether it's done, which an exported page can't change.
+        box.meta.notExported = true;
         t.attrSet('data-steps', String(of[i].line));
       }
     });
