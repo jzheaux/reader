@@ -5,9 +5,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import MarkdownIt from 'markdown-it';
-import { asides } from '../features/asides/index.js';
+import { FEATURES } from '../features/index.js';
 import { columns } from '../src/columns.js';
 import { page } from '../src/page.js';
+
+// The asides feature, by its one public part: its descriptor, in the list.
+const { plugin: asides } = FEATURES.find((f) => f.name === 'asides');
 
 const options = { html: false, linkify: true, typographer: true, breaks: false };
 

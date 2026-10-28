@@ -65,7 +65,7 @@ in a `::: tabs` block, its `+++ Source` and `+++ Rendered` tabs.
 | `static/spoken.js` | a slide as a screen reader hears it, shared by the deck and the preview frame, so the two say a slide alike |
 | `test/dom.js` | a page for the tests of what runs in a browser (happy-dom's), and the preview frame as the server serves it |
 
-A feature imports nothing from another feature's directory: what two share goes at the top of `features/`, and `npm run lint` fails on an import that reaches into another feature (`eslint.config.js`). Nor does the core (`src/`) import a feature's own files, so it works without any one of them.
+Every file in a feature's directory, at any depth, is that feature's own, as a package's are in Java. Nothing outside it refers to one: not another feature, not what features share, not the core (`src/`), not the tests in `test/`, by an import, an `export ... from`, an `import()` or a `new URL(..., import.meta.url)`. What two features share goes at the top of `features/`. A feature's one public part is its descriptor, the default export of its `index.js`, and only `features/index.js` imports it; the rest reach a feature through `FEATURES`. A feature's own tests sit in its directory and may reach `src/` and `test/`. `npm run lint` fails on a reference that breaks this (`eslint.config.js`), so the core and every other feature work without any one of them.
 
 PDF.js is vendored in `static/vendor/`, Mermaid in `features/mermaid/vendor/`, and the sites' marks in `features/social/icons/`; their versions and licenses are noted there.
 
