@@ -51,6 +51,7 @@ in a `::: tabs` block, its `+++ Source` and `+++ Rendered` tabs.
 | `static/views.js` | kept for the frames, which have no storage of their own: the versions picked in `tabs` and `compare` blocks, and how a document is set to be seen (a recipe's multiple) |
 | `static/awake.js` | keeps the screen on while a frame asks: steps under way |
 | `static/print.html` | the empty page a document is printed from, out of sight |
+| `features/blank.js` | a blank to fill in, as any feature draws one (fields, definitions), and whether a page can be worked where it's drawn: not on a slide, not once exported |
 | `features/puzzles/` | puzzle fences: found and wrapped (`index.js`), drawn, played and posted back in the preview (`preview.js`) |
 | `features/puzzles/kinds/` | one file per kind of puzzle; a file here is a fence name |
 | `static/speaker.html`, `static/speaker.js` | the speaker view for a deck being presented |
