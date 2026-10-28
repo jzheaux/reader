@@ -1,11 +1,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { frontMatter, fenced } from '../static/markdown.js';
-import { readEntry } from '../features/asides/key.js';
+import { FEATURES } from '../features/index.js';
 import { extract } from '../src/page.js';
 import { split } from '../src/slides.js';
 import { outline } from '../static/app/sections.js';
 
+// The asides feature, by its one public part: its descriptor, in the list.
+const { matter: readEntry } = FEATURES.find((f) => f.name === 'asides');
 const lines = (s) => s.split('\n');
 
 test('front matter is each key in lower case to its value, quotes taken off', () => {

@@ -28,24 +28,11 @@
  */
 
 import { parseInfo } from './index.js';
+import { readNotes, isOutput } from '../fence.js';
 
-const NOTE = /^<(\d+)>\s*(?:-\s+)?(.*)$/;
 const MARKS = /(\S)\s+((?:<\d+>\s*)+)$/;
 const ALONE = /(?:^|\s+)(?:\/\/|#|--)$/;
 const BLOCK = /(\S)\s+(?:\/\*|<!--)\s*((?:<\d+>\s*)+)(?:\*\/|-->)\s*$/;
-
-/** The notes a paragraph's text makes, if it opens with one: `[{ n, text }]`. */
-export function readNotes(text) {
-  const notes = [];
-  for (const raw of text.split('\n')) {
-    const line = raw.trim();
-    const m = NOTE.exec(line);
-    if (m) notes.push({ n: Number(m[1]), text: m[2] });
-    else if (notes.length) notes.at(-1).text += `\n${line}`;
-    else return [];
-  }
-  return notes;
-}
 
 /**
  * `code` with the markers of `known` numbers taken off its lines ->
@@ -66,8 +53,6 @@ export function takeMarks(code, known) {
   });
   return { code: lines.join('\n'), marks };
 }
-
-export const isOutput = (t) => t?.type === 'fence' && t.info.trim() === 'output';
 
 // Output this many lines or more is cut short, with a way to show the rest.
 const LONG = 12;

@@ -1,7 +1,71 @@
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import js from '@eslint/js';
 import globals from 'globals';
 
+const FEATURES = fileURLToPath(new URL('./features/', import.meta.url));
+
 const FRAME = ['features/*/preview.js', 'features/puzzles/kinds/*.js'];
+
+/**
+ * The feature whose directory holds `file`, at any depth, or null for a
+ * file outside every feature's: one at the top of features/, which
+ * features share, or one elsewhere. `dir` says `file` is a directory.
+ */
+function featureOf(file, dir) {
+  const [name, ...rest] = path.relative(FEATURES, file).split(path.sep);
+  return name && name !== '..' && !path.isAbsolute(name) && (rest.length || dir) ? name : null;
+}
+
+/**
+ * A feature is left out or bundled on its own, and the rest do without it,
+ * so every file in features/<name>/ is that feature's own. Nothing outside
+ * that directory refers to one of them, by an import, an `export ... from`,
+ * an `import()` or a `new URL(..., import.meta.url)`, the way a feature
+ * loads its CSS and its preview scripts. What features share sits at the
+ * top of features/. A feature's one public part is its descriptor, the
+ * default export of its index.js, and only features/index.js imports it.
+ * A feature's own tests sit in its directory, and may reach ../../src/ and
+ * ../../test/ as any file may.
+ */
+const features = {
+  meta: {
+    type: 'problem',
+    messages: {
+      private: "features/{{name}}/ is that feature's own: share what's needed from the top of features/, or go through features/index.js.",
+    },
+  },
+  create(context) {
+    const from = context.filename;
+    const check = (node, specifier, relative) => {
+      if (typeof specifier !== 'string' || !relative(specifier)) return;
+      const to = path.resolve(path.dirname(from), specifier.replace(/[?#].*/, ''));
+      const name = featureOf(to, /\/$/.test(specifier));
+      if (!name || featureOf(from) === name) return;
+      if (from === path.join(FEATURES, 'index.js') && to === path.join(FEATURES, name, 'index.js')) return;
+      context.report({ node, messageId: 'private', data: { name } });
+    };
+    // An import's specifier is relative only as ./ or ../; a URL's is
+    // unless it has a scheme or starts at the root.
+    const imported = (s) => /^\.\.?(\/|$)/.test(s);
+    const url = (s) => !/^([a-z][a-z\d+.-]*:|\/)/i.test(s);
+    const literal = (node) => node?.type === 'Literal' ? node.value
+      : node?.type === 'TemplateLiteral' && !node.expressions.length ? node.quasis[0].value.cooked : null;
+    const source = (node) => node.source && check(node.source, literal(node.source), imported);
+    return {
+      ImportDeclaration: source,
+      ExportNamedDeclaration: source,
+      ExportAllDeclaration: source,
+      ImportExpression: source,
+      NewExpression(node) {
+        const [where, base] = node.arguments;
+        if (node.callee.type !== 'Identifier' || node.callee.name !== 'URL') return;
+        if (base?.type !== 'MemberExpression' || base.object.type !== 'MetaProperty' || base.property.name !== 'url') return;
+        check(where, literal(where), url);
+      },
+    };
+  },
+};
 
 export default [
   { ignores: ['node_modules/', 'static/vendor/', 'features/*/vendor/', 'desktop/dist/'] },
@@ -28,26 +92,11 @@ export default [
     ignores: FRAME,
     languageOptions: { sourceType: 'module', globals: globals.node },
   },
-  // A feature is left out or bundled on its own, so it imports nothing from
-  // another feature's directory: what two share sits at the top of
-  // features/. Its tests may still reach ../../src/ and ../../test/.
+  // Each feature's files are its own, as a package's are in Java: see
+  // `features` above.
   {
-    files: ['features/*/**/*.js'],
-    rules: {
-      'no-restricted-imports': ['error', { patterns: [
-        { regex: String.raw`^\.\./[^./][^/]*/`, message: 'Import what features share from the top of features/, not from another feature.' },
-      ] }],
-    },
-  },
-  // The core does without any one feature, so it imports only what
-  // features share, at the top of features/, never a feature's own files.
-  {
-    files: ['src/**/*.js'],
-    rules: {
-      'no-restricted-imports': ['error', { patterns: [
-        { regex: String.raw`^\.\./features/[^/]+/`, message: 'The core imports only what features share, at the top of features/, not a feature\'s own files.' },
-      ] }],
-    },
+    plugins: { reader: { rules: { features } } },
+    rules: { 'reader/features': 'error' },
   },
   // The app and what it imports are modules; the preview frame's scripts
   // (its own, the puzzles' and the features') are classic scripts sharing

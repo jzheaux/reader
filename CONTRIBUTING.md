@@ -55,6 +55,7 @@ in a `::: tabs` block, its `+++ Source` and `+++ Rendered` tabs.
 | `features/blank.js` | a blank to fill in, as any feature draws one (fields, definitions), and whether a page can be worked where it's drawn: not on a slide, not once exported |
 | `features/rows.js` | the page cut into rows, each passage beside the notes in the margin about it, whichever feature wrote them; and the block a note is written after (`lastBlockBefore`), where the words an aside chooses are |
 | `features/mark.js`, `features/color.js` | a mark, words circled, underlined or highlighted, as styles draws one (`[quick]{circle}`) and asides does (`~a[quick]`); and the colours an author names, in the family's hue for each, as marks and an aside's key draw them |
+| `features/fence.js` | what goes with a code fence, after it: its `output` fence and the notes on its marked lines, as highlight draws them and a layout keeps them in the fence's pane |
 | `features/names.js` | the colour and generic font names CSS knows, for a style's `{red georgia}` and the front matter's `background:` and `font:` |
 | `features/asides/` | asides: lifted out of the source (`preprocess.js`), who they're from and what they're about (`key.js`), each a note in the page's margin, its cell drawn by the feature (`index.js`) and styled (`asides.css`), and the words they choose, marked last of all (`marks.js`, the feature's `late` plugin) and tied to them by a line (`preview.js`) |
 | `features/puzzles/` | puzzle fences: found and wrapped (`index.js`), drawn, played and posted back in the preview (`preview.js`) |
@@ -64,7 +65,7 @@ in a `::: tabs` block, its `+++ Source` and `+++ Rendered` tabs.
 | `static/spoken.js` | a slide as a screen reader hears it, shared by the deck and the preview frame, so the two say a slide alike |
 | `test/dom.js` | a page for the tests of what runs in a browser (happy-dom's), and the preview frame as the server serves it |
 
-A feature imports nothing from another feature's directory: what two share goes at the top of `features/`, and `npm run lint` fails on an import that reaches into another feature (`eslint.config.js`). Nor does the core (`src/`) import a feature's own files, so it works without any one of them.
+Every file in a feature's directory, at any depth, is that feature's own, as a package's are in Java. Nothing outside it refers to one: not another feature, not what features share, not the core (`src/`), not the tests in `test/`, by an import, an `export ... from`, an `import()` or a `new URL(..., import.meta.url)`. What two features share goes at the top of `features/`. A feature's one public part is its descriptor, the default export of its `index.js`, and only `features/index.js` imports it; the rest reach a feature through `FEATURES`. A feature's own tests sit in its directory and may reach `src/` and `test/`. `npm run lint` fails on a reference that breaks this (`eslint.config.js`), so the core and every other feature work without any one of them.
 
 PDF.js is vendored in `static/vendor/`, Mermaid in `features/mermaid/vendor/`, and the sites' marks in `features/social/icons/`; their versions and licenses are noted there.
 
