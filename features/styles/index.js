@@ -29,6 +29,7 @@ import fs from 'node:fs';
 import { beforeExtract, fenced, MARKS } from '../source.js';
 import { LAYOUTS, OPEN as LAYOUT_OPEN, DIVIDER, CLOSE as LAYOUT_CLOSE } from '../layout.js';
 import { marking, markSpan } from '../mark.js';
+import { COLORS, GENERIC } from '../names.js';
 
 const DIV = /^[ \t]{0,3}:::(?:[ \t]+([\w-]+(?:[ \t]+[\w-]+)*))?[ \t]*$/;
 const NAMES = /^\{([\w-]+(?:[ \t]+[\w-]+)*)\}/;
@@ -220,31 +221,6 @@ function apply(token, names) {
   const style = token.attrGet('style');
   token.attrSet('style', style ? `${style.replace(/;?\s*$/, '; ')}${css}` : css);
 }
-
-// Generic families are written as CSS spells them; any other name is a font,
-// its hyphens standing in for spaces.
-export const GENERIC = new Set([
-  'serif', 'sans-serif', 'monospace', 'cursive', 'fantasy', 'system-ui', 'math', 'emoji',
-  'ui-serif', 'ui-sans-serif', 'ui-monospace', 'ui-rounded',
-]);
-
-export const COLORS = new Set(`
-  aliceblue antiquewhite aqua aquamarine azure beige bisque black blanchedalmond blue blueviolet brown
-  burlywood cadetblue chartreuse chocolate coral cornflowerblue cornsilk crimson cyan darkblue darkcyan
-  darkgoldenrod darkgray darkgreen darkgrey darkkhaki darkmagenta darkolivegreen darkorange darkorchid
-  darkred darksalmon darkseagreen darkslateblue darkslategray darkslategrey darkturquoise darkviolet
-  deeppink deepskyblue dimgray dimgrey dodgerblue firebrick floralwhite forestgreen fuchsia gainsboro
-  ghostwhite gold goldenrod gray green greenyellow grey honeydew hotpink indianred indigo ivory khaki
-  lavender lavenderblush lawngreen lemonchiffon lightblue lightcoral lightcyan lightgoldenrodyellow
-  lightgray lightgreen lightgrey lightpink lightsalmon lightseagreen lightskyblue lightslategray
-  lightslategrey lightsteelblue lightyellow lime limegreen linen magenta maroon mediumaquamarine
-  mediumblue mediumorchid mediumpurple mediumseagreen mediumslateblue mediumspringgreen mediumturquoise
-  mediumvioletred midnightblue mintcream mistyrose moccasin navajowhite navy oldlace olive olivedrab
-  orange orangered orchid palegoldenrod palegreen paleturquoise palevioletred papayawhip peachpuff peru
-  pink plum powderblue purple rebeccapurple red rosybrown royalblue saddlebrown salmon sandybrown
-  seagreen seashell sienna silver skyblue slateblue slategray slategrey snow springgreen steelblue tan
-  teal thistle tomato turquoise violet wheat white whitesmoke yellow yellowgreen
-`.trim().split(/\s+/));
 
 export default {
   name: 'styles',

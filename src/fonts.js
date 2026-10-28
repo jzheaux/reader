@@ -14,7 +14,7 @@
  * and code keep their own faces: they're told apart by them.
  */
 
-import { GENERIC } from '../features/styles/index.js';
+import { GENERIC } from '../features/names.js';
 
 /** `avenir-next serif` -> `'avenir next', serif`, or `''` when no name in it reads as one. */
 export function fontFamily(value) {

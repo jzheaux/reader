@@ -23,7 +23,7 @@
  * turns the text light when that reads better on the color (static/ink.js).
  */
 
-import { COLORS } from '../features/styles/index.js';
+import { COLORS } from '../features/names.js';
 import { escapeAttr } from '../features/source.js';
 
 const HEX = /^#(?:[0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i;
