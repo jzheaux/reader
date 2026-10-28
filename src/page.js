@@ -5,7 +5,9 @@
  *
  * A front matter line a feature claims (its `matter(line)`, features/index.js)
  * is that feature's entry, not the page's meta: `reviewer #: Josh` is an
- * alias for the asides feature, not a line of the byline.
+ * alias for the asides feature, not a line of the byline. Only the features
+ * the page is rendered with claim lines; one left out claims none, and its
+ * lines are the page's (see src/columns.js for how they show).
  */
 
 import { frontMatter, fenced } from '../features/source.js';
@@ -17,12 +19,12 @@ import { FEATURES } from '../features/index.js';
 const COMMENT_START_RE = /^ {0,3}<!--/;
 
 /**
- * A front matter line -> the entry the first feature to claim it makes of
- * it, tagged with that feature's name (`{ feature: 'asides', ... }`), or
- * null when none does.
+ * A front matter line -> the entry the first of `features` to claim it
+ * makes of it, tagged with that feature's name (`{ feature: 'asides', ... }`),
+ * or null when none does.
  */
-export function matterEntry(line) {
-  for (const f of FEATURES) {
+export function matterEntry(line, features = FEATURES) {
+  for (const f of features) {
     const e = f.matter?.(line);
     if (e) return { feature: f.name, ...e };
   }
@@ -31,6 +33,7 @@ export function matterEntry(line) {
 
 /**
  * @param {string} src a page as written
+ * @param {object[]} [features] the features that may claim its front matter's lines
  * @returns {{meta: object, entries: object[], source: string, lines: number[]}}
  *   `meta` is the front matter's (static/markdown.js), and `entries` the
  *   lines of it features claimed (`matterEntry`). `source` is `src` with
@@ -38,10 +41,10 @@ export function matterEntry(line) {
  *   of `source`, the 0-based line of `src` it came from. A comment inside
  *   fenced code is code, and is kept.
  */
-export function extract(src) {
+export function extract(src, features = FEATURES) {
   const all = String(src).replace(/\r\n?/g, '\n').split('\n');
   // Josh's convention uses `-----`, but `---` works too.
-  const matter = frontMatter(all, { entry: matterEntry });
+  const matter = frontMatter(all, { entry: (line) => matterEntry(line, features) });
   let i = matter?.end ?? 0;
   if (matter) while (i < all.length && !all[i].trim()) i++;
 
@@ -74,13 +77,14 @@ export function extract(src) {
  * slide) keeps the `env.entries` it was given, its deck's. Token maps count
  * lines of what's left; `env.sourceLines[n]` is the line of the source that
  * line `n` of it came from. Features that read the file as written go before
- * this rule (`beforeExtract`, features/source.js).
+ * this rule (`beforeExtract`, features/source.js). `features` are the ones
+ * the page is rendered with, which may claim lines of its front matter.
  */
-export function page(md) {
+export function page(md, features = FEATURES) {
   md.core.ruler.after('normalize', 'page_extract', (state) => {
     // A note's own body, parsed nested (`env.nested`), was read with the rest.
     if (state.inlineMode || state.env.nested) return;
-    const { meta, entries, source, lines } = extract(state.src);
+    const { meta, entries, source, lines } = extract(state.src, features);
     state.src = source.endsWith('\n') ? source : `${source}\n`;
     state.env.frontMatter = meta;
     state.env.entries = entries.length ? entries : (state.env.entries ?? []);
