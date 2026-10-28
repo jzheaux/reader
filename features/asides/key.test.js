@@ -5,11 +5,18 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { preprocess } from './preprocess.js';
+import { preprocess as asidesOf } from './preprocess.js';
 import { readEntry, makeKey, attribute } from './key.js';
 import { inFamily, ownColor } from '../color.js';
+import { extract } from '../../src/page.js';
 import { render } from '../../src/render.js';
 import { slides } from '../../src/slides.js';
+
+/** `src` as the feature sees it: its front matter off, and the key it declares. */
+function preprocess(src) {
+  const { meta, entries, source } = extract(src);
+  return { meta, ...asidesOf(source, makeKey(entries.filter((e) => e.feature === 'asides'))) };
+}
 
 const KEY = '-----\nreviewer #: Josh\nreviewer m: Maria, teal\ntopic c: Coherence\ntopic s: Style\n-----\n\n';
 

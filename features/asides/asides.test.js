@@ -1,6 +1,6 @@
 /**
- * The asides feature, from gutter-md's own tests: front matter, telling an
- * aside from what isn't one, leaving the document's shape alone, and where
+ * The asides feature, from gutter-md's own tests: telling an aside from
+ * what isn't one, leaving the document's shape alone, and where
  * each aside goes, back inline or into the columns.
  */
 
@@ -8,13 +8,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import MarkdownIt from 'markdown-it';
 import { asides } from './index.js';
+import { page } from '../../src/page.js';
 import { preprocess } from './preprocess.js';
 import { splitPairs } from './split.js';
 import { render } from '../../src/render.js';
 
 /** A document parsed for columns: its front matter, asides, and the rows they cut it into. */
 function parse(src) {
-  const md = new MarkdownIt({ html: false, linkify: true, typographer: true, breaks: false }).use(asides);
+  const md = new MarkdownIt({ html: false, linkify: true, typographer: true, breaks: false }).use(page).use(asides);
   const env = {};
   const tokens = md.parse(src, env);
   const found = env.asides || [];
@@ -23,27 +24,6 @@ function parse(src) {
 
 const speakerText = (pair, md, env) =>
   md.renderer.render(pair.speaker, md.options, env).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-
-// --- front matter ---------------------------------------------------------
-
-test('reads ----- front matter', () => {
-  const { meta, source } = preprocess('-----\nTitle: A Talk\nAuthor: jz\nTags: spec\n-----\n\nbody\n');
-  assert.equal(meta.title, 'A Talk');
-  assert.equal(meta.author, 'jz');
-  assert.equal(meta.tags, 'spec');
-  assert.equal(source.trim(), 'body');
-});
-
-test('reads --- front matter too', () => {
-  const { meta } = preprocess('---\nTitle: B\n---\n\nbody\n');
-  assert.equal(meta.title, 'B');
-});
-
-test('a leading rule that is not front matter is left alone', () => {
-  const { meta, source } = preprocess('---\n\nbody\n');
-  assert.deepEqual(meta, {});
-  assert.match(source, /^---/);
-});
 
 // --- recognising asides ---------------------------------------------------
 
@@ -115,15 +95,6 @@ test('an aside under a paragraph, then a blank, keeps the paragraphs apart', () 
 test('an aside under a line can still wrap, indented', () => {
   const { asides } = preprocess('a line\n~ first\n  second\nmore of the paragraph\n');
   assert.equal(asides[0].text, 'first\nsecond');
-});
-
-test('an HTML comment is dropped, asides and all', () => {
-  const { asides, source } = preprocess('-----\nreviewer D: Drew\n-----\n\n<!--\nHow to review:\n\n~D like this\n-->\n\nbody\n');
-  assert.equal(asides.length, 0);
-  assert.doesNotMatch(source, /review|<!--|-->/);
-  assert.match(source, /body/);
-  assert.equal(preprocess('<!-- one line -->\nbody\n').source, 'body\n');
-  assert.match(preprocess('```\n<!-- kept -->\n```\n').source, /kept/);
 });
 
 // --- structural transparency: the whole point -----------------------------

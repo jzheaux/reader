@@ -2,7 +2,7 @@
  * The features the renderer is built from, in the order their markdown-it
  * plugins are applied. Each is a directory here holding what it needs:
  *
- *   { name, requires?, plugin?, html?, css?, raw?, late?, preview?, lazy? }
+ *   { name, requires?, plugin?, html?, css?, raw?, late?, matter?, preview?, lazy? }
  *
  * - `requires`: the names of the features this one is built on, whose
  *   tokens, classes or events it reads, as steps reads tasks' boxes and
@@ -13,10 +13,15 @@
  *   reach (the masthead, say).
  * - `css`: added to the rendered page's stylesheet.
  * - `raw`: applied before the rest: a feature that reads the file as
- *   written, or asides, whose rule the others place theirs by.
+ *   written, before the page's front matter and comments come off
+ *   (src/page.js).
  * - `late`: a markdown-it plugin applied after every feature's `plugin`,
  *   for a rule that reads what all of them leave as text: the words an
  *   aside chooses.
+ * - `matter`: `(line) => entry or null`, claiming a line of the front
+ *   matter as the feature's own, not the page's meta: asides' aliases,
+ *   `reviewer #: Josh`. What it returns goes on `env.entries`, with the
+ *   feature's `name` (src/page.js).
  * - `preview`: the path of a script the server loads into the preview frame,
  *   where it can use static/preview-api.js, or a list of them, loaded in
  *   order.

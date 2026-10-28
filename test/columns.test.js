@@ -7,12 +7,13 @@ import assert from 'node:assert/strict';
 import MarkdownIt from 'markdown-it';
 import { asides } from '../features/asides/index.js';
 import { columns } from '../src/columns.js';
+import { page } from '../src/page.js';
 
 const options = { html: false, linkify: true, typographer: true, breaks: false };
 
 /** A document laid out in columns. */
 function toHtml(src, opts = {}) {
-  const md = new MarkdownIt(options).use(asides);
+  const md = new MarkdownIt(options).use(page).use(asides);
   const env = {};
   const tokens = md.parse(src, env);
   return columns(md, tokens, env, opts).body;

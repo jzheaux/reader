@@ -1,6 +1,7 @@
 /**
- * Source-level pass that lifts asides (and front matter) out of a document
- * *before* the markdown block parser runs.
+ * Source-level pass that lifts asides out of a document *before* the
+ * markdown block parser runs, once the page's front matter and comments are
+ * off (src/page.js).
  *
  * This is the heart of the extension. An aside is a marginal thought, so it
  * must not change the shape of the thing it is written beside. If the `~` line
@@ -12,10 +13,10 @@
  * be re-attached once the structure is known.
  */
 
-import { readEntry, makeKey, attribute } from './key.js';
+import { attribute } from './key.js';
 import { STYLES } from '../mark.js';
 import { OPEN, DIVIDER, CLOSE } from '../layout.js';
-import { frontMatter, fenced } from '../source.js';
+import { fenced } from '../source.js';
 
 const FENCE_RE = /^\s{0,3}(`{3,}|~{3,})/;
 
@@ -53,11 +54,6 @@ function selection(written, style) {
 // left them as marks of their own (features/layout.js).
 const BLOCK_START_RE = new RegExp(String.raw`^[ \t]*(?:[*+-][ \t]|\d+[.)][ \t]|#{1,6}[ \t]|>|${'```'}|~{3,}|-{3,}\s*$|_{3,}\s*$|:{3}|\+{3,}(?:[ \t]|$)|@[ \t]|\\?![ \t]*[^\s[!:()][^:\n]*:(?:[ \t]|$)|[${OPEN}${DIVIDER}${CLOSE}])`);
 
-// An HTML comment on lines of its own. The renderer takes no HTML, so it would
-// otherwise show as text; it's dropped instead, asides and all, which makes it
-// the place for a note to whoever opens the file, such as how to review it.
-const COMMENT_START_RE = /^ {0,3}<!--/;
-
 function expandTabs(line) {
   return line.replace(/\t/g, '    ');
 }
@@ -67,34 +63,22 @@ function indentOf(line) {
 }
 
 /**
- * @param {string} src raw document text
- * @param {object} [opts]
- * @param {Map} [opts.key] the aliases to use when `src` has no front matter
- *   declaring its own (a deck's slide, under the deck's)
- * @returns {{meta: object, source: string, asides: Array<{anchor: number, text: string, line: number}>}}
- *   `meta` is the front matter's (static/markdown.js);
- *   `source` is the document with front matter and aside lines removed;
+ * @param {string} src the page's source, its front matter and comments off
+ * @param {Map} [key] the aliases declared (see key.js)
+ * @returns {{source: string, asides: Array<{anchor: number, text: string, line: number}>, lines: number[]}}
+ *   `source` is `src` with the aside lines removed;
  *   `anchor` is an index into `source`'s lines -- the aside belongs immediately
- *   before that line; `line` is the aside's 0-based line in the original file.
- *   `lines` has, for each line of `source`, the 0-based line of the original
- *   it came from, so positions in `source` can be traced back to the file.
- *   `key` is the aliases declared (see key.js), and an aside written with
- *   them has `by: { who, topics, unknown }`. One naming words in brackets
+ *   before that line; `line` is the aside's 0-based line in `src`.
+ *   `lines` has, for each line of `source`, the 0-based line of `src`
+ *   it came from, so positions in `source` can be traced back to it.
+ *   An aside written with the key's aliases
+ *   has `by: { who, topics, unknown }`. One naming words in brackets
  *   has `select: { text, nth, style }`, and `within` when it's written
  *   straight under the line they're in.
  */
-export function preprocess(src, opts = {}) {
+export function preprocess(src, key = new Map()) {
   const lines = String(src).replace(/\r\n?/g, '\n').split('\n');
-  // --- front matter -------------------------------------------------------
-  // Josh's convention uses `-----`, but `---` works too.
-  const matter = frontMatter(lines, { entry: readEntry });
-  const meta = matter?.meta ?? {};
-  let i = matter?.end ?? 0;
-  if (matter) while (i < lines.length && !lines[i].trim()) i++;
-
-  const key = matter?.entries.length ? makeKey(matter.entries) : (opts.key || new Map());
-
-  // --- asides -------------------------------------------------------------
+  let i = 0;
   const out = [];
   const from = [];
   const asides = [];
@@ -107,17 +91,6 @@ export function preprocess(src, opts = {}) {
     if (code(line)) {
       out.push(line);
       from.push(i);
-      i++;
-      continue;
-    }
-
-    // Drop a comment, through the line that closes it.
-    if (COMMENT_START_RE.test(line)) {
-      let at = line.indexOf('<!--') + 4;
-      while (i < lines.length && !lines[i].includes('-->', at)) {
-        i++;
-        at = 0;
-      }
       i++;
       continue;
     }
@@ -182,5 +155,5 @@ export function preprocess(src, opts = {}) {
     });
   }
 
-  return { meta, source: out.join('\n'), asides, lines: from, key };
+  return { source: out.join('\n'), asides, lines: from };
 }

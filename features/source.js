@@ -5,7 +5,7 @@
  * a checkbox or a field remembers the line it was written on, and the line
  * as written, to be edited later -- even when it ends up in an aside, which
  * is parsed apart from the rest. Such a feature reads each line first
- * (`readLines`, as a core rule before the asides feature's `aside_extract`), keeps
+ * (`readLines`, as a core rule before the page's `page_extract`), keeps
  * what it found on `env`, and leaves a placeholder in the text: a number
  * between two private-use characters, which markdown passes through
  * untouched. Once the text is parsed, it turns its placeholders into tokens
@@ -17,12 +17,14 @@ import { frontMatter, fenced } from '../static/markdown.js';
 export { frontMatter, fenced };
 
 /**
- * Adds `rule` to read the source before the asides come out, or after
- * normalizing it when the asides feature isn't in use.
+ * Adds `rule` to read the source as written, before the page's front matter
+ * and comments come off (`page_extract`, src/page.js), and so before the
+ * asides do; or after normalizing it when there's no such rule (a test of
+ * the feature alone).
  */
 export function beforeAsides(md, name, rule) {
   try {
-    md.core.ruler.before('aside_extract', name, rule);
+    md.core.ruler.before('page_extract', name, rule);
   } catch {
     md.core.ruler.after('normalize', name, rule);
   }
