@@ -10,6 +10,9 @@
  * -- the heading they're under, lists cut by a callout or a quote among
  * them -- go together, so a step's group is its section's line
  * (`data-steps`).
+ *
+ * It's built on tasks, whose boxes it reads in the tokens, and on badges,
+ * whose badge each step's box sits over (steps.css), so it requires both.
  */
 
 import fs from 'node:fs';
@@ -39,6 +42,7 @@ export function steps(md) {
 
 export default {
   name: 'steps',
+  requires: ['tasks', 'badges'],
   plugin: steps,
   css: fs.readFileSync(new URL('./steps.css', import.meta.url), 'utf8'),
   preview: fileURLToPath(new URL('./preview.js', import.meta.url)),
