@@ -13,6 +13,11 @@ test('each block in a tabs block is a tab, named for its language, the first sho
   assert.match(html, /<div class="tab-pane" data-tab="kotlin" data-label="Kotlin">\n<pre><code class="hljs language-kotlin">Kotlin\n<\/code><\/pre>\n<\/div>\n<\/div>\n$/);
 });
 
+test('a tab is named for its fence\'s language, before any braces', () => {
+  const html = speaker('::: tabs\n```java{1}\nJava;\n```\n\n```kotlin {numbers}\nKotlin\n```\n:::\n');
+  assert.deepEqual(tabs(html), ['tabs-1 java* Java', 'tabs-1 kotlin Kotlin']);
+});
+
 test('a +++ line names the tab after it, and one before the first names it', () => {
   const html = speaker('::: tabs\n+++ Maven\n```xml\n<a/>\n```\nwith a word\n+++ Gradle\n```groovy\na\n```\n:::\n');
   assert.deepEqual(tabs(html), ['tabs-1 maven* Maven', 'tabs-1 gradle Gradle']);

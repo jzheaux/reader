@@ -1,16 +1,16 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { render } from '../../src/render.js';
-import { forms } from './index.js';
+import { wordForms } from '../source.js';
 
 const RECIPE = '## Akara\n\n### Ingredients\n* [ ] count:1 small yellow !onion, diced\n* [ ] fresh !cilantro\n\n### Steps\n1) [ ] Add the Onions, then [onion](x) and `onion`.\n2) [ ] More onion.\n';
 
 test('a word is known by its plural and singular', () => {
-  assert.ok(forms('onion').includes('onions'));
-  assert.ok(forms('tomato').includes('tomatoes'));
-  assert.ok(forms('beans').includes('bean'));
-  assert.ok(forms('berry').includes('berries'));
-  assert.ok(forms('berries').includes('berry'));
+  assert.ok(wordForms('onion').includes('onions'));
+  assert.ok(wordForms('tomato').includes('tomatoes'));
+  assert.ok(wordForms('beans').includes('bean'));
+  assert.ok(wordForms('berry').includes('berries'));
+  assert.ok(wordForms('berries').includes('berry'));
 });
 
 test('!word names an item\'s key, and the word in the recipe\'s steps is marked', () => {
