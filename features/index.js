@@ -2,8 +2,12 @@
  * The features the renderer is built from, in the order their markdown-it
  * plugins are applied. Each is a directory here holding what it needs:
  *
- *   { name, plugin?, html?, css?, raw?, preview?, lazy? }
+ *   { name, requires?, plugin?, html?, css?, raw?, preview?, lazy? }
  *
+ * - `requires`: the names of the features this one is built on, whose
+ *   tokens, classes or events it reads, as steps reads tasks' boxes and
+ *   draws on badges' badges. It still imports nothing from them. Each must
+ *   be in the list, and come before it, or loading the list fails.
  * - `plugin`: a markdown-it plugin.
  * - `html`: a pass over the finished page's HTML, for what the tokens don't
  *   reach (the masthead, say).
@@ -57,4 +61,23 @@ import marks from './marks/index.js';
 // they keep are as written, without its marks. tabs comes last, so the
 // words it compares are the ones the others leave as text, and marks after
 // it, finding the words an aside chooses in what's left as text.
-export const FEATURES = [asides, fields, tasks, qa, definitions, sizes, alerts, attributions, styles, columns, date, scripture, scriptureLds, search, rfc, count, social, math, arrows, emoji, highlight, mermaid, headline, number, badges, steps, ingredients, puzzles, tabs, marks];
+export const FEATURES = checkRequires([asides, fields, tasks, qa, definitions, sizes, alerts, attributions, styles, columns, date, scripture, scriptureLds, search, rfc, count, social, math, arrows, emoji, highlight, mermaid, headline, number, badges, steps, ingredients, puzzles, tabs, marks]);
+
+/**
+ * Throws unless each feature's `requires` names features in the list that
+ * come before it, in the order their plugins are applied: those that are
+ * `raw` first, then the rest, as src/render.js applies them. A feature's
+ * rules can then rely on what the ones it requires leave in the tokens.
+ * Returns the list.
+ */
+export function checkRequires(features) {
+  const order = [...features.filter((f) => f.raw), ...features.filter((f) => !f.raw)].map((f) => f.name);
+  for (const f of features) {
+    for (const name of f.requires ?? []) {
+      const at = order.indexOf(name);
+      if (at < 0) throw new Error(`The ${f.name} feature requires ${name}, which isn't in the list of features`);
+      if (at > order.indexOf(f.name)) throw new Error(`The ${f.name} feature requires ${name}, which has to come before it in the list of features`);
+    }
+  }
+  return features;
+}
