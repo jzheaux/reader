@@ -2,9 +2,10 @@
  * An ingredient named in a step: hovering or focusing the word shows its
  * item, amounts as multiplied, and Enter or Space on it shows it or puts it
  * away; the lit step's (steps/preview.js) are lit,
- * and so are their items in the list. A step marked done that's the last
- * to name an ingredient marks it used, in the same edit: a staged box
- * filled, a plain one ticked. Runs in the preview frame.
+ * and so are their items in the list. A list item ticked done that's the
+ * last to name an ingredient marks it used: its item is sent
+ * `preview:complete`, which tasks answers in the same edit, as one undo.
+ * Runs in the preview frame.
  */
 (() => {
   const itemOf = (use) => document.querySelector(`li.ingredient[data-recipe="${use.dataset.recipe}"][data-ingredient~="${CSS.escape(use.dataset.ingredient)}"]`);
@@ -74,31 +75,22 @@
   window.addEventListener('scroll', hide, { passive: true });
   Preview.register({ restore: hide });
 
-  // A step done: each ingredient it names that no step not done names is used.
-  document.addEventListener('tasks:edits', (e) => {
-    const { box, edits } = e.detail;
-    const step = box.closest('li.step');
-    if (!step || !box.checked) return;
+  // A list item's own box ticked: each ingredient it names that no item still
+  // to do names is used.
+  const ownBox = (li) => li?.querySelector(':scope > input[type=checkbox], :scope > p > input[type=checkbox]');
+  document.addEventListener('change', (e) => {
+    const li = e.target.closest?.('li');
+    if (!li || ownBox(li) !== e.target || !e.target.checked) return;
     const pending = (use) => {
-      const other = use.closest('li.step');
-      return other && other !== step && !other.classList.contains('step-done');
+      const other = use.closest('li');
+      return other && other !== li && ownBox(other) && !ownBox(other).checked;
     };
     const all = [...document.querySelectorAll('.ingredient-use')];
     const items = new Set();
-    for (const use of step.querySelectorAll('.ingredient-use')) {
+    for (const use of li.querySelectorAll('.ingredient-use')) {
       const same = all.filter((u) => u.dataset.recipe === use.dataset.recipe && u.dataset.ingredient === use.dataset.ingredient);
       if (!same.some(pending)) items.add(itemOf(use));
     }
-    for (const item of items) {
-      const staged = item?.querySelector(':scope > .stage-box, :scope > p > .stage-box');
-      const plain = item?.querySelector(':scope > .task-box, :scope > p > .task-box');
-      if (staged && Number(staged.dataset.stage) < staged.children.length) {
-        edits.push(Preview.stageLine(staged, staged.children.length));
-        Preview.setStage(staged, staged.children.length);
-      } else if (plain && !plain.defaultChecked) {
-        edits.push(Preview.boxLine(plain, true));
-        plain.checked = plain.defaultChecked = true;
-      }
-    }
+    for (const item of items) item?.dispatchEvent(new Event('preview:complete', { bubbles: true }));
   });
 })();

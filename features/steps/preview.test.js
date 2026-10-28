@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { render } from '../../src/render.js';
-import { preview } from '../../test/dom.js';
+import { preview, settle } from '../../test/dom.js';
 
 const STEPS = '## Soup\n\n1) [ ] Chop.\n2) [ ] Fry.\n3) [ ] Simmer.\n\n@ Notes: x\n';
 
@@ -35,13 +35,15 @@ test('j and k light the next step and the one before, from the first, and no fur
   assert.equal(lit(), 1);
 });
 
-test('x marks the lit step done, and lights the next not done', () => {
+test('x marks the lit step done, and lights the next not done', async () => {
   const { press, lit, steps, posted } = page();
   assert.equal(press('x'), true, 'nothing lit: the key is the steps\', and does nothing');
+  await settle();
   assert.deepEqual(posted.filter((m) => m.type === 'edit'), []);
   press('j');
   press('j');
   press('x');
+  await settle();
   assert.deepEqual(posted.filter((m) => m.type === 'edit').map((m) => m.edits.map((e) => e.after[0])), [['2) [x] Fry.']]);
   assert.deepEqual(steps().map((li) => li.classList.contains('step-done')), [false, true, false]);
   assert.equal(lit(), 3);
@@ -74,12 +76,13 @@ test('the keys are the steps\' only on the page itself or a step\'s box, not on 
   assert.equal(lit(), 1);
 });
 
-test('x marks the lit step done with the keyboard on a step\'s own box, as Tab leaves it', () => {
+test('x marks the lit step done with the keyboard on a step\'s own box, as Tab leaves it', async () => {
   const { press, steps, posted, document } = page();
   const box = document.querySelector('li.step .task-box');
   box.focus();
   assert.equal(press('j', {}, box), true);
   assert.equal(press('x', {}, box), true);
+  await settle();
   assert.deepEqual(posted.filter((m) => m.type === 'edit').map((m) => m.edits.map((e) => e.after[0])), [['1) [x] Chop.']]);
   assert.deepEqual(steps().map((li) => li.classList.contains('step-done')), [true, false, false]);
 });
