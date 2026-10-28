@@ -6,6 +6,7 @@ const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf
 const style = read('static/style.css');
 const speaker = read('static/speaker.css');
 const columns = read('src/columns.css');
+const asides = read('features/asides/asides.css');
 
 const rgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
 const toHex = (c) => '#' + c.map((v) => Math.round(v).toString(16).padStart(2, '0')).join('');
@@ -187,7 +188,7 @@ test("a retro card's label reads on the paper, and the paper on it once it's don
 
 test("an asides legend's counts read as their names do, not faded", () => {
   // a reviewer's count on their chip, a topic's on the paper, each in its name's colour
-  assert.doesNotMatch(block(columns, '.gm-legend b {'), /opacity/);
+  assert.doesNotMatch(block(asides, '.gm-legend b {'), /opacity/);
   for (const [theme, t] of Object.entries(doc)) {
     for (let i = 1; i <= 8; i++) {
       readable(t['gm-paper'], t[`gm-key-${i}`], `${theme} a reviewer's count on --gm-key-${i}`);
@@ -284,10 +285,10 @@ test('a colour an author names reads as text, in light and dark, and at 7:1 with
     const d = declared(css);
     return { lo: d['gm-key-l-min'], hi: d['gm-key-l-max'], cmax: d['gm-key-c-max'] };
   };
-  const base = set(block(after(columns, BOUNDS), ':root {'));
-  const darker = set(block(after(columns, BOUNDS), ':root.gm-dark {'));
-  const more = set(block(after(after(columns, BOUNDS), MORE), ':root {'));
-  const moreDark = set(block(after(after(columns, BOUNDS), MORE), ':root.gm-dark {'));
+  const base = set(block(after(asides, BOUNDS), ':root {'));
+  const darker = set(block(after(asides, BOUNDS), ':root.gm-dark {'));
+  const more = set(block(after(after(asides, BOUNDS), MORE), ':root {'));
+  const moreDark = set(block(after(after(asides, BOUNDS), MORE), ':root.gm-dark {'));
   const merge = (...sets) => Object.fromEntries(['lo', 'hi', 'cmax'].map((k) => [k, Number(sets.findLast((x) => x[k] !== undefined)[k])]));
   const themes = [
     ['light', merge(base), doc.light, 4.5],
@@ -297,15 +298,15 @@ test('a colour an author names reads as text, in light and dark, and at 7:1 with
   ];
   const cap = (v) => `oklch(from var(--${v}) clamp(var(--gm-key-l-min), l, var(--gm-key-l-max)) min(c, var(--gm-key-c-max)) h)`;
   const marksCss = read('features/asides/marks.css');
-  assert.ok(columns.includes(`.gm-who.gm-own { background: ${cap('by')}`), 'a chip');
-  assert.ok(columns.includes(`.gm-topic.gm-own { color: ${cap('topic')}`), 'a pill');
+  assert.ok(asides.includes(`.gm-who.gm-own { background: ${cap('by')}`), 'a chip');
+  assert.ok(asides.includes(`.gm-topic.gm-own { color: ${cap('topic')}`), 'a pill');
   assert.ok(marksCss.includes(`.mk-about.gm-own { color: color-mix(in srgb, ${cap('mk')} 55%, var(--gm-ink)); }`), 'the words an aside chose');
   // only there: the family, and the colours dealt from it, are drawn exactly as they're defined
-  for (const css of [columns, marksCss]) {
+  for (const css of [columns, asides, marksCss]) {
     for (const [rule] of css.matchAll(/^.*oklch\(from var\(--(?:by|topic|mk)\b.*$/gm)) assert.match(rule, /^ *\.(?:gm-who|gm-topic|mk-about)\.gm-own \{/, rule);
   }
-  assert.match(columns, /\n\.gm-who \{ color: var\(--gm-paper\); background: var\(--by, var\(--gm-accent\)\); \}/);
-  assert.match(columns, /\n\.gm-topic \{ color: var\(--topic, var\(--gm-accent\)\);/);
+  assert.match(asides, /\n\.gm-who \{ color: var\(--gm-paper\); background: var\(--by, var\(--gm-accent\)\); \}/);
+  assert.match(asides, /\n\.gm-topic \{ color: var\(--topic, var\(--gm-accent\)\);/);
   assert.match(marksCss, /\n {2}color: color-mix\(in srgb, var\(--mk, var\(--gm-ink-soft\)\) 55%, var\(--gm-ink\)\);/);
   // every hue, vivid, deep and pale, and what the issue found: gold on white, navy on the dark
   const hsl = (h, l) => {
@@ -420,7 +421,7 @@ test("in the system's own colours, what a ground or a shadow said is said anothe
   assert.match(under(read('features/tabs/tabs.css')), /\.tab \{ forced-color-adjust: none; \}/);
   assert.match(under(columns), /\.gm-who, ol\.badges > li:not\(\.gm-cont\)::before/);
   // a reviewer's chip, and a mark's line, in whatever colour an author named
-  assert.match(under(columns), /\.gm-who, \.gm-who\.gm-own \{ background: CanvasText; \}/);
+  assert.match(under(asides), /\.gm-who, \.gm-who\.gm-own \{ background: CanvasText; \}/);
   assert.match(under(read('features/asides/marks.css')), /\.mk-lines path \{ stroke: CanvasText; \}/);
 });
 

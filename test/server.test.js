@@ -44,7 +44,7 @@ test('render puts asides in the gutter column', async () => {
   assert.match(out.body, /my aside/);
   assert.match(out.body, /<h1 class="gm-title">note<\/h1>/);
   assert.match(out.css, /--gm-aside-col/);
-  assert.equal(out.asides, 1);
+  assert.equal(out.notes, 1);
   assert.equal(out.deck, false);
 });
 

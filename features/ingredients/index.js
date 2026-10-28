@@ -31,7 +31,7 @@ export function ingredients(md) {
   // Before an escaped `\!` joins the text after it, and after a defined
   // term's `!` has become its definition's (definitions runs first).
   md.core.ruler.before('text_join', 'ingredients', (state) => {
-    if (state.inlineMode || state.env.__aside) return;
+    if (state.inlineMode || state.env.nested) return;
     const tokens = state.tokens;
     const { list, of } = sections(state);
     const top = Math.min(...list.filter((s) => s.level).map((s) => s.level));

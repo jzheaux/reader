@@ -33,7 +33,7 @@ in a `::: tabs` block, its `+++ Source` and `+++ Rendered` tabs.
 | `desktop/` | the desktop app: `main.js` (a window and a server for each folder opened, and the menus), `folders.js` (the folders opened, each on a port of its own), `electron-builder.yml` (the installers) |
 | `src/server.js` | HTTP API and static files |
 | `src/content.js` | the content directory: listing, safe paths, saves, backups, the trash, branching, renaming and promoting versions |
-| `src/render.js` | markdown → `{css, body}` for the preview: one markdown-it, with every feature, laid out in columns |
+| `src/render.js` | markdown → `{css, body}` for the preview: one markdown-it, with every feature, laid out in columns; `makeRenderer(features)` for a test that leaves one out |
 | `src/page.js` | what every page has taken off before the features read it: its front matter (less the lines a feature claims, its `matter`) and its HTML comments, with each line left traced back to the file |
 | `src/columns.js` | the two-column layout: the speaker's passages beside the notes in the margin about them (`env.margin`, each `{ anchor, render(attrs) }`), under the masthead and what features add to it (`env.masthead`) |
 | `features/` | one directory per piece of syntax: its markdown-it plugin, CSS, tests and, if it can be clicked, the `preview.js` that makes it so; one built on others names them in its `requires` (`features/index.js`) (so far: `asides`, `fields`, `tasks`, `qa`, `definitions`, `sizes`, `alerts`, `attributions`, `styles`, `columns`, `tabs`, `date`, `scripture`, `scripture-lds`, `search`, `rfc`, `social`, `math`, `arrows`, `emoji`, `highlight`, `mermaid`, `headline`, `number`, `badges`, `count`, `steps`, `ingredients`, `puzzles`) |
@@ -55,7 +55,7 @@ in a `::: tabs` block, its `+++ Source` and `+++ Rendered` tabs.
 | `features/blank.js` | a blank to fill in, as any feature draws one (fields, definitions), and whether a page can be worked where it's drawn: not on a slide, not once exported |
 | `features/rows.js` | the page cut into rows, each passage beside the notes in the margin about it, whichever feature wrote them; and the block a note is written after (`lastBlockBefore`), where the words an aside chooses are |
 | `features/mark.js`, `features/color.js` | a mark, words circled, underlined or highlighted, as styles draws one (`[quick]{circle}`) and asides does (`~a[quick]`); and the colours an author names, in the family's hue for each, as marks and an aside's key draw them |
-| `features/asides/` | asides: lifted out of the source (`preprocess.js`), who they're from and what they're about (`key.js`), each a note in the page's margin, its cell drawn by the feature (`index.js`), and the words they choose, marked last of all (`marks.js`, the feature's `late` plugin) and tied to them by a line (`preview.js`) |
+| `features/asides/` | asides: lifted out of the source (`preprocess.js`), who they're from and what they're about (`key.js`), each a note in the page's margin, its cell drawn by the feature (`index.js`) and styled (`asides.css`), and the words they choose, marked last of all (`marks.js`, the feature's `late` plugin) and tied to them by a line (`preview.js`) |
 | `features/puzzles/` | puzzle fences: found and wrapped (`index.js`), drawn, played and posted back in the preview (`preview.js`) |
 | `features/puzzles/kinds/` | one file per kind of puzzle; a file here is a fence name |
 | `static/speaker.html`, `static/speaker.js` | the speaker view for a deck being presented |

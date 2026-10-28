@@ -13,21 +13,27 @@ import MarkdownIt from 'markdown-it';
 import { columns } from './columns.js';
 import { readBackground, backdrop, CSS as BACKGROUND_CSS } from './background.js';
 import { fontCss } from './fonts.js';
-import { FEATURES } from '../features/index.js';
+import { FEATURES, checkRequires } from '../features/index.js';
 import { page as pageRule } from './page.js';
 
-// Features that read the file as written go before the rest, their rules
-// before the page's front matter and comments come off.
-const md = new MarkdownIt({ html: false, linkify: true, typographer: true, breaks: false });
-md.use(pageRule);
-for (const f of FEATURES.filter((f) => f.plugin && f.raw)) md.use(f.plugin);
-for (const f of FEATURES.filter((f) => f.plugin && !f.raw)) md.use(f.plugin);
-// A `late` plugin, which reads what all of them leave as text (the words an
-// aside chooses), goes after.
-for (const f of FEATURES.filter((f) => f.late)) md.use(f.late);
-md.core.ruler.push('reader_lines', (state) => {
-  if (state.env.lines && !state.inlineMode && !state.env.__aside) markLines(state.tokens, state.env);
-});
+/** The markdown-it that parses a document, built from `features`. */
+function markdown(features) {
+  // Features that read the file as written go before the rest, their rules
+  // before the page's front matter and comments come off.
+  const md = new MarkdownIt({ html: false, linkify: true, typographer: true, breaks: false });
+  md.use(pageRule);
+  for (const f of features.filter((f) => f.plugin && f.raw)) md.use(f.plugin);
+  for (const f of features.filter((f) => f.plugin && !f.raw)) md.use(f.plugin);
+  // A `late` plugin, which reads what all of them leave as text (the words an
+  // aside chooses), goes after.
+  for (const f of features.filter((f) => f.late)) md.use(f.late);
+  md.core.ruler.push('reader_lines', (state) => {
+    if (state.env.lines && !state.inlineMode && !state.env.nested) markLines(state.tokens, state.env);
+  });
+  return md;
+}
+
+const md = markdown(FEATURES);
 
 /**
  * A document's title: the one its front matter names, or else its file's
@@ -58,7 +64,22 @@ export function titleOf(meta, file) {
  * run no script of the app's, so draws nothing that would wait on one. `deck` is for a slide
  * being presented, where the deck keeps the page's fields shut.
  */
-export function render(src, { file, read, line = 0, shared = {}, entries, lines = false, background, fonts, matter, drawn, exported = false, deck = false } = {}) {
+export function render(src, options) {
+  return renderWith(md, FEATURES, src, options);
+}
+
+/**
+ * render(), with only `features`, in their order: for a test that leaves
+ * one out, to show the page renders without it. Throws, as the features'
+ * list does, unless each one's `requires` are among them.
+ */
+export function makeRenderer(features) {
+  const own = markdown(checkRequires(features));
+  return (src, options) => renderWith(own, features, src, options);
+}
+
+/** render(), by `md`, built from `features`. */
+function renderWith(md, features, src, { file, read, line = 0, shared = {}, entries, lines = false, background, fonts, matter, drawn, exported = false, deck = false } = {}) {
   const text = src || '';
   const env = { lineBase: line, file, read, shared, entries, lines, matter, drawn, exported, deck };
   const tokens = md.parse(text, env);
@@ -73,13 +94,14 @@ export function render(src, { file, read, line = 0, shared = {}, entries, lines 
 
   const page = columns(md, tokens, env, { headings, title });
   // Then each feature's pass over the finished page, if it has one.
-  const body = FEATURES.reduce((html, f) => (f.html ? f.html(html) : html), figures(page.body.trim()));
+  const body = features.reduce((html, f) => (f.html ? f.html(html) : html), figures(page.body.trim()));
   const behind = backdrop(background === undefined ? readBackground(meta.background) : background);
   return {
     // The document's fonts last, over the theme's and under a `:::` block's own.
-    css: [page.css.trim(), CSS, BACKGROUND_CSS, ...FEATURES.map((f) => f.css).filter(Boolean), fontCss(fonts ?? meta)].filter(Boolean).join('\n'),
+    css: [page.css.trim(), CSS, BACKGROUND_CSS, ...features.map((f) => f.css).filter(Boolean), fontCss(fonts ?? meta)].filter(Boolean).join('\n'),
     body: behind + body,
-    asides: notes.length,
+    // How many notes are in the margin, asides or any other feature's.
+    notes: notes.length,
     title,
   };
 }

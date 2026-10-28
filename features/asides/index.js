@@ -13,7 +13,8 @@
  * speaker's stream unbroken so it can choose its own cut points; the
  * feature draws its cell (`cell`). The aliases they may use,
  * `reviewer #: Josh` and `topic c: Coherence`, are the front matter lines
- * the feature claims (`matter`), and make the key on `env.asideKey`; who
+ * the feature claims (`matter`), and make its key, whose topics it offers
+ * the page's marks on `env.topics` (features/source.js); who
  * and what the asides are from and about goes in the masthead
  * (`env.masthead`), as a legend.
  *
@@ -37,9 +38,9 @@ import { ownColor } from '../color.js';
 
 export function asides(md) {
   const rule = (state) => {
-    // `__aside` marks the recursive parse of an aside's own body; it has
-    // already been stripped of its markers and must not be re-processed.
-    if (state.inlineMode || state.env.__aside) return;
+    // An aside's own body is parsed nested (`env.nested`, features/source.js);
+    // it has already been stripped of its markers and must not be re-processed.
+    if (state.inlineMode || state.env.nested) return;
     // The aliases the front matter declares, or a deck's, for one slide of it.
     const key = makeKey((state.env.entries ?? []).filter((e) => e.feature === 'asides'));
     const { source, asides, lines } = preprocess(state.src, key);
@@ -50,7 +51,8 @@ export function asides(md) {
     for (const a of asides) a.line = page[a.line] ?? a.line;
     state.env.sourceLines = lines.map((k) => page[k] ?? k);
     state.env.asides = asides;
-    state.env.asideKey = key;
+    // The key's topics, for a mark in braces to be in (`[words]{c}`).
+    state.env.topics = new Map([...key].filter(([, e]) => e.kind === 'topic'));
     // Each one a note in the margin, its cell drawn as the page is laid
     // out, once every rule has run, so the words it chose are marked by then.
     const { md, env } = state;
@@ -98,11 +100,11 @@ export function asideTokens(md, aside, env) {
   // Parse the aside body as markdown in its own right, so **emphasis**,
   // `code`, links and even nested lists work inside a thought. Link reference
   // definitions carry over; the aside bookkeeping deliberately does not.
-  return md.parse(aside.text, { ...env, asides: null, __aside: true });
+  return md.parse(aside.text, { ...env, asides: null, nested: true });
 }
 
 // A chip's or a pill's class, `gm-own` for a colour an author wrote that
-// isn't the family's, for the page to keep readable (src/columns.css).
+// isn't the family's, for the page to keep readable (asides.css).
 const chipClass = (kind, color) => `${kind}${ownColor(color) ? ' gm-own' : ''}`;
 
 /**
@@ -144,7 +146,7 @@ export default {
   // Last of all: the words an aside chooses are found in what the others
   // leave as text, tabs' among them (marks.js).
   late: marks,
-  css: fs.readFileSync(new URL('./marks.css', import.meta.url), 'utf8'),
+  css: ['./asides.css', './marks.css'].map((f) => fs.readFileSync(new URL(f, import.meta.url), 'utf8')).join('\n'),
   // The line from a mark to the asides about it.
   preview: fileURLToPath(new URL('./preview.js', import.meta.url)),
 };

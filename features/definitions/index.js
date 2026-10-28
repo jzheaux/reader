@@ -25,7 +25,7 @@
 
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { beforeAsides, readLines, MARKS, escapeHtml, escapeAttr, textToken, split, eachText, escapeRegExp, wordForms } from '../source.js';
+import { beforeExtract, readLines, MARKS, escapeHtml, escapeAttr, textToken, split, eachText, escapeRegExp, wordForms } from '../source.js';
 import { typable } from '../blank.js';
 
 // A term can't open with `[` (an image) and holds no colon or parentheses.
@@ -41,7 +41,7 @@ const SMALL = new Set(['a', 'an', 'and', 'as', 'at', 'by', 'for', 'from', 'in', 
 const WORD = /[\p{L}\p{N}][\p{L}\p{N}'’]*/gu;
 
 export function definitions(md) {
-  beforeAsides(md, 'definition_lines', lines);
+  beforeExtract(md, 'definition_lines', lines);
   md.block.ruler.before('paragraph', 'definition', block, { alt: ['paragraph', 'reference', 'blockquote', 'list'] });
   md.core.ruler.push('definition_initials', (state) => {
     for (const t of state.tokens) if (t.type === 'inline' && t.meta?.definition) initials(state, t, t.meta.definition.term);

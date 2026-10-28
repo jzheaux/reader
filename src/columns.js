@@ -65,10 +65,10 @@ export function columns(md, tokens, env, { headings = true, title } = {}) {
         : '';
       // Each with what its block gives a note: written in a tab, it shows
       // while that tab does (features/tabs).
-      const asideHtml = pair.asides.map((note) => note.render(noteAttrs(tokens, note.anchor))).join('\n');
+      const noteHtml = pair.notes.map((note) => note.render(noteAttrs(tokens, note.anchor))).join('\n');
       const cells = [
         `<div class="gm-speaker">\n${speakerHtml}</div>`,
-        asideHtml ? `<div class="gm-asides">\n${asideHtml}\n</div>` : '<div></div>',
+        noteHtml ? `<div class="gm-asides">\n${noteHtml}\n</div>` : '<div></div>',
       ];
       return `<section class="gm-pair">\n${cells.join('\n')}\n</section>`;
     })

@@ -27,7 +27,7 @@ export function alerts(md) {
   // from one that isn't.
   md.core.ruler.before('text_join', 'alerts', (state) => {
     // A callout is the speaker's, not a thought in the margin.
-    if (state.env.__aside) return;
+    if (state.env.nested) return;
     const tokens = state.tokens;
     for (let i = 0; i < tokens.length; i++) {
       const quote = tokens[i];

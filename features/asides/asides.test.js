@@ -125,8 +125,8 @@ test('removing every aside yields the same structure as never writing one', () =
 test('an aside aligns with the line it was written after', () => {
   const src = '1. alpha\n2. bravo\n\n   ~ about bravo\n\n3. charlie\n';
   const { pairs, md, env } = parse(src);
-  const withAside = pairs.find((p) => p.asides.length);
-  assert.equal(withAside.asides[0].text, 'about bravo');
+  const withAside = pairs.find((p) => p.notes.length);
+  assert.equal(withAside.notes[0].text, 'about bravo');
   assert.match(speakerText(withAside, md, env), /^bravo/);
 });
 
@@ -178,7 +178,7 @@ test('cutting mid-item resumes that item without a second marker', () => {
 test('what the speaker said next starts below the aside, not beside it', () => {
   const src = '1. alpha\n2. bravo\n\n   ~ a long thought about bravo\n\n3. charlie\n';
   const { pairs, md, env } = parse(src);
-  const row = pairs.find((p) => p.asides.length);
+  const row = pairs.find((p) => p.notes.length);
   // The commented item owns its row; charlie is not carried along beside it.
   assert.match(speakerText(row, md, env), /^bravo$/);
 });
@@ -189,7 +189,7 @@ test('the item after a commented one starts a fresh row either way', () => {
   // a new row under the aside, whether or not it carries a comment of its own.
   const check = (src) => {
     const { pairs, md, env } = parse(src);
-    const i = pairs.findIndex((p) => p.asides.some((a) => a.text === 'note'));
+    const i = pairs.findIndex((p) => p.notes.some((a) => a.text === 'note'));
     assert.match(speakerText(pairs[i], md, env), /^b$/);
     assert.match(speakerText(pairs[i + 1], md, env), /^c/);
   };
@@ -199,18 +199,18 @@ test('the item after a commented one starts a fresh row either way', () => {
 
 test('several asides on one line share a cell', () => {
   const { pairs } = parse('a point\n\n~ one\n~ two\n');
-  const cell = pairs.find((p) => p.asides.length);
-  assert.equal(cell.asides.length, 2);
+  const cell = pairs.find((p) => p.notes.length);
+  assert.equal(cell.notes.length, 2);
 });
 
 test('an aside before any content does not crash', () => {
   const { pairs } = parse('~ thought first\n\nthen speech\n');
-  assert.ok(pairs.some((p) => p.asides.length));
+  assert.ok(pairs.some((p) => p.notes.length));
 });
 
 test('a document with no asides is a single pair', () => {
   const { pairs } = parse('just speech\n\nmore speech\n');
   assert.equal(pairs.length, 1);
-  assert.equal(pairs[0].asides.length, 0);
+  assert.equal(pairs[0].notes.length, 0);
 });
 

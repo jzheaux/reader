@@ -30,7 +30,7 @@
 
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { beforeAsides, readLines, placeholder, MARKS, splitText, escapeHtml, escapeAttr } from '../source.js';
+import { beforeExtract, readLines, placeholder, MARKS, splitText, escapeHtml, escapeAttr } from '../source.js';
 import { typable, unfilled } from '../blank.js';
 
 const FIELD = /^@[ \t]+([^:\n]*?[^:\s])[ \t]*(:+)[ \t]*(.*?)[ \t]*$/;
@@ -76,7 +76,7 @@ function choices(line, head, value) {
 }
 
 export function fields(md) {
-  beforeAsides(md, 'field_lines', (state) => {
+  beforeExtract(md, 'field_lines', (state) => {
     const found = [];
     readLines(state, (line, n) => {
       if (!FIELD.test(line)) {

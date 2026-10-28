@@ -1,10 +1,11 @@
 /**
  * Marks: words circled, underlined or highlighted, as on paper. The styles
  * feature draws one from the names in a style's braces (`[quick]{circle}`,
- * `[quick]{a highlight}`), and the asides feature one for the words an
- * aside chooses (`~a[quick]`, features/asides/marks.js). A topic's alias
- * marks the text in the topic's colour and style, from the asides' key
- * (`env.asideKey`); a style names how it's drawn.
+ * `[quick]{a highlight}`), and a feature may draw one for words it picks
+ * out, as asides does for the words an aside chooses (`~a[quick]`). A
+ * topic's alias marks the text in the topic's colour and style, from the
+ * page's topics (`env.topics`, features/source.js); a style names how
+ * it's drawn.
  */
 
 import { inFamily } from './color.js';
@@ -14,18 +15,19 @@ export const STYLES = ['circle', 'underline', 'dotted', 'wavy', 'highlight'];
 
 /**
  * The names in braces -> `{ style, topic, rest }`, the names that aren't
- * the mark's left in `rest`; or null when none of them is a mark's. A
- * topic is a declared one's alias, one character, so `{a}` without a key
- * is a font, as it always was.
+ * the mark's left in `rest`; or null when none of them is a mark's.
+ * `topics` are the page's, by alias (`env.topics`): a topic is a declared
+ * one's alias, one character, so `{a}` without one is a font, as it always
+ * was.
  */
-export function marking(names, key) {
+export function marking(names, topics) {
   let style = null;
   let topic = null;
   const rest = [];
   for (const name of names.trim().split(/\s+/)) {
-    const entry = [...name].length === 1 ? key?.get(name) : null;
+    const declared = [...name].length === 1 ? topics?.get(name) : null;
     if (STYLES.includes(name.toLowerCase())) style ??= name.toLowerCase();
-    else if (entry?.kind === 'topic') topic ??= entry;
+    else if (declared) topic ??= declared;
     else rest.push(name);
   }
   if (!style && !topic) return null;
