@@ -55,15 +55,19 @@ test('a step done out of order leaves what a step still to do names', async () =
   ]]);
 });
 
-test('any list item ticked uses up what it last names, not only a step', async () => {
+test('only a step uses an ingredient up: another item naming it, ticked or not, neither uses it nor holds it back', async () => {
   const p = preview();
-  p.show(render(RECIPE.replace('2) [ ] Add the cilantro and the onion.', '* [ ] Add the cilantro and the onion.')).body);
-  await ticking(p, 1);
+  p.show(render(`${RECIPE}\n\n### Shopping\n- [ ] Buy more onion and peas`).body);
+  const buy = p.document.querySelector('li.task:not(.step):not(.ingredient) > .task-box');
   p.posted.length = 0;
-  p.document.querySelector('li.task:not(.step):not(.ingredient) > .task-box').click();
+  buy.click();
   await settle();
-  assert.deepEqual(p.posted.filter((m) => m.type === 'edit').map((m) => m.edits.map((e) => [e.from, e.after[0]])), [[
-    [14, '* [x] Add the cilantro and the onion.'],
+  assert.deepEqual(p.posted.filter((m) => m.type === 'edit').map((m) => m.edits.map((e) => e.after[0])), [['- [x] Buy more onion and peas']]);
+  buy.click();
+  await settle();
+  await ticking(p, 1);
+  assert.deepEqual(await ticking(p, 2), [[
+    [14, '2) [x] Add the cilantro and the onion.'],
     [9, '* [x] a handful of fresh !cilantro, chopped'],
     [8, '* [x][x][x] count:1 small yellow !onion, diced'],
   ]]);

@@ -3,9 +3,11 @@
  * item, amounts as multiplied, and Enter or Space on it shows it or puts it
  * away. Those named in what's current on the page, `[aria-current="step"]`,
  * are lit, and so are their items in the list, each time `preview:current`
- * says it changed. A list item ticked done that's the last to name an
- * ingredient marks it used: its item is sent `preview:complete`, which
- * tasks answers in the same edit, as one undo. Runs in the preview frame.
+ * says it changed. A step ticked done, a list item marked as one to follow
+ * (`data-steps`), that's the last to name an ingredient marks it used: its
+ * item is sent `preview:complete`, which tasks answers in the same edit, as
+ * one undo. Any other item naming it, as a shopping list's might, neither
+ * uses it up nor holds it back. Runs in the preview frame.
  */
 (() => {
   const itemOf = (use) => document.querySelector(`li.ingredient[data-recipe="${use.dataset.recipe}"][data-ingredient~="${CSS.escape(use.dataset.ingredient)}"]`);
@@ -75,14 +77,14 @@
   window.addEventListener('scroll', hide, { passive: true });
   Preview.register({ restore: hide });
 
-  // A list item's own box ticked: each ingredient it names that no item still
-  // to do names is used.
+  // A step's own box ticked: each ingredient it names that no step still to
+  // do names is used.
   const ownBox = (li) => li?.querySelector(':scope > input[type=checkbox], :scope > p > input[type=checkbox]');
   document.addEventListener('change', (e) => {
-    const li = e.target.closest?.('li');
+    const li = e.target.closest?.('li[data-steps]');
     if (!li || ownBox(li) !== e.target || !e.target.checked) return;
     const pending = (use) => {
-      const other = use.closest('li');
+      const other = use.closest('li[data-steps]');
       return other && other !== li && ownBox(other) && !ownBox(other).checked;
     };
     const all = [...document.querySelectorAll('.ingredient-use')];
