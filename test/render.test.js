@@ -87,6 +87,23 @@ test('without asides, a page is one column, its ~ lines are text, and each block
   assert.match(body, /<blockquote class="quoted" data-line="19">\n<p data-line="19">Quoted words\.<\/p>\n<p class="quote-by" data-line="20">Dana<\/p>/);
 });
 
+test("without asides, a page's reviewers show in its byline by name, and its topics don't", () => {
+  const src = '---\ntitle: T\nauthor: Ann\nreviewer #: Josh\nreviewer m: Maria, teal\ntopic c: Coherence\nreviewer: Kim\n---\n\nWords.\n\n~#c a thought\n';
+  const { body, css } = withoutAsides()(src);
+  const byline = /<div class="gm-byline">([\s\S]*?)<\/div>/.exec(body)[1];
+  assert.equal(byline, '<span>Ann</span><span class="gm-who">Josh</span><span class="gm-who">Maria</span><span>reviewer: Kim</span>');
+  assert.doesNotMatch(body, /Coherence|<b>/);
+  assert.match(css, /\.gm-byline \.gm-who \{/);
+  assert.doesNotMatch(withoutAsides()('---\ntitle: T\n---\n\nWords.\n').css, /\.gm-byline \.gm-who/);
+});
+
+test('with asides, a reviewer shows in its legend, with a count, and not in the byline', () => {
+  const { body, css } = render('---\ntitle: T\nauthor: Ann\nreviewer #: Josh\n---\n\nWords.\n\n~# a thought\n');
+  assert.match(body, /<div class="gm-byline"><span>Ann<\/span><\/div>/);
+  assert.match(body, /<div class="gm-legend"><span class="gm-who" style="--by: var\(--gm-key-1\)">Josh <b>1<\/b><\/span><\/div>/);
+  assert.doesNotMatch(css, /\.gm-byline \.gm-who/);
+});
+
 test('without asides, every page of the docs renders, in one column', () => {
   const page = withoutAsides();
   const dir = new URL('../docs/', import.meta.url);

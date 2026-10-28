@@ -21,7 +21,7 @@ function markdown(features) {
   // Features that read the file as written go before the rest, their rules
   // before the page's front matter and comments come off.
   const md = new MarkdownIt({ html: false, linkify: true, typographer: true, breaks: false });
-  md.use(pageRule);
+  md.use(pageRule, features);
   for (const f of features.filter((f) => f.plugin && f.raw)) md.use(f.plugin);
   for (const f of features.filter((f) => f.plugin && !f.raw)) md.use(f.plugin);
   // A `late` plugin, which reads what all of them leave as text (the words an
