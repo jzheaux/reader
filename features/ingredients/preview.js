@@ -1,19 +1,19 @@
 /**
  * An ingredient named in a step: hovering or focusing the word shows its
  * item, amounts as multiplied, and Enter or Space on it shows it or puts it
- * away; the lit step's (steps/preview.js) are lit,
- * and so are their items in the list. A list item ticked done that's the
- * last to name an ingredient marks it used: its item is sent
- * `preview:complete`, which tasks answers in the same edit, as one undo.
- * Runs in the preview frame.
+ * away. Those named in what's current on the page, `[aria-current="step"]`,
+ * are lit, and so are their items in the list, each time `preview:current`
+ * says it changed. A list item ticked done that's the last to name an
+ * ingredient marks it used: its item is sent `preview:complete`, which
+ * tasks answers in the same edit, as one undo. Runs in the preview frame.
  */
 (() => {
   const itemOf = (use) => document.querySelector(`li.ingredient[data-recipe="${use.dataset.recipe}"][data-ingredient~="${CSS.escape(use.dataset.ingredient)}"]`);
 
-  document.addEventListener('steps:lit', () => {
+  document.addEventListener('preview:current', () => {
     for (const lit of document.querySelectorAll('.ingredient-use.lit, li.ingredient.lit')) lit.classList.remove('lit');
-    for (const step of document.querySelectorAll('li.step-current')) {
-      for (const use of step.querySelectorAll('.ingredient-use')) {
+    for (const current of document.querySelectorAll('[aria-current="step"]')) {
+      for (const use of current.querySelectorAll('.ingredient-use')) {
         use.classList.add('lit');
         itemOf(use)?.classList.add('lit');
       }

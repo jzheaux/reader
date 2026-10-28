@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { render } from '../../src/render.js';
-import { preview, settle } from '../../test/dom.js';
+import { page, preview, run, settle } from '../../test/dom.js';
 
 const RECIPE = [
   '---', 'multibox:', '  stages: have, prepped, used', '---', '',
@@ -67,6 +67,31 @@ test('any list item ticked uses up what it last names, not only a step', async (
     [9, '* [x] a handful of fresh !cilantro, chopped'],
     [8, '* [x][x][x] count:1 small yellow !onion, diced'],
   ]]);
+});
+
+test('what\'s current on the page lights the ingredients it names, and their items, with no steps feature to say so', () => {
+  const window = run(page(render(RECIPE).body), 'static/preview-api.js', 'features/ingredients/preview.js');
+  const { document } = window;
+  const lit = () => [...document.querySelectorAll('.lit')].map((n) => n.matches('li.ingredient') ? `item ${n.dataset.ingredient}` : n.textContent.trim());
+  const current = (li) => {
+    for (const n of document.querySelectorAll('[aria-current]')) n.removeAttribute('aria-current');
+    li?.setAttribute('aria-current', 'step');
+    document.dispatchEvent(new window.Event('preview:current'));
+  };
+  const [, second] = document.querySelectorAll('ol > li');
+  current(second);
+  assert.deepEqual(lit().sort(), ['cilantro', 'item cilantro', 'item onion', 'onion']);
+  current(null);
+  assert.deepEqual(lit(), []);
+});
+
+test('a step clicked lights what it names', () => {
+  const p = preview();
+  p.show(render(RECIPE).body);
+  p.document.querySelectorAll('li.step')[1].click();
+  const lit = [...p.document.querySelectorAll('li.ingredient.lit')].map((li) => li.dataset.ingredient);
+  assert.deepEqual(lit.sort(), ['cilantro', 'onion']);
+  assert.equal(p.document.querySelectorAll('.ingredient-use.lit').length, 2);
 });
 
 test('the word is a button that shows its item, described by it, and Enter puts it away', () => {

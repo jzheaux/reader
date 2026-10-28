@@ -70,8 +70,9 @@
       });
       if (begun && !steps.every(done)) underWay = true;
     }
-    // For what follows the lit steps (ingredients/preview.js).
-    document.dispatchEvent(new Event('steps:lit'));
+    // What's current on the page changed, for any feature that follows it:
+    // the lit steps carry `aria-current="step"`.
+    document.dispatchEvent(new Event('preview:current'));
     if (underWay !== awake) {
       awake = underWay;
       window.parent.postMessage({ type: 'awake', on: awake }, '*');
