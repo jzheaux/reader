@@ -1,12 +1,16 @@
 /**
- * Reading a mark from the names in a style's braces (features/styles):
- * `[quick]{a}`, `[quick]{circle}`, `[quick]{a highlight}`. A topic's alias
- * marks the text in the topic's colour and style; a style names how it's
- * drawn. Kept apart from the marks feature itself so the styles feature
- * can read them without taking in the rest.
+ * Marks: words circled, underlined or highlighted, as on paper. The styles
+ * feature draws one from the names in a style's braces (`[quick]{circle}`,
+ * `[quick]{a highlight}`), and the asides feature one for the words an
+ * aside chooses (`~a[quick]`, features/asides/marks.js). A topic's alias
+ * marks the text in the topic's colour and style, from the asides' key
+ * (`env.asideKey`); a style names how it's drawn.
  */
 
-import { STYLES, inFamily } from '../asides/key.js';
+import { inFamily } from './color.js';
+
+/** How a mark can be drawn. */
+export const STYLES = ['circle', 'underline', 'dotted', 'wavy', 'highlight'];
 
 /**
  * The names in braces -> `{ style, topic, rest }`, the names that aren't

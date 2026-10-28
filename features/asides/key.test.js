@@ -6,7 +6,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { preprocess } from './preprocess.js';
-import { readEntry, makeKey, attribute, inFamily, ownColor } from './key.js';
+import { readEntry, makeKey, attribute } from './key.js';
+import { inFamily, ownColor } from '../color.js';
 import { render } from '../../src/render.js';
 import { slides } from '../../src/slides.js';
 

@@ -11,7 +11,7 @@
 
 import fs from 'node:fs';
 import { asideTokens, byChips, legend } from '../features/asides/index.js';
-import { about } from '../features/marks/index.js';
+import { about } from '../features/asides/marks.js';
 import { splitPairs, tabOf } from '../features/asides/split.js';
 import { escapeHtml } from '../features/source.js';
 
@@ -35,8 +35,8 @@ export const LIGHT_COLOURS = CSS.match(/\/\* colours, light \*\/\n:root \{([^}]*
 
 function renderAsideCell(md, aside, env, tab) {
   const html = md.renderer.render(asideTokens(md, aside, env), md.options, env);
-  // The words it's about, if it chose some (features/marks), follow who
-  // it's from and what it's about, or its `~`.
+  // The words it's about, if it chose some (features/asides/marks.js),
+  // follow who it's from and what it's about, or its `~`.
   const words = about(aside.mark);
   const tied = aside.mark?.id;
   const style = [aside.by?.who && `--by: ${escapeHtml(aside.by.who.color)}`, tied && aside.mark.color && `--mk: ${escapeHtml(aside.mark.color)}`].filter(Boolean).join('; ');

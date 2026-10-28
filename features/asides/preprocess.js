@@ -12,7 +12,8 @@
  * be re-attached once the structure is known.
  */
 
-import { readEntry, makeKey, attribute, STYLES } from './key.js';
+import { readEntry, makeKey, attribute } from './key.js';
+import { STYLES } from '../mark.js';
 import { OPEN, DIVIDER, CLOSE } from '../layout.js';
 import { frontMatter, fenced } from '../source.js';
 
@@ -22,7 +23,7 @@ const FENCE_RE = /^\s{0,3}(`{3,}|~{3,})/;
 // are both excluded by requiring the next character not to be another tilde.
 // A run of aliases may come between the `~` and the space (see key.js), and
 // after them the words in the line above it's about, in brackets, with how
-// to mark them in braces (see features/marks): `~v[jumped]{circle}`.
+// to mark them in braces (see marks.js): `~v[jumped]{circle}`.
 const ASIDE_RE = new RegExp(String.raw`^([ \t]*)~(?!~)([^\s~[]*)(?:\[((?:[^\]\\\n]|\\.)+)\](?:\{(${STYLES.join('|')})\})?)?([ \t]+.*)?$`, 'i');
 
 /**

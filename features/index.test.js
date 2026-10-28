@@ -25,3 +25,15 @@ test('a raw feature comes before the rest, wherever it is in the list, as tasks 
   assert.deepEqual(checkRequires([built, base]), [built, base]);
   assert.throws(() => checkRequires([{ name: 'built', raw: true, requires: ['base'] }, { name: 'base' }]), /built feature requires base/);
 });
+
+test('a feature with only a late plugin comes after the rest, wherever it is in the list; one with a plugin too goes by its plugin', () => {
+  const late = () => {};
+  const base = { name: 'base' };
+  const built = { name: 'built', late, requires: ['base'] };
+  assert.deepEqual(checkRequires([built, base]), [built, base]);
+  assert.throws(() => checkRequires([{ name: 'built', requires: ['base'] }, { name: 'base', late }]), /built feature requires base, which has to come before it/);
+  // as asides does, raw and late, before the rest
+  const both = [{ name: 'base', raw: true, plugin: late, late }, { name: 'built', requires: ['base'] }];
+  assert.equal(checkRequires(both), both);
+  assert.equal(checkRequires([...both].reverse()).length, 2);
+});

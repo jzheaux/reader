@@ -296,7 +296,7 @@ test('a colour an author names reads as text, in light and dark, and at 7:1 with
     ['dark, more contrast', merge(base, more, darker, moreDark), docMore.dark, 7],
   ];
   const cap = (v) => `oklch(from var(--${v}) clamp(var(--gm-key-l-min), l, var(--gm-key-l-max)) min(c, var(--gm-key-c-max)) h)`;
-  const marksCss = read('features/marks/marks.css');
+  const marksCss = read('features/asides/marks.css');
   assert.ok(columns.includes(`.gm-who.gm-own { background: ${cap('by')}`), 'a chip');
   assert.ok(columns.includes(`.gm-topic.gm-own { color: ${cap('topic')}`), 'a pill');
   assert.ok(marksCss.includes(`.mk-about.gm-own { color: color-mix(in srgb, ${cap('mk')} 55%, var(--gm-ink)); }`), 'the words an aside chose');
@@ -414,13 +414,13 @@ test("in the system's own colours, what a ground or a shadow said is said anothe
   }
   assert.match(under(read('features/steps/steps.css')), /li\.step-current \{ outline: 2px solid Highlight/);
   assert.match(under(read('features/qa/qa.css')), /qa-done > \.qa-label[\s\S]*background: CanvasText; color: Canvas/);
-  assert.match(under(read('features/marks/marks.css')), /\.mk-highlight[^{]*\{[^}]*background: Mark; color: MarkText/);
+  assert.match(under(read('features/asides/marks.css')), /\.mk-highlight[^{]*\{[^}]*background: Mark; color: MarkText/);
   assert.match(under(read('features/highlight/highlight.css')), /\.line\.hl, \.callout-notes > li\.hl \{ outline: 2px solid Highlight/);
   assert.match(under(read('features/puzzles/kinds/sudoku.js')), /\.cursor \{ outline: 3px solid Highlight/);
   assert.match(under(read('features/tabs/tabs.css')), /\.tab \{ forced-color-adjust: none; \}/);
   assert.match(under(columns), /\.gm-who, ol\.badges > li:not\(\.gm-cont\)::before/);
   // a reviewer's chip, and a mark's line, in whatever colour an author named
   assert.match(under(columns), /\.gm-who, \.gm-who\.gm-own \{ background: CanvasText; \}/);
-  assert.match(under(read('features/marks/marks.css')), /\.mk-lines path \{ stroke: CanvasText; \}/);
+  assert.match(under(read('features/asides/marks.css')), /\.mk-lines path \{ stroke: CanvasText; \}/);
 });
 

@@ -4,7 +4,7 @@
  * sets the color (the first one given wins); any other name is a font, with
  * hyphens for spaces, tried in order before the page's own. A topic's alias
  * or `circle`, `underline`, `dotted`, `wavy` or `highlight` marks the text
- * instead, and a color then is the mark's (features/marks). For whole
+ * instead, and a color then is the mark's (features/mark.js). For whole
  * paragraphs, lists or tables, fence them with `:::`:
  *
  *   ::: slategray georgia
@@ -28,7 +28,7 @@
 import fs from 'node:fs';
 import { beforeAsides, fenced, MARKS } from '../source.js';
 import { LAYOUTS, OPEN as LAYOUT_OPEN, DIVIDER, CLOSE as LAYOUT_CLOSE } from '../layout.js';
-import { marking, markSpan } from '../marks/mark.js';
+import { marking, markSpan } from '../mark.js';
 
 const DIV = /^[ \t]{0,3}:::(?:[ \t]+([\w-]+(?:[ \t]+[\w-]+)*))?[ \t]*$/;
 const NAMES = /^\{([\w-]+(?:[ \t]+[\w-]+)*)\}/;
@@ -177,7 +177,7 @@ function span(state, silent) {
   const names = NAMES.exec(state.src.slice(end + 1));
   if (!names) return false;
   const open = state.push('style_span_open', 'span', 1);
-  // A mark's colour is the mark's, not the text's (features/marks).
+  // A mark's colour is the mark's, not the text's (features/mark.js).
   const marked = marking(names[1], state.env.asideKey);
   if (marked) {
     const color = marked.rest.find((n) => COLORS.has(n.toLowerCase()))?.toLowerCase();
