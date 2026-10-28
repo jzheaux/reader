@@ -91,6 +91,12 @@
   --gm-brand-facebook: #0866ff;
   --gm-brand-instagram: #e4405f;
   --gm-brand-youtube: #ff0000;
+
+  /* how light a colour an author names may be, and how vivid
+   * (features/asides/key.js, below) */
+  --gm-key-l-min: 0;
+  --gm-key-l-max: 0.5;
+  --gm-key-c-max: 0.4;
 }
 
 /* colours, dark */
@@ -139,6 +145,10 @@
   --gm-brand-facebook: #5b9bff;
   --gm-brand-instagram: #f06f88;
   --gm-brand-youtube: #ff5252;
+
+  /* brighter, so a colour an author names reads on the dark paper */
+  --gm-key-l-min: 0.78;
+  --gm-key-l-max: 1;
 }
 
 /* colours, more contrast */
@@ -164,6 +174,7 @@
     --gm-clip-ink-soft: #565656;
     --gm-brand-atlantic: #b00e14;
     --gm-brand-slashdot: #016260;
+    --gm-key-l-max: 0.4;
   }
   :root.gm-dark {
     --gm-ink: #fff;
@@ -184,6 +195,8 @@
     --gm-code-comment: #d8d5d0;
     --gm-output-lit: #303c4b;
     --gm-brand-atlantic: #ff867d;
+    --gm-key-l-min: 0.86;
+    --gm-key-c-max: 0.15;
   }
 }
 
@@ -231,13 +244,8 @@
  * most in the light, and at least in the dark, so it reads as the family
  * does. One deeper than that in the light, or brighter
  * in the dark, is left as it is. With more contrast asked for, deeper, and
- * brighter and less vivid, to 7:1. */
-:root { --gm-key-l-min: 0; --gm-key-l-max: 0.5; --gm-key-c-max: 0.4; }
-:root.gm-dark { --gm-key-l-min: 0.78; --gm-key-l-max: 1; }
-@media (prefers-contrast: more) {
-  :root { --gm-key-l-max: 0.4; }
-  :root.gm-dark { --gm-key-l-min: 0.86; --gm-key-c-max: 0.15; }
-}
+ * brighter and less vivid, to 7:1. They're set with the colours above, so
+ * print, which puts the light colours back on paper, puts them back too. */
 
 /* The system's own colours (forced-colors: active, as Windows' contrast
  * themes are): the browser draws text, grounds and borders in them anyway,

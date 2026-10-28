@@ -87,6 +87,9 @@ test('a deck is saved as its pages, without its notes, each a numbered sheet on 
   assert.match(pages[1], /^<div class="gm-doc">[\s\S]*<h1>Two<\/h1>/);
   assert.doesNotMatch(html.slice(html.indexOf('<body>')), /a note|gm-masthead|data-line/);
   assert.match(html, /@media print \{\n {2}\.gm-page \{ page: numbered; \}\n {2}\.gm-page \+ \.gm-page \{ border-top: none; break-before: page; \}/);
+  // A dark deck prints in the light colours, and the bounds that keep an
+  // author's own colour readable print with them (#172).
+  assert.match(html, /:root\.gm-dark \{ [^}]*--gm-key-l-min: 0;[^}]*--gm-key-l-max: 0\.5;[^}]*--gm-key-c-max: 0\.4;/);
   assert.match(html, /@page numbered \{\n {2}@bottom-center \{\n {4}content: counter\(page\);/);
 });
 

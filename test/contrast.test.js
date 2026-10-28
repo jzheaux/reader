@@ -279,15 +279,14 @@ const capped = (hex, { lo, hi, cmax }) => {
 
 test('a colour an author names reads as text, in light and dark, and at 7:1 with more contrast asked for', () => {
   // the bounds, and the rules that draw with them
-  const BOUNDS = '/* How light a colour an author names';
   const set = (css) => {
     const d = declared(css);
     return { lo: d['gm-key-l-min'], hi: d['gm-key-l-max'], cmax: d['gm-key-c-max'] };
   };
-  const base = set(block(after(columns, BOUNDS), ':root {'));
-  const darker = set(block(after(columns, BOUNDS), ':root.gm-dark {'));
-  const more = set(block(after(after(columns, BOUNDS), MORE), ':root {'));
-  const moreDark = set(block(after(after(columns, BOUNDS), MORE), ':root.gm-dark {'));
+  const base = set(block(columns, '/* colours, light */'));
+  const darker = set(block(columns, '/* colours, dark */'));
+  const more = set(block(after(columns, MORE), ':root {'));
+  const moreDark = set(block(after(columns, MORE), ':root.gm-dark {'));
   const merge = (...sets) => Object.fromEntries(['lo', 'hi', 'cmax'].map((k) => [k, Number(sets.findLast((x) => x[k] !== undefined)[k])]));
   const themes = [
     ['light', merge(base), doc.light, 4.5],
@@ -401,7 +400,8 @@ test("in the system's own colours, every colour of the document's is one of them
   const SYSTEM = /^(Canvas|CanvasText|GrayText|Highlight)$/;
   // a profile link's mark is its site's, as an image's colours are
   const MARKS = /^gm-brand-(linkedin|bluesky|facebook|instagram|youtube)$/;
-  for (const name of Object.keys(lightSet).filter((n) => !MARKS.test(n))) assert.match(forced[name] ?? '', SYSTEM, `--${name}`);
+  // except the bounds on a colour an author names, which aren't colours themselves
+  for (const name of Object.keys(lightSet).filter((n) => !MARKS.test(n) && !/^gm-key-[lc]-/.test(n))) assert.match(forced[name] ?? '', SYSTEM, `--${name}`);
   assert.equal(forced['gm-accent'], 'Highlight');
   assert.equal(forced['gm-pick'], 'Highlight');
 });
