@@ -23,7 +23,7 @@
  * into panes with `panes()`.
  */
 
-import { isOutput, readNotes } from './highlight/callouts.js';
+import { isOutput, readNotes } from './fence.js';
 import { MARKS } from './source.js';
 
 export const LAYOUTS = ['columns', 'tabs', 'compare'];
@@ -82,7 +82,7 @@ export function panes(state, startLine, endLine, name) {
 
 /**
  * `tokens`, a block at a time. A fence's `output` fence and the notes on
- * its lines (highlight/callouts.js) go with it, in its block.
+ * its lines (fence.js) go with it, in its block.
  */
 function each(tokens) {
   const out = [];
