@@ -8,7 +8,8 @@
  * button beside it adds a heading for today, with the multiple picked. Another
  * feature can have a box done by sending it, or its list item, a
  * `preview:complete`: a plain box is ticked, a staged one filled all the way.
- * Runs in the preview frame.
+ * Where the page can't be worked (`Preview.workable`), as on a slide, none
+ * of them takes a click or a key. Runs in the preview frame.
  */
 (() => {
   const boxLine = (b, on) => {
@@ -28,6 +29,17 @@
     const n = b.children.length;
     b.setAttribute('aria-checked', to === n ? 'true' : to ? 'mixed' : 'false');
   };
+
+  // A box or a choice where the page can't be worked: a click on it, which
+  // Space is too, is called off before it ticks, and so are the keys that
+  // move a choice. A field's choices are the field's (fields/preview.js).
+  const shut = (t) => !Preview.workable && t.matches?.('input.task-box, input.choice-box') && !t.closest('.field');
+  document.addEventListener('click', (e) => {
+    if (shut(e.target)) e.preventDefault();
+  }, true);
+  document.addEventListener('keydown', (e) => {
+    if (shut(e.target) && [' ', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) e.preventDefault();
+  });
 
   document.addEventListener('change', (e) => {
     const box = e.target;
@@ -61,6 +73,7 @@
   });
 
   document.addEventListener('click', (e) => {
+    if (!Preview.workable) return;
     const box = e.target.closest?.('.stage-box');
     if (box) {
       const stage = Number(box.dataset.stage);

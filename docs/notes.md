@@ -69,7 +69,8 @@ Clicking a card's G or B marks its discussion done: the line gets an
 `[x]` (`Good [x] (Josh):`), and the card, its votes and its answers fade.
 Click again to take it away. A `Try`'s T is a box instead, ticked once it's
 been tried: the same `[x]`, a check in place of the T, and the card stays
-as it was.
+as it was. On a slide being presented, a card shows whether it's done but
+can't be clicked.
 
 ## Definitions
 

@@ -49,6 +49,9 @@ li.qa-card > .qa-label, li.qa-card > p:first-child > .qa-label { border-color: v
 /* Discussed: the card's label filled in, and the card and what's said under
  * it faded, in a softer ink rather than see-through, so it's still read. */
 .qa-toggle { cursor: pointer; }
+/* Where the page can't be worked (static/preview-api.js), as on a slide, it
+   only says whether it's been discussed. */
+.unworkable .qa-toggle { cursor: default; }
 li.qa-done { color: var(--gm-ink-soft); --gm-accent: var(--gm-ink-soft); }
 li.qa-card.qa-done > .qa-label, li.qa-card.qa-done > p:first-child > .qa-label { color: var(--gm-paper); background: var(--qa-card); }
 .qa-tally {

@@ -15,7 +15,9 @@
  *
  *   @ Session: ( ) Sat AM (x) Sat PM ( ) Sun AM
  *
- * Each button carries the line as it reads with only it picked.
+ * Each button carries the line as it reads with only it picked. Where the
+ * page can't be worked, as on a slide, they show what's picked and can't
+ * be changed, as a blank can't be filled in.
  *
  * A blank can also sit inside a sentence, as in a madlib: `[@ ` and what
  * goes there, which is shown small under the blank, and the answer after a
@@ -31,7 +33,7 @@
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { beforeExtract, readLines, placeholder, MARKS, splitText, escapeHtml, escapeAttr } from '../source.js';
-import { typable, unfilled } from '../blank.js';
+import { typable, unfilled, shut } from '../blank.js';
 
 const FIELD = /^@[ \t]+([^:\n]*?[^:\s])[ \t]*(:+)[ \t]*(.*?)[ \t]*$/;
 const HEAD = /^@[ \t]+[^:\n]*?[^:\s][ \t]*:+/;
@@ -118,7 +120,7 @@ export function fields(md) {
       // Its buttons a group, named by its label.
       return `${open} data-choices role="radiogroup" aria-labelledby="field-${line}"><span class="field-label" id="field-${line}">${escapeHtml(label)}</span><span class="field-choices">`
         + picks.map((c) => `<label class="field-choice"><input type="radio" class="choice-box" name="field-${line}"`
-          + ` data-on="${escapeAttr(c.on)}"${c.checked ? ' checked' : ''}> ${escapeHtml(c.label)}</label>`).join('')
+          + ` data-on="${escapeAttr(c.on)}"${c.checked ? ' checked' : ''}${shut(env)}> ${escapeHtml(c.label)}</label>`).join('')
         + '</span></span>';
     }
     const v = escapeHtml(value);

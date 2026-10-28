@@ -81,7 +81,7 @@ it. It's as much for a todo list or a game as for a recipe.
 
 A `1)` list whose items have boxes is **steps to follow**: each number badge
 is the step's box, and a click on it marks the step done, a check in its
-place.
+place. On a slide being presented, the badges only show which are done.
 
 ::: tabs
 +++ Source

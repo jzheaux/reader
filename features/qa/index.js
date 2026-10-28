@@ -37,6 +37,7 @@
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { beforeExtract, keepWritten, addClass, escapeAttr, fenced } from '../source.js';
+import { workable } from '../blank.js';
 
 // A name may hold a link, whose address is in parentheses of its own.
 const QA = /^\\?(Q|A|Good|Bad|Try)(?:[ \t]+\[([ xX])\])?(?:[ \t]*\(((?:[^()\n]|\([^()\n]*\))*)\))?:[ \t]+(?=\S)/;
@@ -55,12 +56,16 @@ export function qa(md) {
     const tally = votes ? `<span class="qa-tally">+${votes}</span>` : '';
     // A toggle, pressed once discussed, named for its card rather than its
     // letter. An exported page has no script to press it with, so there it's
-    // only a label.
+    // only a label. Elsewhere the page can't be worked, as on a slide, it
+    // still says whether it's done, but can't be reached or pressed.
     // A Try is ticked off once it's been tried, a checkbox rather than a toggle.
     const tried = who === 'Try';
+    const open = workable(env);
+    const reach = open ? 'tabindex="0"' : 'aria-disabled="true"';
+    const hint = (t) => (open ? ` title="${t}"` : '');
     const state = tried
-      ? `role="checkbox" tabindex="0" aria-label="Try, tried" aria-checked="${toggle?.done}" title="${toggle?.done ? 'Not tried yet' : 'Mark it tried'}"`
-      : `role="button" tabindex="0" aria-label="${who}, discussed" aria-pressed="${toggle?.done}" title="${toggle?.done ? 'Reopen the discussion' : 'Mark the discussion done'}"`;
+      ? `role="checkbox" ${reach} aria-label="Try, tried" aria-checked="${toggle?.done}"${hint(toggle?.done ? 'Not tried yet' : 'Mark it tried')}`
+      : `role="button" ${reach} aria-label="${who}, discussed" aria-pressed="${toggle?.done}"${hint(toggle?.done ? 'Reopen the discussion' : 'Mark the discussion done')}`;
     const label = toggle && !env.exported
       ? `<span class="qa-label qa-toggle${tried ? ' qa-tried' : ''}" ${state} data-line="${toggle.line}" data-on="${escapeAttr(toggle.on)}" data-off="${escapeAttr(toggle.off)}">`
       : '<span class="qa-label">';

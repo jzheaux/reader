@@ -75,6 +75,22 @@ test('boxes on a slide know their lines in the file', () => {
   assert.match(out.slides[1].body, /data-line="4" data-on="- \[x\] here"/);
 });
 
+test('on a slide, every box and choice is drawn as it stands and can\'t be changed, and there\'s no reset', () => {
+  const md = '---\nmultibox:\n  stages: have, prepped, used\n---\n\n## [x] Prep\nreset:[]\n\n- [x] oil\n- [ ] salt\n\n- ( ) tea\n- (x) coffee\n\n* [x][ ][ ] onion\n';
+  const { body } = slides(`${md}\n---\n\n# Next\n`).slides[0];
+  const inputs = body.match(/<input [^>]*>/g);
+  assert.equal(inputs.length, 5);
+  for (const input of inputs) assert.match(input, / disabled>$/);
+  assert.match(body, /<input type="checkbox" class="task-box" data-line="5" [^>]* checked disabled> Prep/);
+  assert.match(body, /<input type="radio" class="choice-box" name="choice-\d+" [^>]*aria-label="coffee" checked disabled>/);
+  assert.match(body, /<span class="stage-box" role="img" aria-label="onion: have \(1 of 3\)" title="have">/);
+  assert.doesNotMatch(body, /<button|task-reset/);
+  const page = render(md).body;
+  assert.doesNotMatch(page, /disabled/, 'in the editor, every one can be changed');
+  assert.match(page, /<button type="button" class="stage-box"/);
+  assert.match(page, /class="task-reset"/);
+});
+
 test('the stylesheet comes with the feature', () => {
   assert.match(render('- [ ] x\n').css, /li\.task \{ list-style: none; \}/);
 });
@@ -160,7 +176,8 @@ test('an exported page\'s staged box is a picture of how far it\'s got, not a co
   const { body } = render(md, { exported: true });
   assert.match(body, /<span class="stage-box" role="img" aria-label="onion: have \(1 of 3\)" title="have"><i class="on"><\/i><i><\/i><i><\/i><\/span> <span class="stage-name">have<\/span>/);
   assert.doesNotMatch(body, /<button/);
-  assert.match(body, /<input type="checkbox" class="task-box"/, 'a plain box can still be ticked, on paper or on screen');
+  assert.match(body, /<input type="checkbox" class="task-box"[^>]*> salt/, 'a plain box can still be ticked, on paper or on screen');
+  assert.doesNotMatch(body, /disabled/);
 });
 
 test('an exported page draws no box another feature has tagged notExported, whichever feature that is', () => {

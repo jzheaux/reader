@@ -8,7 +8,9 @@
  * next field or the one before. A field of choices writes its line as it
  * reads with the one picked. A field in a sentence (`[@ what goes here:
  * answer]`) writes its answer into its place on the line, moving along the
- * others after it. Runs in the preview frame.
+ * others after it. Where the page can't be worked (`Preview.workable`), as
+ * on a slide, no blank opens and no choice is picked. Runs in the preview
+ * frame.
  */
 (() => {
   let editing = null;
@@ -104,6 +106,17 @@
     });
     input.addEventListener('blur', () => close(true));
   }
+
+  // A choice where the page can't be worked: a click on it, which Space and
+  // its label's are too, is called off before it picks, and so are the
+  // keys that move along the choices.
+  const shut = (t) => !Preview.workable && t.matches?.('.field-choice > input');
+  document.addEventListener('click', (e) => {
+    if (shut(e.target)) e.preventDefault();
+  }, true);
+  document.addEventListener('keydown', (e) => {
+    if (shut(e.target) && [' ', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) e.preventDefault();
+  });
 
   document.addEventListener('change', (e) => {
     const field = e.target.matches?.('.field-choice > input') && e.target.closest('.field');

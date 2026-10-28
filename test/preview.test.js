@@ -74,10 +74,11 @@ test('the document is the frame\'s main part, and its title the frame\'s', () =>
   assert.equal(document.title, 'Rendered document');
 });
 
-test('on a slide, Tab goes round its boxes and back out to the deck, and Space on one is the box\'s', () => {
+test('on a slide, Tab goes round its tabs and back out to the deck, and Space on one is the tab\'s', () => {
   const { document, window, show, send, posted } = preview();
-  show(render('* [ ] one\n* [ ] two\n').body, { deck: true });
-  const boxes = [...document.querySelectorAll('.task-box')];
+  show(render('::: tabs\n+++ A\none\n+++ B\ntwo\n:::\n\n::: tabs\n+++ C\nthree\n+++ D\nfour\n:::\n').body, { deck: true });
+  // Each block's tab picked, as Tab reaches a group of radio buttons.
+  const boxes = [...document.querySelectorAll('.tab-pick:checked')];
   const press = (key, keys = {}) => {
     const e = new window.KeyboardEvent('keydown', { key, bubbles: true, cancelable: true, ...keys });
     (document.activeElement ?? document.body).dispatchEvent(e);
@@ -89,7 +90,7 @@ test('on a slide, Tab goes round its boxes and back out to the deck, and Space o
   assert.equal(press('Tab'), true);
   assert.equal(document.activeElement, boxes[1]);
   press(' ');
-  assert.deepEqual(sent(), [], 'Space works the box, and doesn\'t go up to the deck');
+  assert.deepEqual(sent(), [], 'Space works the tab, and doesn\'t go up to the deck');
   press('n');
   assert.deepEqual(sent(), ['n']);
   press('Tab');
@@ -113,12 +114,16 @@ function presenting(markdown) {
   return { ...p, press, sent };
 }
 
-test('on a slide, Tab passes over a blank, which can\'t be filled in there, and a box keeps only Space from the deck', () => {
-  const { document, send, press, sent } = presenting('# One\n\nFill in: [@ answer here:]\n\n- [ ] A box\n');
+test('on a slide, Tab passes over a blank, a box, a choice and a card, which can\'t be worked there, and a checkbox keeps only Space from the deck', () => {
+  const { document, send, press, sent } = presenting('# One\n\nFill in: [@ answer here:]\n\n- [ ] A box\n\n@ Session: ( ) Sat AM ( ) Sat PM\n\nGood: a card\n');
+  // A checkbox Tab can still reach there, as a code block's "show all" is.
+  const box = document.createElement('input');
+  box.type = 'checkbox';
+  document.querySelector('.gm-doc').append(box);
   send({ type: 'tab', back: false });
-  assert.ok(document.activeElement === document.querySelector('.task-box'), 'Tab reaches the box, not the blank');
+  assert.ok(document.activeElement === box, 'Tab reaches the checkbox, and nothing that can\'t be worked');
   press(' ');
-  assert.deepEqual(sent(), [], 'Space ticks the box');
+  assert.deepEqual(sent(), [], 'Space ticks the checkbox');
   assert.equal(press('ArrowRight'), true);
   press('Enter');
   assert.deepEqual(sent(), ['ArrowRight', 'Enter'], 'the box doesn\'t use them: they move the deck');
@@ -126,9 +131,9 @@ test('on a slide, Tab passes over a blank, which can\'t be filled in there, and 
   assert.deepEqual(sent(), ['untab']);
 });
 
-test('on a slide, a choice keeps Space and the arrows from the deck, a link Enter, and anything else the keys it takes', () => {
-  const { document, press, sent } = presenting('# One\n\n@ Session: ( ) Sat AM ( ) Sat PM\n\n[a link](https://example.com)\n');
-  document.querySelector('.choice-box').focus();
+test('on a slide, a tab keeps Space and the arrows from the deck, a link Enter, and anything else the keys it takes', () => {
+  const { document, press, sent } = presenting('# One\n\n::: tabs\n+++ A\none\n+++ B\ntwo\n:::\n\n[a link](https://example.com)\n');
+  document.querySelector('.tab-pick').focus();
   press(' ');
   press('ArrowDown');
   press('Enter');
@@ -148,10 +153,10 @@ test('on a slide, a choice keeps Space and the arrows from the deck, a link Ente
   assert.deepEqual(sent(), ['ArrowRight']);
 });
 
-test('whether the page can be worked is one answer, set by each render and marked on the page, that the features go by when it changes', () => {
-  const { window, document, show } = preview();
+test('whether the page can be worked is one answer, set by each render and marked on the page, that the features go by when it changes', async () => {
+  const { window, document, show, posted } = preview();
   const html = document.documentElement;
-  const md = '## Soup\n\n1) [ ] Chop.\n2) [ ] Fry.\n\n@ Notes: x\n\nOn date:2026-11-10[].\n';
+  const md = '## Soup\n\n1) [ ] Chop.\n2) [ ] Fry.\n\n@ Notes: x\n\nOn date:2026-11-10[].\n\n- [ ] Salt\n\n@ Bowl: ( ) big ( ) small\n\nGood: a card\n';
   show(render(md).body);
   assert.equal(window.Preview.workable, true);
   assert.equal(html.classList.contains('unworkable'), false);
@@ -170,6 +175,17 @@ test('whether the page can be worked is one answer, set by each render and marke
   press('j');
   document.querySelectorAll('li.step')[1].click();
   assert.equal(document.querySelector('li.step-current'), null, 'nor a step lit');
+  posted.length = 0;
+  const box = document.querySelector('li.task:not(.step) .task-box');
+  const badge = document.querySelector('li.step .task-box');
+  const choice = document.querySelector('.field-choice > input');
+  const card = document.querySelector('.qa-toggle');
+  for (const control of [box, badge, choice]) control.click();
+  card.click();
+  press('Enter', card);
+  await settle();
+  assert.deepEqual(posted.filter((m) => m.type === 'edit'), [], 'nor a box ticked, a step\'s badge, a choice picked or a card marked done');
+  assert.deepEqual([box.checked, badge.checked, choice.checked], [false, false, false]);
   window.Preview.workable = true;
   assert.equal(html.classList.contains('unworkable'), false);
   document.querySelectorAll('li.step')[1].click();
@@ -178,6 +194,11 @@ test('whether the page can be worked is one answer, set by each render and marke
   assert.ok(document.querySelector('.date-open'));
   document.querySelector('.field').click();
   assert.ok(document.querySelector('.field textarea'));
+  for (const control of [box, badge, choice]) control.click();
+  card.click();
+  await settle();
+  assert.deepEqual(posted.filter((m) => m.type === 'edit').flatMap((m) => m.edits.map((e) => e.after[0])),
+    ['- [x] Salt', '1) [x] Chop.', '@ Bowl: (x) big ( ) small', 'Good [x]: a card']);
 });
 
 test('a slide with nothing to Tab to gives the keyboard straight back to the deck', () => {

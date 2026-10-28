@@ -103,18 +103,20 @@ test('the lit step is the current one, and j, k and x say where they left the st
   assert.equal(said(), 'Step 2 of 3, done: Fry.');
 });
 
-test('on a slide, a step\'s badge is a box as any task\'s is: a click or Space ticks it, and neither moves the deck', async () => {
+test('on a slide, a step\'s badge only says whether it\'s done: a click or Space ticks nothing, and a click on the step moves the deck', async () => {
   const p = preview();
   p.show(slides(`${STEPS}\n---\n\n# Next\n`).slides[0].body, { deck: true });
   p.posted.length = 0;
   const box = p.document.querySelector('li.step .task-box');
+  box.focus();
+  assert.notEqual(p.document.activeElement, box, 'the keyboard doesn\'t reach it');
   box.click();
+  box.dispatchEvent(new p.window.KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }));
+  p.document.body.dispatchEvent(new p.window.KeyboardEvent('keydown', { key: 'x', bubbles: true, cancelable: true }));
   await settle();
-  assert.deepEqual(p.posted.filter((m) => m.type === 'edit').map((m) => m.edits.map((e) => e.after[0])), [['1) [x] Chop.']]);
-  assert.deepEqual(p.posted.filter((m) => m.type === 'click'), []);
-  const e = new p.window.KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true });
-  box.dispatchEvent(e);
-  assert.deepEqual(p.posted.filter((m) => m.type === 'key'), [], 'Space is the box\'s');
+  assert.deepEqual(p.posted.filter((m) => m.type === 'edit'), []);
+  assert.equal(box.checked, false);
+  assert.equal(p.document.querySelector('li.step-done'), null);
   // The step itself isn't the steps' to light there: a click on it moves the deck.
   p.document.querySelectorAll('li.step')[2].click();
   assert.equal(p.document.querySelectorAll('li.step')[2].classList.contains('step-current'), false);
