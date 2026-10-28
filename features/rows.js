@@ -1,13 +1,16 @@
 /**
- * Re-attaching asides to a parsed document.
+ * The page's rows: the notes in its margin (`env.margin`, src/columns.js)
+ * re-attached to the parsed document. The asides feature writes notes
+ * there, and any feature may.
  *
- * `preprocess` gave each aside an anchor: a line number in the cleaned source.
- * Here we turn that line number into a position in the token stream. The
- * speaker's flow is cut into chunks, and each aside is top-aligned with the
- * chunk that begins at its cut. The cut is placed at the *start* of the last
- * block written before the aside, so "~ but it doesn't allow me to add my own
- * voice" lines up with "markdown is fast" -- the thing it reacts to -- rather
- * than with the top of the list or the item after it.
+ * Each note has an anchor: a line number in the cleaned source, the line it
+ * goes before. Here we turn that line number into a position in the token
+ * stream. The speaker's flow is cut into chunks, and each note is
+ * top-aligned with the chunk that begins at its cut. The cut is placed at
+ * the *start* of the last block written before the note, so the aside "~ but
+ * it doesn't allow me to add my own voice" lines up with "markdown is fast"
+ * -- the thing it reacts to -- rather than with the top of the list or the
+ * item after it.
  *
  * Cutting a nested structure means closing every open container at the cut and
  * reopening it in the next chunk. Reopened lists carry their numbering forward
@@ -128,8 +131,8 @@ function firstTokenAtOrAfter(tokens, line) {
 }
 
 /**
- * Resolve every aside's anchor line to the token index its column cut belongs
- * at. Returns asides annotated with `cut` and `endCut` (the token indexes
+ * Resolve every note's anchor line to the token index its column cut belongs
+ * at. Returns the notes annotated with `cut` and `endCut` (the token indexes
  * where the block they are commenting on starts and ends), in document order.
  */
 export function resolveAnchors(tokens, asides) {
@@ -148,9 +151,10 @@ export function resolveAnchors(tokens, asides) {
 }
 
 /**
- * Cut the token stream into aligned pairs.
+ * Cut the token stream into aligned pairs, each passage of the speaker's
+ * with the notes beside it, its `asides`.
  *
- * @returns {Array<{speaker: Token[], asides: Array<{text: string, line: number}>}>}
+ * @returns {Array<{speaker: Token[], asides: Array<{anchor: number}>}>}
  */
 export function splitPairs(tokens, asides) {
   const resolved = resolveAnchors(tokens, asides);

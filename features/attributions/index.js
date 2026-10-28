@@ -11,7 +11,7 @@
  * the line carried on a paragraph, it's split off into one of its own, with
  * that paragraph's attributes (a `:::` block's style). The quote it's under is
  * marked `quoted`, which an aside's row that cuts it carries on into the rest
- * (features/asides/split.js), so both halves are set as one quote.
+ * (features/rows.js), so both halves are set as one quote.
  */
 
 import fs from 'node:fs';

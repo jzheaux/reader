@@ -10,7 +10,7 @@ import MarkdownIt from 'markdown-it';
 import { asides } from './index.js';
 import { page } from '../../src/page.js';
 import { preprocess } from './preprocess.js';
-import { splitPairs } from './split.js';
+import { splitPairs } from '../rows.js';
 import { render } from '../../src/render.js';
 
 /** A document parsed for columns: its front matter, asides, and the rows they cut it into. */

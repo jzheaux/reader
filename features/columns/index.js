@@ -45,7 +45,7 @@ function rule(state, startLine, endLine, silent) {
   const open = state.push('columns_open', 'div', 1);
   open.attrs = [['class', 'columns']];
   open.block = true;
-  // An aside written in it or after it is about all of it (asides/split.js).
+  // An aside written in it or after it is about all of it (features/rows.js).
   open.meta = { whole: true };
 
   const { end, panes: columns } = panes(state, startLine, endLine, 'columns');

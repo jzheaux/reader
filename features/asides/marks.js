@@ -22,12 +22,12 @@
  * chooses it by its words; several asides can choose the same words.
  *
  * Each mark has an id, `data-mark`, and the aside about it that id and
- * the words it chose, set at its start (columns.js); preview.js draws the
+ * the words it chose, set at its start (its cell, index.js); preview.js draws the
  * line between them. Words not found are set in the aside all the same,
  * with a `?`.
  */
 
-import { lastBlockBefore } from './split.js';
+import { lastBlockBefore } from '../rows.js';
 import { markSpan } from '../mark.js';
 import { ownColor } from '../color.js';
 import { escapeHtml, textToken } from '../source.js';
