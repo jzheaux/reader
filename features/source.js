@@ -80,6 +80,10 @@ export const MARKS = {
  * - `notExported`: draw nothing for the token on an exported page, because
  *   another feature already shows there what it says, and nothing on that
  *   page could change it (a step's box, whose badge says whether it's done).
+ * - `byline`: the block says who said the one before it, and goes with it
+ *   (a quote's attribution); a note beside them is level with the words.
+ * - `noteAttrs`: the attributes a note in the margin beside the block
+ *   carries (` data-in-tab="2"`, for a block in a tab, to show with it).
  */
 
 /** `s` with any placeholders taken out, for the words alone. */

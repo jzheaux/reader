@@ -77,3 +77,37 @@ test('without asides, a page has nothing in its margin and its ~ lines are text'
   assert.doesNotMatch(html, /gm-asides/);
   assert.match(html, /<p>~ a thought<\/p>/);
 });
+
+/**
+ * A feature, not tabs or attributions, that tags the paragraph saying
+ * `tagged` with what a note beside it carries, and the one starting `by`
+ * as the byline of the one before it.
+ */
+function tagger(md) {
+  md.core.ruler.push('tagger', (state) => {
+    state.tokens.forEach((t, i) => {
+      const words = state.tokens[i + 1]?.content ?? '';
+      if (t.type !== 'paragraph_open') return;
+      if (words.startsWith('tagged')) t.meta = { noteAttrs: ' data-tagged="yes"' };
+      if (words.startsWith('by')) t.meta = { byline: true };
+    });
+  });
+}
+
+test('a note carries what the block it is beside is tagged with', () => {
+  const md = new MarkdownIt(options).use(page).use(noter).use(tagger);
+  const tagged = (src) => {
+    const env = {};
+    return columns(md, md.parse(src, env), env).body;
+  };
+  assert.match(tagged('tagged\n!note\n\nthird\n'), /<div class="noted" data-tagged="yes">noted<\/div>/);
+  assert.match(tagged('untagged\n!note\n\nthird\n'), /<div class="noted">noted<\/div>/);
+});
+
+test('a note after a block tagged byline is level with the block before it, and its row keeps both', () => {
+  const md = new MarkdownIt(options).use(page).use(noter).use(tagger);
+  const env = {};
+  const html = columns(md, md.parse('first\n\nwords\n\nby someone\n!note\n\nthird\n', env), env).body;
+  assert.match(html, /<div class="gm-speaker">\n<p>words<\/p>\n<p>by someone\n!note<\/p>\n<\/div>\n<div class="gm-asides">\n<div class="noted">noted<\/div>/);
+  assert.match(html, /<div class="gm-speaker">\n<p>third<\/p>\n<\/div>\n<div><\/div>/);
+});
