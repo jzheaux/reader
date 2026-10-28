@@ -8,11 +8,14 @@
  *
  * Once the page's front matter and comments are off (src/page.js), the
  * asides are lifted out of the source before block parsing, so they cannot
- * disturb the document's structure, and kept on `env.asides` for reader's
- * two-column layout (src/columns.js), which wants the speaker's stream
- * unbroken so it can choose its own cut points. The aliases they may use,
+ * disturb the document's structure, and kept on `env.asides`. Each is a
+ * note in the page's margin (`env.margin`, src/columns.js), which wants the
+ * speaker's stream unbroken so it can choose its own cut points; the
+ * feature draws its cell (`cell`). The aliases they may use,
  * `reviewer #: Josh` and `topic c: Coherence`, are the front matter lines
- * the feature claims (`matter`), and make the key on `env.asideKey`.
+ * the feature claims (`matter`), and make the key on `env.asideKey`; who
+ * and what the asides are from and about goes in the masthead
+ * (`env.masthead`), as a legend.
  *
  * Taking them out shifts the lines the block parser sees again, so the
  * feature traces `env.sourceLines` on through what it took.
@@ -28,7 +31,7 @@ import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { preprocess } from './preprocess.js';
 import { readEntry, makeKey } from './key.js';
-import { marks } from './marks.js';
+import { marks, about } from './marks.js';
 import { escapeHtml } from '../source.js';
 import { ownColor } from '../color.js';
 
@@ -48,6 +51,12 @@ export function asides(md) {
     state.env.sourceLines = lines.map((k) => page[k] ?? k);
     state.env.asides = asides;
     state.env.asideKey = key;
+    // Each one a note in the margin, its cell drawn as the page is laid
+    // out, once every rule has run, so the words it chose are marked by then.
+    const { md, env } = state;
+    env.margin = [...(env.margin ?? []), ...asides.map((aside) => ({ anchor: aside.anchor, render: (attrs) => cell(md, aside, env, attrs) }))];
+    const shown = legend(asides, key);
+    if (shown) env.masthead = [...(env.masthead ?? []), shown];
   };
   // After the page's front matter and comments are off, or after
   // normalizing when there's no such rule (a test of the feature alone).
@@ -56,6 +65,32 @@ export function asides(md) {
   } catch {
     md.core.ruler.after('normalize', 'aside_extract', rule);
   }
+}
+
+/**
+ * An aside's cell in the margin, with `attrs`, the attributes the page
+ * gives it (` data-in-tab="2"`, for one that shows with a tab).
+ */
+function cell(md, aside, env, attrs = '') {
+  const html = md.renderer.render(asideTokens(md, aside, env), md.options, env);
+  // The words it's about, if it chose some (marks.js), follow who it's
+  // from and what it's about, or its `~`.
+  const words = about(aside.mark);
+  const tied = aside.mark?.id;
+  const style = [aside.by?.who && `--by: ${escapeHtml(aside.by.who.color)}`, tied && aside.mark.color && `--mk: ${escapeHtml(aside.mark.color)}`].filter(Boolean).join('; ');
+  attrs = `${style ? ` style="${style}"` : ''}${tied ? ` data-mark="${escapeHtml(tied)}"` : ''}${attrs}`;
+  // An attributed aside opens with who it's from and what it's about, at the
+  // start of its first paragraph, or above it when it doesn't open with one.
+  if (aside.by) {
+    const chips = byChips(aside.by) + words;
+    const opened = /^<p\b/.test(html) ? html.replace(/^<p\b([^>]*)>/, `<p$1>${chips}`) : `${chips}\n${html}`;
+    return `<div class="gm-aside-cell gm-attributed" role="note"${attrs}>\n${opened}</div>`;
+  }
+  // Slip the `~` in front of the first line of prose so the mark survives into
+  // the printed page. It's seen, not read: the aside is a note.
+  const lead = `<span class="gm-mark" aria-hidden="true">~</span>${words}`;
+  const marked = /<p\b/.test(html) ? html.replace(/<p\b([^>]*)>/, `<p$1>${lead}`) : words ? `<p>${lead}</p>\n${html}` : html;
+  return `<div class="gm-aside-cell" role="note"${attrs}>\n${marked}</div>`;
 }
 
 /** The tokens of one aside's content. */

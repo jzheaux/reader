@@ -63,11 +63,12 @@ export function render(src, { file, read, line = 0, shared = {}, entries, lines 
   const env = { lineBase: line, file, read, shared, entries, lines, matter, drawn, exported, deck };
   const tokens = md.parse(text, env);
   const meta = env.frontMatter || {};
-  const asides = env.asides || [];
+  // The notes in the page's margin (src/columns.js), its asides among them.
+  const notes = env.margin || [];
 
   // Column headings ("Speaker" / "Listener") only help when the document
   // names its voices; a journal entry doesn't need them.
-  const headings = Boolean(asides.length && (meta.speaker || meta.listener));
+  const headings = Boolean(notes.length && (meta.speaker || meta.listener));
   const title = titleOf(meta, file);
 
   const page = columns(md, tokens, env, { headings, title });
@@ -78,7 +79,7 @@ export function render(src, { file, read, line = 0, shared = {}, entries, lines 
     // The document's fonts last, over the theme's and under a `:::` block's own.
     css: [page.css.trim(), CSS, BACKGROUND_CSS, ...FEATURES.map((f) => f.css).filter(Boolean), fontCss(fonts ?? meta)].filter(Boolean).join('\n'),
     body: behind + body,
-    asides: asides.length,
+    asides: notes.length,
     title,
   };
 }

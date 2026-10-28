@@ -46,3 +46,34 @@ test('html is escaped, not injected', () => {
   assert.doesNotMatch(html, /<title><script>/);
   assert.match(html, /&lt;script&gt;/);
 });
+
+// --- the margin -----------------------------------------------------------
+
+/** A feature, not asides, that writes a note beside the line after `!note`, and a line in the masthead. */
+function noter(md) {
+  md.core.ruler.push('noter', (state) => {
+    const lines = state.src.split('\n');
+    const at = lines.indexOf('!note');
+    if (at < 0) return;
+    state.env.margin = [...(state.env.margin ?? []), { anchor: at, render: (attrs) => `<div class="noted"${attrs}>noted</div>` }];
+    state.env.masthead = [...(state.env.masthead ?? []), '<div class="more">more</div>'];
+  });
+}
+
+test('any feature can write a note in the margin, and a line in the masthead', () => {
+  const md = new MarkdownIt(options).use(page).use(noter);
+  const env = {};
+  const tokens = md.parse('first\n\nsecond\n!note\n\nthird\n', env);
+  const html = columns(md, tokens, env).body;
+  assert.match(html, /<section class="gm-pair">\n<div class="gm-speaker">\n<p>second\n!note<\/p>\n<\/div>\n<div class="gm-asides">\n<div class="noted">noted<\/div>\n<\/div>/);
+  assert.match(html, /<div class="more">more<\/div>\n<\/header>/);
+});
+
+test('without asides, a page has nothing in its margin and its ~ lines are text', () => {
+  const md = new MarkdownIt(options).use(page);
+  const env = {};
+  const html = columns(md, md.parse('a point\n\n~ a thought\n', env), env).body;
+  assert.equal(env.margin, undefined);
+  assert.doesNotMatch(html, /gm-asides/);
+  assert.match(html, /<p>~ a thought<\/p>/);
+});

@@ -67,7 +67,7 @@ function rule(name) {
     const open = state.push(`${name}_open`, 'div', 1);
     open.attrs = [['class', name]];
     open.block = true;
-    // An aside written in it or after it is about all of it (asides/split.js).
+    // An aside written in it or after it is about all of it (features/rows.js).
     open.meta = { whole: true };
 
     const { end, panes: versions } = panes(state, startLine, endLine, name);
