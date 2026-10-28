@@ -9,9 +9,11 @@
  * The line is found before markdown reads the text, its dash left as a
  * marker; once parsed, the paragraph it opens is the attribution, or, if
  * the line carried on a paragraph, it's split off into one of its own, with
- * that paragraph's attributes (a `:::` block's style). The quote it's under is
- * marked `quoted`, which an aside's row that cuts it carries on into the rest
- * (features/rows.js), so both halves are set as one quote.
+ * that paragraph's attributes (a `:::` block's style). It's tagged
+ * `byline`, so a note beside the quote is level with the quote's words
+ * (features/rows.js). The quote it's under is marked `quoted`, which an
+ * aside's row that cuts it carries on into the rest (features/rows.js), so
+ * both halves are set as one quote.
  */
 
 import fs from 'node:fs';
@@ -41,7 +43,7 @@ export function attributions(md) {
         && (k === 0 || ['softbreak', 'hardbreak'].includes(t.children[k - 1].type)));
       if (shown && at === 0) {
         t.children[0].content = t.children[0].content.slice(BYLINE.length);
-        addClass(open, 'quote-by');
+        byline(open);
       } else if (shown && at > 0) {
         i = split(state, i, at);
       }
@@ -50,6 +52,12 @@ export function attributions(md) {
       for (const c of tokens[i].children || []) if (c.type === 'text') c.content = c.content.replaceAll(BYLINE, '-- ');
     }
   });
+}
+
+/** Makes the paragraph `open` opens an attribution. */
+function byline(open) {
+  addClass(open, 'quote-by');
+  open.meta = { ...open.meta, byline: true };
 }
 
 /** The blockquote's opening token around the inline token at `i`. */
@@ -85,7 +93,7 @@ function split(state, i, at) {
   after[0].content = after[0].content.slice(BYLINE.length);
   const copy = (t) => Object.assign(new state.Token(t.type, t.tag, t.nesting), t, { attrs: t.attrs?.map((a) => [...a]) ?? null });
   const byOpen = copy(open);
-  addClass(byOpen, 'quote-by');
+  byline(byOpen);
   const byInline = copy(inline);
   // Each on its own lines, the attribution on the one it's written on.
   if (open.map) {

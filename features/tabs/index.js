@@ -47,6 +47,7 @@ export function tabs(md) {
   md.block.ruler.before('fence', 'tabs', rule('tabs'), { alt: ['paragraph', 'reference', 'blockquote', 'list'] });
   md.block.ruler.before('fence', 'compare', rule('compare'), { alt: ['paragraph', 'reference', 'blockquote', 'list'] });
   md.core.ruler.push('compare_diff', diff);
+  md.core.ruler.push('tabs_notes', notes);
   md.renderer.rules.tab_bar = (tokens, i) => `<div class="tab-bar">\n${tokens[i].meta.tabs.map(pick).join('\n')}\n</div>\n`;
   md.renderer.rules.tab_pick = (tokens, i) => `${pick(tokens[i].meta)}\n`;
   // Last of the features, so this is the fence as the others draw it.
@@ -104,6 +105,25 @@ function rule(name) {
     state.line = Math.min(end + 1, endLine);
     return true;
   };
+}
+
+/**
+ * Tags each block in a tab with what a note beside it carries
+ * (`noteAttrs`, features/rows.js): the tab it's in, counted from 1, so it
+ * shows with that tab. A block in a tab of a `tabs` block in another is in
+ * the inner one's.
+ */
+function notes(state) {
+  // For each `tabs` block open around a token, the tab it's in, or 0 between.
+  const open = [];
+  for (const t of state.tokens) {
+    if (t.type === 'tabs_open') open.push({ count: 0, tab: 0 });
+    else if (t.type === 'tabs_close') open.pop();
+    else if (t.type === 'tabs_pane_open') open.at(-1).tab = ++open.at(-1).count;
+    else if (t.type === 'tabs_pane_close') open.at(-1).tab = 0;
+    const tab = open.at(-1)?.tab;
+    if (tab && t.map && t.nesting >= 0) t.meta = { ...t.meta, noteAttrs: ` data-in-tab="${tab}"` };
+  }
 }
 
 /** The name of a version's fence's language, as highlight.js spells it. */

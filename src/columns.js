@@ -7,7 +7,8 @@
  * Features leave notes for the margin on `env.margin`, and the speaker's
  * tokens unbroken. Each note is `{ anchor, render(attrs) }`: the line of the
  * cleaned source it goes before, and its cell, given the attributes the
- * page adds; the asides feature's `~` lines are such notes. Here the tokens
+ * block it's beside is tagged with (`noteAttrs`, features/source.js); the
+ * asides feature's `~` lines are such notes. Here the tokens
  * are cut into rows (splitPairs, features/rows.js) and each row is drawn
  * beside its notes. What else goes in the masthead, under the byline, is on
  * `env.masthead` (the asides' legend). Came from gutter-md, which reader
@@ -15,7 +16,7 @@
  */
 
 import fs from 'node:fs';
-import { splitPairs, tabOf } from '../features/rows.js';
+import { splitPairs, noteAttrs } from '../features/rows.js';
 import { escapeHtml } from '../features/source.js';
 
 const CSS = fs.readFileSync(new URL('./columns.css', import.meta.url), 'utf8');
@@ -62,11 +63,9 @@ export function columns(md, tokens, env, { headings = true, title } = {}) {
       const speakerHtml = pair.speaker.length
         ? md.renderer.render(pair.speaker, md.options, env)
         : '';
-      const asideHtml = pair.asides.map((note) => {
-        // Written in a tab, it shows while that tab does (features/tabs).
-        const tab = tabOf(tokens, note.anchor);
-        return note.render(tab ? ` data-in-tab="${tab}"` : '');
-      }).join('\n');
+      // Each with what its block gives a note: written in a tab, it shows
+      // while that tab does (features/tabs).
+      const asideHtml = pair.asides.map((note) => note.render(noteAttrs(tokens, note.anchor))).join('\n');
       const cells = [
         `<div class="gm-speaker">\n${speakerHtml}</div>`,
         asideHtml ? `<div class="gm-asides">\n${asideHtml}\n</div>` : '<div></div>',

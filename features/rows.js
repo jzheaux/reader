@@ -67,9 +67,9 @@ export function lastBlockBefore(tokens, anchor, { into = false } = {}) {
     // payload of a block that already counted, so it is skipped too.
     if (CONTAINERS.has(t.type) || t.type === 'inline') continue;
     // A row beside an aside after a quote opens with the quote's words, not
-    // its attribution, which stays in the row with them; the words an aside
-    // names can still be in the attribution.
-    if (isByline(t) && !into) continue;
+    // its attribution (a block tagged `byline`), which stays in the row with
+    // them; the words an aside names can still be in the attribution.
+    if (t.meta?.byline && !into) continue;
     found = t;
     // What's laid out as one thing (columns) is one block, however much is
     // in it: an aside is beside all of it, and never cuts it. Looking `into`
@@ -79,36 +79,23 @@ export function lastBlockBefore(tokens, anchor, { into = false } = {}) {
   return found;
 }
 
-function isByline(t) {
-  return t.type === 'paragraph_open' && (t.attrGet('class') || '').split(' ').includes('quote-by');
-}
-
 /** The source line `block` ends on, with the attribution after it, if any. */
 function endOf(tokens, block) {
   const i = tokens.indexOf(block);
   const next = tokens.slice(i + 1).find((t) => t.map && t.nesting > 0);
-  return next && isByline(next) ? next.map[1] : block.map[1];
+  return next?.meta?.byline ? next.map[1] : block.map[1];
 }
 
 /**
- * Which tab an aside written at `anchor` is in, counted from 1, when it's
- * in one: it's beside the whole `tabs` block, and shows with that tab.
+ * The attributes a note written at `anchor` carries, as its block is
+ * tagged with them (`noteAttrs`), or '' for none: one written in a tab,
+ * say, shows with that tab (features/tabs).
  */
-export function tabOf(tokens, anchor) {
-  // One written after the block's closing is about all of it.
+export function noteAttrs(tokens, anchor) {
+  // One written after a block laid out as one thing is about all of it.
   const after = lastBlockBefore(tokens, anchor);
-  if (after?.meta?.whole && anchor >= after.map?.[1]) return null;
-  const block = lastBlockBefore(tokens, anchor, { into: true });
-  // For each `tabs` block open around a token, the tab it's in, or 0 between.
-  const open = [];
-  for (const t of tokens) {
-    if (t.type === 'tabs_open') open.push({ count: 0, tab: 0 });
-    else if (t.type === 'tabs_close') open.pop();
-    else if (t.type === 'tabs_pane_open') open.at(-1).tab = ++open.at(-1).count;
-    else if (t.type === 'tabs_pane_close') open.at(-1).tab = 0;
-    if (t === block) return open.at(-1)?.tab || null;
-  }
-  return null;
+  if (after?.meta?.whole && anchor >= after.map?.[1]) return '';
+  return lastBlockBefore(tokens, anchor, { into: true })?.meta?.noteAttrs ?? '';
 }
 
 /** The index of the token that closes the one opened at `i`. */
