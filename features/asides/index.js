@@ -17,12 +17,19 @@
  * count lines of what's left; `env.sourceLines[n]` is the line of the source
  * that line `n` of it came from.
  *
+ * Once everything else has parsed the page, it marks the words an aside
+ * names in brackets (`~a[quick]`) in the line it's written under, and ties
+ * the aside to them by a line (marks.js, preview.js).
+ *
  * Came from gutter-md, which reader grew out of.
  */
 
+import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { preprocess } from './preprocess.js';
+import { marks } from './marks.js';
 import { escapeHtml } from '../source.js';
-import { ownColor } from './key.js';
+import { ownColor } from '../color.js';
 
 export function asides(md) {
   md.core.ruler.after('normalize', 'aside_extract', (state) => {
@@ -89,4 +96,10 @@ export default {
   // First of all: other features place what they read before the asides
   // come out (`aside_extract`), so it must be there to place them by.
   raw: true,
+  // Last of all: the words an aside chooses are found in what the others
+  // leave as text, tabs' among them (marks.js).
+  late: marks,
+  css: fs.readFileSync(new URL('./marks.css', import.meta.url), 'utf8'),
+  // The line from a mark to the asides about it.
+  preview: fileURLToPath(new URL('./preview.js', import.meta.url)),
 };

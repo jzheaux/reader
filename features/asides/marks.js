@@ -18,8 +18,8 @@
  * the brackets say how to mark them (`~a[quick]{highlight}`), over the
  * topic's own style, or the underline when it has none. Words written as a
  * mark already, in a style's braces (`[the lazy dog]{c}`, see
- * features/styles and mark.js), are that mark, so an aside chooses it by
- * its words; several asides can choose the same words.
+ * features/styles and features/mark.js), are that mark, so an aside
+ * chooses it by its words; several asides can choose the same words.
  *
  * Each mark has an id, `data-mark`, and the aside about it that id and
  * the words it chose, set at its start (columns.js); preview.js draws the
@@ -27,11 +27,9 @@
  * with a `?`.
  */
 
-import fs from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { lastBlockBefore } from '../asides/split.js';
-import { markSpan } from './mark.js';
-import { ownColor } from '../asides/key.js';
+import { lastBlockBefore } from './split.js';
+import { markSpan } from '../mark.js';
+import { ownColor } from '../color.js';
 import { escapeHtml, textToken } from '../source.js';
 
 export function marks(md) {
@@ -183,10 +181,3 @@ export function about(mark) {
     ? `<q class="mk-about${own} mk-lost" title="Not found in the line above">${escapeHtml(mark.text)}?</q>`
     : `<q class="mk-about${own}">${escapeHtml(mark.text)}</q>`;
 }
-
-export default {
-  name: 'marks',
-  plugin: marks,
-  css: fs.readFileSync(new URL('./marks.css', import.meta.url), 'utf8'),
-  preview: fileURLToPath(new URL('./preview.js', import.meta.url)),
-};

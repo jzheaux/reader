@@ -14,9 +14,9 @@
  *   ~#c This contradicts §2.        Josh, about Coherence
  *
  * A colour after the name (a CSS name or `#hex`) is the alias's own, a
- * common name drawn in the family's hue for it (see `inFamily`), and a
+ * common name drawn in the family's hue for it (see features/color.js), and a
  * topic can name how it marks the words its asides choose (`circle`,
- * `underline` or `highlight`; see features/marks); the
+ * `underline` or `highlight`; see features/mark.js); the
  * rest are dealt from a palette in the order they're declared, reviewers
  * from its start and topics from its end, so the two don't look paired. A run counts when its aliases are
  * declared, all but one at most: that one is taken for a slip of the
@@ -25,48 +25,15 @@
  * left as it was.
  */
 
+import { STYLES } from '../mark.js';
+import { inFamily } from '../color.js';
+
 const ENTRY = /^\s*(reviewer|topic)\s+(\S)\s*:\s*(.+?)\s*$/i;
 const COLOR = /^(?:#[0-9a-f]{3,8}|[a-z]+)$/i;
-
-/** How a mark can be drawn: features/marks. */
-export const STYLES = ['circle', 'underline', 'dotted', 'wavy', 'highlight'];
 
 // The family's hues (src/columns.css), which read as text on the page,
 // light or dark, and the page on them.
 const PALETTE = Array.from({ length: 8 }, (_, i) => `var(--gm-key-${i + 1})`);
-
-// The colour names an author is likely to write, each to the family's hue
-// nearest it. The family's green is a teal, so a plain green is its moss.
-const FAMILY = {
-  red: ['red', 'crimson', 'maroon'],
-  amber: ['amber', 'orange', 'gold', 'yellow', 'brown'],
-  moss: ['moss', 'green', 'lime', 'olive'],
-  green: ['teal', 'cyan', 'turquoise'],
-  blue: ['blue', 'navy'],
-  violet: ['violet', 'purple', 'indigo'],
-  rose: ['rose', 'pink', 'magenta'],
-  slate: ['slate', 'grey', 'gray'],
-};
-const HUES = new Map(Object.entries(FAMILY).flatMap(([hue, names]) => names.map((n) => [n, `var(--gm-${hue})`])));
-
-/**
- * A colour an author names -> the family's hue for it, which reads as text
- * in light and dark (`gold` -> `var(--gm-amber)`); any other, a `#hex` or a
- * name not listed, as it's written, for the page to keep readable
- * (src/columns.css).
- */
-export function inFamily(color) {
-  return (color && HUES.get(color.toLowerCase())) || color;
-}
-
-/**
- * Whether `color` is one an author wrote that isn't the family's: a `#hex`,
- * or a name not listed. The page keeps that one readable, and draws the
- * family's exactly as it's defined (src/columns.css).
- */
-export function ownColor(color) {
-  return Boolean(color) && !color.startsWith('var(--gm-');
-}
 
 /** A front matter line declaring an alias -> `{ kind, alias, name, color, style }`, or null. */
 export function readEntry(line) {

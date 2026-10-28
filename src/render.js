@@ -18,6 +18,9 @@ import { FEATURES } from '../features/index.js';
 const md = new MarkdownIt({ html: false, linkify: true, typographer: true, breaks: false });
 for (const f of FEATURES.filter((f) => f.plugin && f.raw)) md.use(f.plugin);
 for (const f of FEATURES.filter((f) => f.plugin && !f.raw)) md.use(f.plugin);
+// A `late` plugin, which reads what all of them leave as text (the words an
+// aside chooses), goes after.
+for (const f of FEATURES.filter((f) => f.late)) md.use(f.late);
 md.core.ruler.push('reader_lines', (state) => {
   if (state.env.lines && !state.inlineMode && !state.env.__aside) markLines(state.tokens, state.env);
 });
