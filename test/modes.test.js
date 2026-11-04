@@ -15,6 +15,17 @@ test('☰ says whether the file list is showing', () => {
   assert.equal(el.sidebarToggle.getAttribute('aria-expanded'), 'true');
 });
 
+test('in Work at a wide width, ☰ opens the list over the page, and closes it again', () => {
+  el.split.classList.add('work-mode');
+  toggleSidebar();
+  assert.equal(el.split.classList.contains('list-open'), true);
+  assert.equal(el.sidebarToggle.getAttribute('aria-expanded'), 'true');
+  toggleSidebar();
+  assert.equal(el.split.classList.contains('list-open'), false);
+  assert.equal(el.sidebarToggle.getAttribute('aria-expanded'), 'false');
+  el.split.classList.remove('work-mode');
+});
+
 test('hiding the list with the keyboard in it leaves the keyboard on ☰', () => {
   el.filter.focus();
   toggleSidebar(true);

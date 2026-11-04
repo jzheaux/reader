@@ -14,7 +14,8 @@ import { frontMatter, typeOf } from '../markdown.js';
 const NARROW = matchMedia('(max-width: 900px)');
 
 export function toggleSidebar(force) {
-  if ((NARROW.matches || el.split.classList.contains('list-open')) && force === undefined) return toggleDrawer();
+  const drawer = NARROW.matches || el.split.classList.contains('list-open') || el.split.classList.contains('work-mode');
+  if (drawer && force === undefined) return toggleDrawer();
   const hide = force ?? !el.split.classList.contains('no-sidebar');
   el.split.classList.toggle('no-sidebar', hide);
   // The keyboard isn't left in a list that's gone.
@@ -48,11 +49,9 @@ export function showList() {
   else toggleSidebar(false);
 }
 
-/** ☰ says whether the list is showing: beside the panes, or over them at a narrow width. */
+/** ☰ says whether the list is showing: beside the panes, or over them. */
 function listShown() {
-  const { classList } = el.split;
-  const shown = classList.contains('list-open') || (!NARROW.matches && !classList.contains('no-sidebar'));
-  el.sidebarToggle.setAttribute('aria-expanded', String(shown));
+  el.sidebarToggle.setAttribute('aria-expanded', String(listSeen()));
 }
 
 export function toggleHelp(show = el.help.hidden) {
