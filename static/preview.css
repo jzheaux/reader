@@ -21,6 +21,10 @@
 /* with more contrast asked for, still faint, but to be read */
 @media (prefers-contrast: more) { .step-dim { opacity: .5; } }
 
+/* a code block that scrolls sideways takes the keyboard (preview.js), so
+ * where the keyboard is shows: its end is read with the arrows */
+.gm-doc pre:focus-visible { outline: 2px solid var(--gm-accent); outline-offset: 2px; }
+
 /* one slide giving way to the next (preview.js sets data-transition): the
  * way named is the way both move. A fade is the browser's own. */
 ::view-transition-old(root), ::view-transition-new(root) { animation-duration: .45s; animation-timing-function: cubic-bezier(.4, 0, .2, 1); }

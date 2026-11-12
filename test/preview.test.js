@@ -560,3 +560,64 @@ test('Preview.flush sends the edits held so far, and the end of the turn sends n
   await settle();
   assert.equal(posted.length, 1);
 });
+
+/** The page lays nothing out: here a block is as wide as these two say. */
+function sized(p, scroll, client) {
+  Object.defineProperty(p.window.Element.prototype, 'scrollWidth', { configurable: true, get: () => scroll });
+  Object.defineProperty(p.window.HTMLElement.prototype, 'clientWidth', { configurable: true, get: () => client });
+}
+
+test('a code block that scrolls sideways takes the keyboard, and is named', () => {
+  const p = preview();
+  sized(p, 600, 400);
+  p.show(render('```js\nconst aVeryLongLine = 1;\n```\n').body);
+  const pre = p.document.querySelector('pre');
+  assert.equal(pre.getAttribute('tabindex'), '0');
+  assert.equal(pre.getAttribute('role'), 'region');
+  assert.equal(pre.getAttribute('aria-label'), 'Code, js');
+});
+
+test('a block that no longer scrolls, as the window widens, gives the keyboard back', () => {
+  const p = preview();
+  sized(p, 600, 400);
+  p.show(render('```js\nconst aVeryLongLine = 1;\n```\n').body);
+  const pre = p.document.querySelector('pre');
+  assert.equal(pre.getAttribute('tabindex'), '0');
+  sized(p, 400, 400);
+  p.window.dispatchEvent(new p.window.Event('resize'));
+  assert.equal(pre.hasAttribute('tabindex'), false);
+  assert.equal(pre.hasAttribute('role'), false);
+  assert.equal(pre.hasAttribute('aria-label'), false);
+});
+
+test('a block that fits is no Tab stop, and one with no language is just "Code"', () => {
+  const p = preview();
+  sized(p, 300, 400);
+  p.show(render('```js\nshort\n```\n').body);
+  assert.equal(p.document.querySelector('pre').hasAttribute('tabindex'), false);
+  sized(p, 600, 400);
+  p.show(render('```\nplain\n```\n').body);
+  assert.equal(p.document.querySelector('pre').getAttribute('aria-label'), 'Code');
+});
+
+test('a block hidden when the page was drawn takes the keyboard once it is shown', () => {
+  const p = preview();
+  const watchers = [];
+  // The page under test lays nothing out, so the test says when a block's
+  // size changes, as showing a folded section or a picked tab would.
+  p.window.ResizeObserver = class {
+    constructor(run) { watchers.push(run); }
+    observe() {}
+    disconnect() {}
+    unobserve() {}
+  };
+  sized(p, 0, 0);
+  p.show(render('```js\nconst aVeryLongLine = 1;\n```\n').body);
+  const pre = p.document.querySelector('pre');
+  assert.equal(pre.hasAttribute('tabindex'), false);
+  sized(p, 600, 400);
+  for (const run of watchers) run();
+  assert.equal(pre.getAttribute('tabindex'), '0');
+  assert.equal(pre.getAttribute('role'), 'region');
+  assert.equal(pre.getAttribute('aria-label'), 'Code, js');
+});

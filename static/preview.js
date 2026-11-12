@@ -177,6 +177,36 @@
     window.parent.postMessage({ type: 'fit', measure, zoom: fitted.zoom, fits: fitted.fits, wrapped }, '*');
   }
 
+  // A code block wider than the page scrolls sideways. One that does takes
+  // the keyboard, too, so its end can be reached with the arrows, and is
+  // named for what it is. Only one that overflows: a page of short code
+  // shouldn't be a page of Tab stops.
+  const CODE_LANG = /(?:^|\s)language-([\w-]+)/;
+  let codeWatch = null;
+  function reachableCode() {
+    for (const pre of document.querySelectorAll('.gm-doc pre')) {
+      const over = pre.scrollWidth > pre.clientWidth + 1;
+      if (over === pre.hasAttribute('tabindex')) continue;
+      if (over) {
+        const lang = CODE_LANG.exec(pre.querySelector('code')?.className || '');
+        pre.setAttribute('tabindex', '0');
+        pre.setAttribute('role', 'region');
+        pre.setAttribute('aria-label', lang ? `Code, ${lang[1]}` : 'Code');
+      } else {
+        pre.removeAttribute('tabindex');
+        pre.removeAttribute('role');
+        pre.removeAttribute('aria-label');
+      }
+    }
+    // A block hidden when the page was drawn (a folded section, an unpicked
+    // tab) has no size, so the draw passed it over; shown, the size it takes
+    // is the tell. Watching each pre keeps one that shows later within
+    // reach, whether or not the page is drawn again.
+    if (!codeWatch) codeWatch = new ResizeObserver(() => reachableCode());
+    codeWatch.disconnect();
+    for (const pre of document.querySelectorAll('.gm-doc pre')) codeWatch.observe(pre);
+  }
+
   // Images, fonts and what features draw change a slide's size as they
   // arrive. A measurement waits for them, a little while at most.
   const settled = () => Promise.race([
@@ -190,7 +220,7 @@
   ]);
   document.addEventListener('load', (e) => { if (Preview.deck && e.target.tagName === 'IMG') fit(); }, true);
   window.addEventListener('preview:drawn', () => { if (Preview.deck) fit(); });
-  window.addEventListener('resize', () => fit());
+  window.addEventListener('resize', () => { fit(); reachableCode(); });
 
   // Scrolling in step with the editor, by the line of the file each block
   // was drawn from (`data-line`). Whichever side was last touched leads and
@@ -379,7 +409,8 @@
     document.documentElement.classList.toggle('deck', Preview.deck);
     scaleTo(m.scale);
     fit();
-    if (m.measure != null) settled().then(() => fit(m.measure));
+    reachableCode();
+    if (m.measure != null) settled().then(() => { fit(m.measure); reachableCode(); });
     if (m.reveal != null) reveal(m.reveal, m.say);
     marks = null;
     if (m.lines != null) lines = m.lines;
