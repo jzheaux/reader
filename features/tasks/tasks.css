@@ -5,6 +5,14 @@ li.task > .choice-box, li.task > p > .choice-box {
   vertical-align: -0.1em;
   cursor: pointer;
 }
+/* Grow the radio into the list's margin so its label keeps the same alignment. */
+li.task > .choice-box, li.task > p > .choice-box {
+  --choice-target-size: 24px;
+  --choice-inline-width: 13px;
+  width: var(--choice-target-size);
+  height: var(--choice-target-size);
+  margin-left: calc(-1 * var(--gm-indent) + var(--choice-inline-width) - var(--choice-target-size));
+}
 /* A heading's box: its title, then a Done pill at the end of its line,
    filled in the accent once its section is done, the title in done ink. */
 .task-heading { display: flex; align-items: baseline; gap: var(--gm-space-5); }
