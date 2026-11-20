@@ -47,6 +47,7 @@ const [OPEN, CLOSE] = MARKS.tasks;
 // `env`, keeps it.
 const BOXES = Symbol('boxes');
 const PLACED = new RegExp(`${OPEN}(\\d+)${CLOSE}`, 'g');
+const DATES = new RegExp(`${MARKS.date[0]}(\\d+)${MARKS.date[1]}`, 'g');
 const AT_HEAD = new RegExp(`^${OPEN}(\\d+)${CLOSE}[ \\t]?`);
 
 export function tasks(md) {
@@ -113,7 +114,7 @@ export function tasks(md) {
         if (box.staged && !heading) addClass(t, box.checked ? 'staged task-done' : 'staged');
         first.content = first.content.slice(m[0].length);
         const input = new state.Token('task_box', 'input', 0);
-        input.meta = { ...box, group: lists.at(-1), name: nameOf(inline.children), heading };
+        input.meta = { ...box, group: lists.at(-1), name: nameOf(inline.children, state.env.dates), heading };
         // A box is a thing to be done; a choice isn't (see source.js's tags).
         if (!box.radio) input.meta.done = box.checked;
         // A choice whose words have a blank in them is picked once it's written in.
@@ -316,12 +317,16 @@ function stageBox({ line, stage, lines, stages, name, pictured }) {
  * What a box is for, as a screen reader says it: the words beside it. A
  * label around them would make every link among them tick the box too.
  */
-function nameOf(children) {
-  // Words other features set apart (a count, an ingredient, a note, a timer) carry theirs too.
+function nameOf(children, dates) {
+  // Words other features set apart (a count, an ingredient, a note, a timer)
+  // carry theirs too, and a date the words it's read as: it's placed after
+  // this, so its words come from what it found on the line.
   // A line break between them is a space, so two lines don't run together.
-  const words = children.filter((t) => t.type === 'text' || t.type === 'code_inline' || t.type === 'softbreak' || t.type === 'hardbreak' || NAMED.has(t.type))
-    .map((t) => (t.type.endsWith('break') ? ' ' : t.content));
-  return unplaced(words.join('')).replace(/\s+/g, ' ').trim();
+  const said = children.filter((t) => t.type === 'text' || t.type === 'code_inline' || t.type === 'softbreak' || t.type === 'hardbreak' || NAMED.has(t.type))
+    .map((t) => (t.type.endsWith('break') ? ' ' : t.content))
+    .join('')
+    .replace(DATES, (m, k) => dates?.[k]?.words ?? m);
+  return unplaced(said).replace(/\s+/g, ' ').trim();
 }
 
 export default {
