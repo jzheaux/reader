@@ -39,7 +39,7 @@ import { schemeRule } from '../scheme.js';
 import { workable, shut, inlineBlanks } from '../blank.js';
 
 const TASK = new RegExp(`^([ \\t]*(?:>[ \\t]*|~(?![^\\s~])[ \\t]*|~[^\\s~]+[ \\t]+)*${LIST_MARKER}[ \\t]+)(?:((?:\\[[ xX]\\]){1,9})|\\(([ xX])\\))(?=[ \\t]|$)`);
-const NAMED = new Set(['field_inline', 'count', 'ingredient_key', 'ingredient_use', 'pitch', 'timer', 'scheme_shown']);
+const NAMED = new Set(['date', 'field_inline', 'count', 'ingredient_key', 'ingredient_use', 'pitch', 'timer', 'scheme_shown']);
 const HEADING = /^( {0,3}#{1,6}[ \t]+)\[([ xX])\](?=[ \t]|$)/;
 const [OPEN, CLOSE] = MARKS.tasks;
 // The boxes found, by placeholder, kept on `env` under a key no other feature can name, so that
@@ -317,7 +317,8 @@ function stageBox({ line, stage, lines, stages, name, pictured }) {
  * label around them would make every link among them tick the box too.
  */
 function nameOf(children) {
-  // Words other features set apart (a count, an ingredient, a note, a timer) carry theirs too.
+  // Words other features set apart (a count, an ingredient, a note, a timer)
+  // carry theirs too, and a date the words it's read as.
   // A line break between them is a space, so two lines don't run together.
   const words = children.filter((t) => t.type === 'text' || t.type === 'code_inline' || t.type === 'softbreak' || t.type === 'hardbreak' || NAMED.has(t.type))
     .map((t) => (t.type.endsWith('break') ? ' ' : t.content));
@@ -326,6 +327,8 @@ function nameOf(children) {
 
 export default {
   name: 'tasks',
+  // A box is named by the words beside it, a date's among them.
+  requires: ['date'],
   plugin: tasks,
   css: fs.readFileSync(new URL('./tasks.css', import.meta.url), 'utf8'),
   // Drawn into the preview frame, to make it clickable.
