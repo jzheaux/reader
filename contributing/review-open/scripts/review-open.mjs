@@ -72,8 +72,10 @@ This box is for anything in this page, or for everything at once.
 To try it, run the branch's reader. It starts again when reader's code changes, and the page shows the change by itself.
 
 \`\`\`sh
-npm --prefix ${worktree} run dev -- ${tilde(day)} --port 8734 --no-browser
+reader-review --at ${branch} ${tilde(day)} --port 8734 --no-browser
 \`\`\`
+
+\`reader-review <dir>\` runs the newest review worktree's reader on any folder, as \`reader <dir>\` does; \`node contributing/link.mjs\` puts it on the PATH. Without it, \`npm --prefix ${worktree} run dev -- ${tilde(day)} --port 8734 --no-browser\`.
 
 ## Please look
 progress:[]

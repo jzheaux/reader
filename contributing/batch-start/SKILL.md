@@ -16,8 +16,10 @@ node scripts/branch.mjs review <review date, YYYY-MM-DD>   # review/YYYY.MM.DD f
 Before anything else, so that the contributor runs reader from the review worktree from the start, reading `batch.md` and then the review in it, rather than from main first and the worktree once it's made. Tell them the command:
 
 ```sh
-npm --prefix <repo>/.claude/worktrees/review-YYYY.MM.DD run dev -- <meetings>/<review date> --port 8734 --no-browser
+reader-review <meetings>/<review date> --port 8734 --no-browser
 ```
+
+`reader-review` runs the newest review worktree's reader, `--at <branch>` another's, from any folder; `node contributing/link.mjs` puts it on the PATH. If they haven't run that, it's `npm --prefix <repo>/.claude/worktrees/review-YYYY.MM.DD run dev -- <meetings>/<review date> --port 8734 --no-browser`.
 
 ## 2. Check, don't remember
 

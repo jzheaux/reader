@@ -49,6 +49,7 @@ test('the index uses the config\'s names and repo, lists the items in the order 
   assert.match(index, /^Branch `review\/2026\.11\.22` \(worktree `\.claude\/worktrees\/review-2026\.11\.22`\)/m);
   assert.ok(index.indexOf('### gh-22 Tabs move on') < index.indexOf('### gh-21 Pages fold'));
   assert.match(index, /^- \[ \] gh:acme\/reader#23\[gh-23\] Typo in the docs\./m);
+  assert.match(index, /^reader-review --at review\/2026\.11\.22 .*2026-11-22 --port 8734 --no-browser$/m);
   assert.match(index, /run dev -- .*2026-11-22 --port 8734 --no-browser/);
 
   const { body, title } = render(index);

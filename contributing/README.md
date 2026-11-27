@@ -16,6 +16,17 @@ node contributing/link.mjs
 ```
 
 This links each skill into the git-ignored `.claude/skills/` (Claude Code) and `.agents/skills/` (Codex and others).
+It also puts `reader-review` on your PATH, in `npm prefix -g`'s folder as `reader` is, or in `--bin <dir>`'s; `--unlink` takes it all away again.
+
+## Trying a review's reader
+
+```sh
+reader-review <dir> [reader's options]
+```
+
+From any folder, as `reader <dir>`: it runs the newest `review/YYYY.MM.DD` worktree's `npm run dev`, or main's if there's none, so the page shows each change the batch makes.
+`--at <branch>` runs another worktree's, such as `--at main`, and `--which` says which it would run.
+reader takes the next free port after 8734, so it and the installed `reader` run side by side.
 
 ## Config
 
